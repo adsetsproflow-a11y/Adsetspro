@@ -296,7 +296,7 @@ async function runTestSuite() {
     const reuseAttackResult = await rotateRefreshTokenSession(rotToken1);
     assert(reuseAttackResult.success === false, 'Replaying already-revoked refresh token is rejected');
     assert(
-      reuseAttackResult.error?.includes('reuse detected') || reuseAttackResult.error?.includes('revoked'),
+      Boolean(reuseAttackResult.error?.includes('reuse detected') || reuseAttackResult.error?.includes('revoked')),
       'Token reuse attack detected and security alarm triggered'
     );
 

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: result.error.errors[0]?.message || 'Invalid password reset submission.',
+          error: result.error.issues[0]?.message || 'Invalid password reset submission.',
           errors: result.error.flatten().fieldErrors,
         },
         { status: 400 }

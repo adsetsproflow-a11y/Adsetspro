@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: result.error.errors[0]?.message || 'Invalid registration form data.',
+          error: result.error.issues[0]?.message || 'Invalid registration form data.',
           errors: result.error.flatten().fieldErrors,
         },
         { status: 400 }
