@@ -80,7 +80,7 @@ function PendingApprovalContent() {
         <div className="flex justify-between items-center">
           <span className="text-zinc-500">Platform Support:</span>
           <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
-            owner@adsetspro.com
+            owner@adsetsproflow.com
           </span>
         </div>
       </div>

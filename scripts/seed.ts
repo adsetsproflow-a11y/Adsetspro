@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('--- SAAA SaaS Platform Database Seeding ---');
 
-  const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || 'owner@adsetspro.com').trim().toLowerCase();
+  const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || 'owner@adsetsproflow.com').trim().toLowerCase();
   const superAdminName = process.env.SUPER_ADMIN_NAME || 'Platform Super Admin';
   const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin@2026!Secure';
 

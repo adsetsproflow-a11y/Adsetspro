@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Adsetspro SaaS - Multi-Tenant Project Management & WebP Engine',
-  description: 'Adsetspro SaaS Project Management with Web Audio Alarms, WebP Studio, Gamified Leaderboard, and Dynamic Tenant Isolation',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://adsetsproflow.com'),
+  title: 'Adsetspro Flow - Multi-Tenant SaaS Platform & Project Suite',
+  description: 'Adsetspro Flow - Multi-Tenant SaaS Project Management with Web Audio Alarms, WebP Studio, Gamified Leaderboard, and Dynamic Tenant Isolation',
 };
 
 export default function RootLayout({

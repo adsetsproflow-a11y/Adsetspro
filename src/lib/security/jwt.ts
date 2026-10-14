@@ -201,6 +201,7 @@ export function setAuthCookies(
   refreshToken?: string
 ): void {
   const isProduction = process.env.NODE_ENV === 'production';
+  const cookieDomain = isProduction && process.env.COOKIE_DOMAIN ? process.env.COOKIE_DOMAIN : undefined;
 
   // Access token cookie (short-lived)
   response.cookies.set('saas_access_token', accessToken, {
@@ -208,6 +209,7 @@ export function setAuthCookies(
     secure: isProduction,
     sameSite: 'lax',
     path: '/',
+    domain: cookieDomain,
     maxAge: ACCESS_TOKEN_EXPIRY_SECONDS,
   });
 
@@ -217,6 +219,7 @@ export function setAuthCookies(
     secure: isProduction,
     sameSite: 'lax',
     path: '/',
+    domain: cookieDomain,
     maxAge: ACCESS_TOKEN_EXPIRY_SECONDS,
   });
 
@@ -227,6 +230,7 @@ export function setAuthCookies(
       secure: isProduction,
       sameSite: 'lax',
       path: '/',
+      domain: cookieDomain,
       maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,
     });
   }
@@ -236,27 +240,33 @@ export function setAuthCookies(
  * Clear authentication cookies on logout or session invalidation
  */
 export function clearAuthCookies(response: NextResponse): void {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieDomain = isProduction && process.env.COOKIE_DOMAIN ? process.env.COOKIE_DOMAIN : undefined;
+
   response.cookies.set('saas_access_token', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'lax',
     path: '/',
+    domain: cookieDomain,
     maxAge: 0,
   });
 
   response.cookies.set('saas_auth_token', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'lax',
     path: '/',
+    domain: cookieDomain,
     maxAge: 0,
   });
 
   response.cookies.set('saas_refresh_token', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'lax',
     path: '/',
+    domain: cookieDomain,
     maxAge: 0,
   });
 }
