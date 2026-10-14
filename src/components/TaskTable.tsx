@@ -18,6 +18,7 @@ import {
   UploadCloud,
   Check,
   UserCheck,
+  Lock,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Task, TaskStatus, TaskPriority, Department, UserProfile } from '@/lib/types';
@@ -41,6 +42,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [activeUser, setActiveUser] = useState<UserProfile>(saasStore.getActiveUser());
+  const isCompanyAdmin = activeUser.role === 'company_admin' || activeUser.role === 'team_lead' || activeUser.role === 'super_admin';
 
   const fileInputRefs = useRef<{ [taskId: string]: HTMLInputElement | null }>({});
 
@@ -312,14 +314,16 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             <option value="low">⚪ Low</option>
           </select>
 
-          {/* Add Task Button */}
-          <button
-            onClick={onOpenCreateTask}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm cursor-pointer ml-auto md:ml-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Task</span>
-          </button>
+          {/* Add Task Button (Company Admin / Manager Only) */}
+          {isCompanyAdmin && (
+            <button
+              onClick={onOpenCreateTask}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm cursor-pointer ml-auto md:ml-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ New Task</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -351,6 +355,9 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                   const assignee = profiles.find((p) => p.id === task.assigned_to);
                   const assigner = profiles.find((p) => p.id === task.created_by);
                   const deadlineInfo = getDeadlineInfo(task.due_date, task.status === 'completed');
+
+                  const isAssignee = activeUser.id === task.assigned_to;
+                  const canEditTask = isCompanyAdmin || isAssignee;
 
                   return (
                     <tr
@@ -447,26 +454,48 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         </div>
                       </td>
 
-                      {/* Status Dropdown */}
+                      {/* Status Dropdown (Assignee or Company Admin Only) */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <select
-                          value={task.status}
-                          onChange={(e) => handleStatusChange(task, e.target.value as TaskStatus)}
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-lg border cursor-pointer focus:outline-none transition-colors ${
-                            task.status === 'completed'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                              : task.status === 'in_progress'
-                              ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
-                              : task.status === 'review'
-                              ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
-                          }`}
-                        >
-                          <option value="todo">To Do</option>
-                          <option value="in_progress">In Progress</option>
-                          <option value="review">Under Review 🔍</option>
-                          <option value="completed">Completed 🏆</option>
-                        </select>
+                        {canEditTask ? (
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleStatusChange(task, e.target.value as TaskStatus)}
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-lg border cursor-pointer focus:outline-none transition-colors ${
+                              task.status === 'completed'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                : task.status === 'in_progress'
+                                ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                                : task.status === 'review'
+                                ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
+                            }`}
+                          >
+                            <option value="todo">To Do</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="review">Under Review 🔍</option>
+                            <option value="completed">Completed 🏆</option>
+                          </select>
+                        ) : (
+                          <div
+                            className="flex items-center gap-1.5 cursor-not-allowed"
+                            title={`🔒 Locked: Assigned to ${assignee?.full_name || 'team member'} (${task.department}). Only the assigned employee or Company Admin can update status.`}
+                          >
+                            <span
+                              className={`text-xs font-semibold px-2.5 py-1 rounded-lg border opacity-80 ${
+                                task.status === 'completed'
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                  : task.status === 'in_progress'
+                                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                                  : task.status === 'review'
+                                  ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
+                              }`}
+                            >
+                              {task.status === 'completed' ? 'Completed 🏆' : task.status === 'in_progress' ? 'In Progress' : task.status === 'review' ? 'Under Review 🔍' : 'To Do'}
+                            </span>
+                            <Lock className="w-3 h-3 text-zinc-400" />
+                          </div>
+                        )}
                       </td>
 
                       {/* Deliverables (.webp Thumbnails + One-Click Assigner Download + Upload Button) */}
@@ -525,64 +554,86 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                             </div>
                           )}
 
-                          {/* Quick Upload Button for Employee Finishing Task */}
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="file"
-                              accept="image/png, image/jpeg, image/jpg, image/webp"
-                              ref={(el) => {
-                                fileInputRefs.current[task.id] = el;
-                              }}
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleQuickDeliverableUpload(task.id, e.target.files[0]);
-                                  e.target.value = '';
-                                }
-                              }}
-                              className="hidden"
-                            />
-                            <button
-                              onClick={() => fileInputRefs.current[task.id]?.click()}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-md text-[11px] font-semibold transition-colors cursor-pointer"
-                              title="Upload finished deliverable image (auto-converted to WebP)"
-                            >
-                              <UploadCloud className="w-3 h-3" />
-                              <span>{task.attachments && task.attachments.length > 0 ? '+ Upload Another' : '📷 Upload Deliverable'}</span>
-                            </button>
-
-                            {/* Assigner Review Approval Button */}
-                            {task.status === 'review' && (
+                          {/* Quick Upload Button (Assignee or Company Admin Only) */}
+                          {canEditTask ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="file"
+                                accept="image/png, image/jpeg, image/jpg, image/webp"
+                                ref={(el) => {
+                                  fileInputRefs.current[task.id] = el;
+                                }}
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleQuickDeliverableUpload(task.id, e.target.files[0]);
+                                    e.target.value = '';
+                                  }
+                                }}
+                                className="hidden"
+                              />
                               <button
-                                onClick={() => handleStatusChange(task, 'completed')}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-bold transition-colors cursor-pointer shadow-xs"
-                                title="Approve deliverable and award XP points"
+                                onClick={() => fileInputRefs.current[task.id]?.click()}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-md text-[11px] font-semibold transition-colors cursor-pointer"
+                                title="Upload finished deliverable image (auto-converted to WebP)"
                               >
-                                <Check className="w-3 h-3" />
-                                <span>Approve Deliverable</span>
+                                <UploadCloud className="w-3 h-3" />
+                                <span>{task.attachments && task.attachments.length > 0 ? '+ Upload Another' : '📷 Upload Deliverable'}</span>
                               </button>
-                            )}
-                          </div>
+
+                              {/* Assigner Review Approval Button */}
+                              {task.status === 'review' && isCompanyAdmin && (
+                                <button
+                                  onClick={() => handleStatusChange(task, 'completed')}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-bold transition-colors cursor-pointer shadow-xs"
+                                  title="Approve deliverable and award XP points"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  <span>Approve Deliverable</span>
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            (!task.attachments || task.attachments.length === 0) && (
+                              <span
+                                className="text-[10px] text-zinc-400 italic flex items-center gap-1"
+                                title={`Waiting for ${assignee?.full_name || 'assignee'} to submit deliverable`}
+                              >
+                                <Lock className="w-2.5 h-2.5" />
+                                <span>Awaiting {assignee?.full_name || 'assignee'} deliverable</span>
+                              </span>
+                            )
+                          )}
                         </div>
                       </td>
 
-                      {/* Timer */}
+                      {/* Timer (Assignee Only) */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleToggleTimer(task.id)}
-                            className={`p-1.5 rounded-lg border transition-colors ${
-                              task.is_timer_running
-                                ? 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/20'
-                                : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
-                            }`}
-                            title={task.is_timer_running ? 'Pause Timer' : 'Start Timer'}
-                          >
-                            {task.is_timer_running ? (
-                              <Square className="w-3 h-3 fill-current" />
-                            ) : (
-                              <Play className="w-3 h-3 fill-current" />
-                            )}
-                          </button>
+                          {isAssignee ? (
+                            <button
+                              onClick={() => handleToggleTimer(task.id)}
+                              className={`p-1.5 rounded-lg border transition-colors ${
+                                task.is_timer_running
+                                  ? 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/20'
+                                  : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                              }`}
+                              title={task.is_timer_running ? 'Pause Timer' : 'Start Timer'}
+                            >
+                              {task.is_timer_running ? (
+                                <Square className="w-3 h-3 fill-current" />
+                              ) : (
+                                <Play className="w-3 h-3 fill-current" />
+                              )}
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="p-1.5 rounded-lg border bg-zinc-100 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-400 cursor-not-allowed opacity-50"
+                              title={`🔒 Timer locked: Only ${assignee?.full_name || 'the assignee'} can run the timer on this task.`}
+                            >
+                              <Lock className="w-3 h-3" />
+                            </button>
+                          )}
                           <span className={`font-mono text-xs ${task.is_timer_running ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-zinc-500'}`}>
                             {formatTimer(task.time_spent_seconds)}
                           </span>
@@ -599,13 +650,15 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                           >
                             <MessageSquare className="w-3.5 h-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
-                            title="Delete Task"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {isCompanyAdmin && (
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                              title="Delete Task (Company Admin Only)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

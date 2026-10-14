@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireSuperAdmin, recordAuditLog } from '@/lib/auth-helpers';
+import { CompanyStatus } from '@prisma/client';
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authCheck = await requireSuperAdmin(request);
+    if ('response' in authCheck) return authCheck.response;
+
+    const { id } = await context.params;
+
+    const company = await prisma.company.findUnique({
+      where: { id },
+    });
+
+    if (!company) {
+      return NextResponse.json({ success: false, error: 'Company not found.' }, { status: 404 });
+    }
+
+    const updated = await prisma.company.update({
+      where: { id },
+      data: {
+        status: CompanyStatus.ACTIVE,
+        approvedAt: new Date(),
+        approvedById: authCheck.user.userId,
+        rejectionReason: null,
+      },
+    });
+
+    await recordAuditLog({
+      actorUserId: authCheck.user.userId,
+      companyId: id,
+      action: 'COMPANY_APPROVED',
+      targetType: 'COMPANY',
+      targetId: id,
+      metadata: {
+        companyName: company.name,
+        companySlug: company.slug,
+        approvedBy: authCheck.user.email,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Company "${updated.name}" has been approved and workspace is now active!`,
+      company: updated,
+    });
+  } catch (error: any) {
+    console.error('[API Approve Company Error]', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Error approving company.' },
+      { status: 500 }
+    );
+  }
+}

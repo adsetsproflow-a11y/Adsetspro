@@ -39,9 +39,10 @@ import { INITIAL_COMPANIES, INITIAL_PROFILES } from '@/lib/seed-data';
 
 interface WorkspaceViewProps {
   forcedSubdomain?: string;
+  onLogout?: () => void;
 }
 
-export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain }) => {
+export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'tasks' | 'team' | 'studio' | 'leaderboard' | 'chat'>('tasks');
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | undefined>(undefined);
@@ -84,6 +85,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
 
   const isCompanySuspended = !activeCompany.is_active;
   const isSuperAdmin = activeUser.role === 'super_admin';
+  const canCreateTask = activeUser.role === 'company_admin' || activeUser.role === 'team_lead' || activeUser.role === 'super_admin';
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#090d16] text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200">
@@ -91,6 +93,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
       <Header
         onOpenEmailCenter={() => setIsEmailCenterOpen(true)}
         onOpenSuperAdmin={() => setIsSuperAdminOpen(true)}
+        onLogout={onLogout}
       />
 
       {/* 2. Admin Broadcast Banner (Top Urgent Push Alert) */}
@@ -127,16 +130,16 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
                 {activeCompany.name}
               </span>
               <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-semibold border border-indigo-200/50 dark:border-indigo-800/50">
-                {activeCompany.subdomain}.domain.com
+                /workspace/{activeCompany.subdomain}
               </span>
               <span
-                className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
+                className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase text-[10px] ${
                   activeCompany.is_active
                     ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
                     : 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300'
                 }`}
               >
-                {activeCompany.is_active ? `${activeCompany.plan} Plan` : 'SUSPENDED'}
+                {activeCompany.is_active ? '🟢 Active Workspace' : '🔴 Suspended'}
               </span>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
@@ -192,25 +195,21 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <button
-                onClick={() => setIsSuperAdminOpen(true)}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-md shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Shield className="w-4 h-4" />
-                <span>Super Admin Console (Reactivate)</span>
-              </button>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setIsSuperAdminOpen(true)}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-md shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span>Super Admin Console (Reactivate)</span>
+                </button>
+              )}
 
               <button
-                onClick={() => {
-                  const activeOnes = saasStore.getCompanies().filter((c) => c.is_active);
-                  if (activeOnes.length > 0) {
-                    saasStore.setActiveCompanyId(activeOnes[0].id);
-                    window.location.href = `/workspace/${activeOnes[0].subdomain}`;
-                  }
-                }}
+                onClick={onLogout || (() => { window.location.href = '/'; })}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs transition-colors cursor-pointer"
               >
-                Switch to Active Workspace
+                Log Out
               </button>
             </div>
           </div>
@@ -228,10 +227,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
                   }`}
                 >
                   <ListTodo className="w-4 h-4" />
-                  <span>Zoho Task Board</span>
+                  <span>Task Board</span>
                 </button>
 
-                {/* Team & Employees Management Tab */}
+                {/* Team & Admin Panel Tab */}
                 <button
                   onClick={() => setActiveTab('team')}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -241,12 +240,13 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
                   }`}
                 >
                   <Users className="w-4 h-4" />
-                  <span>Team & Employees</span>
+                  <span>Team & Admin Panel</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-extrabold">
                     {companyEmployeeCount}
                   </span>
                 </button>
 
+                {/* WebP & Image Studio Tab */}
                 <button
                   onClick={() => setActiveTab('studio')}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -256,9 +256,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
                   }`}
                 >
                   <FileImage className="w-4 h-4" />
-                  <span>WebP Studio Engine</span>
+                  <span>Image & WebP Studio</span>
                 </button>
 
+                {/* Leaderboard & Priority Graphs Tab */}
                 <button
                   onClick={() => setActiveTab('leaderboard')}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -268,9 +269,10 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
                   }`}
                 >
                   <Trophy className="w-4 h-4" />
-                  <span>Gamified Leaderboard</span>
+                  <span>Leaderboard & Priority Graphs</span>
                 </button>
 
+                {/* Chat & AI Chatbot Tab */}
                 <button
                   onClick={() => setActiveTab('chat')}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -280,11 +282,12 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
                   }`}
                 >
                   <MessageSquare className="w-4 h-4" />
-                  <span>Department Chat</span>
+                  <span>Team Chat</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </button>
               </div>
 
-              {activeTab === 'tasks' && (
+              {activeTab === 'tasks' && canCreateTask && (
                 <button
                   onClick={() => {
                     setSelectedAssigneeId(undefined);
@@ -293,7 +296,7 @@ export const WorkspaceView: React.FC<WorkspaceViewProps> = ({ forcedSubdomain })
                   className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer shrink-0"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Add Deliverable</span>
+                  <span>+ Create Task</span>
                 </button>
               )}
             </div>

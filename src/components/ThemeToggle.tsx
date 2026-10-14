@@ -40,7 +40,7 @@ export const ThemeToggle: React.FC = () => {
       {/* Light Mode Option */}
       <button
         onClick={() => switchTheme('light')}
-        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+        className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
           theme === 'light'
             ? 'bg-white text-zinc-900 shadow-sm border border-zinc-200'
             : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
@@ -48,13 +48,13 @@ export const ThemeToggle: React.FC = () => {
         title="Switch to Light Mode"
       >
         <Sun className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-amber-500' : 'text-zinc-400'}`} />
-        <span>Light</span>
+        <span className="hidden xl:inline">Light</span>
       </button>
 
       {/* Dark Mode Option */}
       <button
         onClick={() => switchTheme('dark')}
-        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+        className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
           theme === 'dark'
             ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
             : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
@@ -62,7 +62,7 @@ export const ThemeToggle: React.FC = () => {
         title="Switch to Dark Mode"
       >
         <Moon className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-indigo-400' : 'text-zinc-400'}`} />
-        <span>Dark</span>
+        <span className="hidden xl:inline">Dark</span>
       </button>
     </div>
   );

@@ -1,4 +1,4 @@
-import { UserProfile, Company, Role, Department } from './types';
+import { UserProfile, Company, Role, Department, Designation } from './types';
 import { saasStore } from './storage';
 
 export async function hashPassword(password: string): Promise<string> {
@@ -134,12 +134,14 @@ export class AuthService {
     ];
     const newAdmin: UserProfile = {
       id: `user-${Date.now()}`,
+      employee_id: `EMP-${cleanSubdomain.toUpperCase().slice(0, 4)}-001`,
       company_id: newCompany.id,
       full_name: params.adminName.trim(),
       email: params.email.trim().toLowerCase(),
       password_hash: passwordHash,
       avatar_url: AVATAR_POOL[Math.floor(Math.random() * AVATAR_POOL.length)],
       role: 'company_admin',
+      designation: 'Company CEO',
       department: params.department || 'Design',
       total_xp: 500,
       current_streak: 1,
@@ -162,11 +164,17 @@ export class AuthService {
     password?: string;
     department: Department;
     role: Role;
+    designation?: Designation;
   }): Promise<{ success: boolean; error?: string; user?: UserProfile }> {
     const profiles = saasStore.getProfiles();
     if (profiles.some((p) => p.email.toLowerCase() === params.email.toLowerCase())) {
       return { success: false, error: 'An employee with this email already exists.' };
     }
+
+    const company = saasStore.getCompanies().find((c) => c.id === params.companyId);
+    const companyProfiles = profiles.filter((p) => p.company_id === params.companyId);
+    const subPrefix = company?.subdomain ? company.subdomain.toUpperCase().slice(0, 4) : 'CORP';
+    const employeeId = `EMP-${subPrefix}-${String(companyProfiles.length + 1).padStart(3, '0')}`;
 
     const AVATAR_POOL = [
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -183,12 +191,14 @@ export class AuthService {
     const passwordHash = await hashPassword(params.password || 'admin123');
     const newEmployee: UserProfile = {
       id: `user-${Date.now()}`,
+      employee_id: employeeId,
       company_id: params.companyId,
       full_name: params.fullName.trim(),
       email: params.email.trim().toLowerCase(),
       password_hash: passwordHash,
       avatar_url: AVATAR_POOL[Math.floor(Math.random() * AVATAR_POOL.length)],
       role: params.role || 'worker',
+      designation: params.designation || 'Developer',
       department: params.department || 'Development',
       total_xp: 100,
       current_streak: 1,

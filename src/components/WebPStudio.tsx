@@ -379,6 +379,86 @@ export const WebPStudio: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Deliverable Assets Gallery for the Company */}
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <FileImage className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
+                Company Deliverable Asset Library
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                All client-ready WebP visual deliverables attached across active sprint tasks.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-mono font-bold text-zinc-400">
+            {tasks.flatMap((t) => t.attachments || []).length} Deliverables
+          </span>
+        </div>
+
+        {tasks.flatMap((t) => t.attachments || []).length === 0 ? (
+          <div className="text-center py-8 text-zinc-400 text-xs bg-zinc-50 dark:bg-zinc-800/40 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
+            No image deliverables attached yet. Use the upload converter above to attach assets!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+            {tasks.flatMap((t) =>
+              (t.attachments || []).map((att) => ({ ...att, taskTitle: t.title }))
+            ).map((item) => (
+              <div
+                key={item.id}
+                className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200/80 dark:border-zinc-700/60 overflow-hidden flex flex-col justify-between group hover:border-indigo-500/50 transition-all"
+              >
+                <div className="relative h-40 bg-zinc-950/20 overflow-hidden flex items-center justify-center p-2">
+                  <img
+                    src={item.webp_url}
+                    alt={item.webp_name}
+                    className="max-h-full max-w-full object-contain rounded-lg group-hover:scale-105 transition-transform"
+                  />
+                  <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-emerald-600 text-white font-mono text-[10px] font-black shadow">
+                    -{item.savings_percentage}% WEBP
+                  </span>
+                </div>
+
+                <div className="p-4 space-y-2">
+                  <div>
+                    <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                      {item.webp_name}
+                    </h4>
+                    <p className="text-[11px] text-zinc-400 truncate">
+                      Task: {item.taskTitle}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-200/60 dark:border-zinc-700/60">
+                    <span>
+                      {item.webp_size_kb} KB <span className="line-through text-zinc-400 text-[10px]">({item.original_size_kb} KB)</span>
+                    </span>
+                    <button
+                      onClick={() => {
+                        const a = document.createElement('a');
+                        a.href = item.webp_url;
+                        a.download = item.webp_name;
+                        a.click();
+                        audioEngine.playBellChime();
+                      }}
+                      className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -180,10 +180,49 @@ export class SaaSStore {
 
   public toggleCompanyStatus(id: string) {
     const companies = this.getCompanies();
+    const updated = companies.map((c) => {
+      if (c.id === id) {
+        const nextActive = !c.is_active;
+        return {
+          ...c,
+          is_active: nextActive,
+          approval_status: nextActive ? ('approved' as const) : ('suspended' as const),
+        };
+      }
+      return c;
+    });
+    this.setItem(STORAGE_KEYS.COMPANIES, updated);
+  }
+
+  public approveCompanyCredentials(id: string) {
+    const companies = this.getCompanies();
     const updated = companies.map((c) =>
-      c.id === id ? { ...c, is_active: !c.is_active } : c
+      c.id === id ? { ...c, is_active: true, approval_status: 'approved' as const } : c
     );
     this.setItem(STORAGE_KEYS.COMPANIES, updated);
+  }
+
+  public deleteCompany(id: string): void {
+    const companies = this.getCompanies().filter((c) => c.id !== id);
+    this.setItem(STORAGE_KEYS.COMPANIES, companies);
+
+    const profiles = this.getProfiles().filter((p) => p.company_id !== id);
+    this.setItem(STORAGE_KEYS.PROFILES, profiles);
+
+    const tasks = this.getTasks().filter((t) => t.company_id !== id);
+    this.setItem(STORAGE_KEYS.TASKS, tasks);
+
+    const messages = this.getMessages().filter((m) => m.company_id !== id);
+    this.setItem(STORAGE_KEYS.MESSAGES, messages);
+
+    const points = this.getPointsHistory().filter((p) => p.company_id !== id);
+    this.setItem(STORAGE_KEYS.POINTS, points);
+
+    if (this.getActiveCompanyId() === id) {
+      if (companies.length > 0) {
+        this.setActiveCompanyId(companies[0].id);
+      }
+    }
   }
 
   // --- Profiles ---

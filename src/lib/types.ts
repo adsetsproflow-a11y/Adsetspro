@@ -1,6 +1,16 @@
 export type Role = 'super_admin' | 'company_admin' | 'team_lead' | 'worker';
 
-export type Department = 'Development' | 'Design' | 'Content';
+export type Department = 'Development' | 'Design' | 'Content' | 'Marketing' | 'QA';
+
+export type Designation =
+  | 'Developer'
+  | 'Digital Marketer'
+  | 'Tester'
+  | 'Content Writer'
+  | 'Designer'
+  | 'Product Manager'
+  | 'Company CEO'
+  | 'Platform Owner';
 
 export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
 
@@ -13,19 +23,24 @@ export interface Company {
   plan: 'starter' | 'pro' | 'enterprise';
   max_users: number;
   storage_limit_mb: number;
-  is_active: boolean;
+  is_active: boolean; // true = access allowed, false = paused/suspended
+  approval_status?: 'approved' | 'pending' | 'suspended';
+  admin_name?: string;
+  admin_email?: string;
   mrr: number;
   created_at: string;
 }
 
 export interface UserProfile {
   id: string;
+  employee_id?: string; // e.g. "EMP-APX-001"
   company_id: string;
   full_name: string;
   email: string;
   password_hash?: string;
   avatar_url: string;
   role: Role;
+  designation?: Designation;
   department: Department;
   total_xp: number;
   current_streak: number;

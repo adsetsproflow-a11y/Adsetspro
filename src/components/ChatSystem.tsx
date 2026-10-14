@@ -12,6 +12,15 @@ import {
   BellRing,
   X,
   Check,
+  Zap,
+  Flame,
+  Code2,
+  Palette,
+  TrendingUp,
+  FlaskConical,
+  PenTool,
+  CheckCircle,
+  Users,
 } from 'lucide-react';
 import { saasStore } from '@/lib/storage';
 import { Message, UserProfile } from '@/lib/types';
@@ -29,21 +38,27 @@ export const ChatSystem: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const channels = ['#general', '#designers', '#developers', '#content'];
+  const channels = [
+    { name: '#general', desc: 'All-hands announcements & updates' },
+    { name: '#development', desc: 'Engineering, APIs, Code reviews' },
+    { name: '#design', desc: 'Figma mockups, WebP banners, Assets' },
+    { name: '#marketing', desc: 'Ad campaigns, Copywriting, CRO' },
+    { name: '#qa-testing', desc: 'Bug reports, Test cases, QA checks' },
+  ];
 
   useEffect(() => {
     const update = () => {
-      setMessages(saasStore.getChannelMessages(activeChannel));
       setCurrentUser(saasStore.getActiveUser());
+      setMessages(saasStore.getMessages());
     };
     update();
     const unsub = saasStore.subscribe(update);
     return unsub;
-  }, [activeChannel]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, activeChannel]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,124 +73,145 @@ export const ChatSystem: React.FC = () => {
     if (!broadcastTitle.trim() || !broadcastMessage.trim()) return;
 
     saasStore.sendBroadcast(broadcastTitle.trim(), broadcastMessage.trim(), broadcastSeverity);
+    saasStore.sendMessage('#general', `🚨 **ADMIN BROADCAST ALERT: ${broadcastTitle.trim()}**\n${broadcastMessage.trim()}`);
+
     setIsBroadcastModalOpen(false);
     setBroadcastTitle('');
     setBroadcastMessage('');
   };
 
+  const channelMessages = messages.filter((m) => m.channel_name === activeChannel);
+  const profiles = saasStore.getProfiles();
   const isAdmin = currentUser.role === 'company_admin' || currentUser.role === 'super_admin';
+  const activeCompany = saasStore.getActiveCompany();
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col md:flex-row h-[620px]">
-      {/* Channels Sidebar */}
-      <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 p-4 flex flex-col justify-between bg-zinc-50/60 dark:bg-zinc-950/40">
+    <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col md:flex-row h-[650px]">
+      {/* 1. Sidebar: Department Channels */}
+      <div className="w-full md:w-72 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 p-4 flex flex-col justify-between bg-zinc-50/70 dark:bg-zinc-950/50">
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <span className="font-bold text-xs uppercase tracking-wider text-zinc-500">
-              Department Channels
-            </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Supabase Realtime Connected" />
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4 px-1">
+            <div>
+              <span className="font-extrabold text-xs uppercase tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-indigo-500" />
+                Team Channels
+              </span>
+              <span className="text-[10px] text-zinc-400 block mt-0.5">
+                {activeCompany.name} Workspace
+              </span>
+            </div>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Team Chat Active" />
           </div>
 
+          {/* Channel List */}
           <div className="space-y-1">
             {channels.map((chan) => (
               <button
-                key={chan}
-                onClick={() => setActiveChannel(chan)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  activeChannel === chan
+                key={chan.name}
+                onClick={() => setActiveChannel(chan.name)}
+                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between ${
+                  activeChannel === chan.name
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/80 hover:text-zinc-900 dark:hover:text-zinc-100'
                 }`}
               >
-                <Hash className="w-3.5 h-3.5 opacity-80" />
-                <span>{chan.replace('#', '')}</span>
+                <div className="flex items-center gap-2">
+                  <Hash className="w-3.5 h-3.5 opacity-80" />
+                  <span>{chan.name.replace('#', '')}</span>
+                </div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Admin Broadcast Trigger */}
-        <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-          {isAdmin ? (
+        {/* Broadcast Trigger Button (Admins only) */}
+        {isAdmin && (
+          <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <button
               onClick={() => setIsBroadcastModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+              className="w-full py-2.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
             >
-              <Megaphone className="w-4 h-4" />
-              <span>Admin Broadcast</span>
+              <Megaphone className="w-3.5 h-3.5" />
+              <span>Send Urgent Push Alert</span>
             </button>
-          ) : (
-            <div className="text-[11px] text-zinc-400 text-center italic">
-              Broadcasts managed by Company Admins
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Main Chat Stream */}
+      {/* 2. Main Chat Conversation Area */}
       <div className="flex-1 flex flex-col justify-between bg-white dark:bg-zinc-900">
-        {/* Chat Header */}
-        <div className="px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        {/* Channel Header */}
+        <div className="px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Hash className="w-4 h-4 text-indigo-500" />
-            <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-              {activeChannel.replace('#', '')}
-            </h3>
-            <span className="text-[11px] text-zinc-400 hidden sm:inline">
-              • Team real-time workspace discussions
-            </span>
+            <div>
+              <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                {activeChannel}
+              </h3>
+              <span className="text-[11px] text-zinc-400">
+                {channels.find((c) => c.name === activeChannel)?.desc}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
-            <span>Live WebSockets</span>
+
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <span>Logged in as:</span>
+            <strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{currentUser.full_name}</strong>
           </div>
         </div>
 
-        {/* Messages Scroll Area */}
-        <div className="flex-1 p-5 overflow-y-auto space-y-4">
-          {messages.length === 0 ? (
-            <div className="text-center py-16 text-zinc-400 text-xs">
-              No messages in {activeChannel} yet. Start the conversation below!
+        {/* Messages Feed */}
+        <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4">
+          {channelMessages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center text-zinc-400 space-y-2">
+              <Hash className="w-10 h-10 opacity-30 text-indigo-500" />
+              <p className="text-xs font-semibold">No messages in {activeChannel} yet.</p>
+              <p className="text-[11px]">Start the conversation with your team members!</p>
             </div>
           ) : (
-            messages.map((msg) => {
+            channelMessages.map((msg) => {
+              const author = profiles.find((p) => p.id === msg.sender_id) || {
+                full_name: msg.sender_name || 'Team Member',
+                avatar_url: msg.sender_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+                role: 'worker',
+                designation: 'Developer',
+                department: 'Development',
+              };
               const isMe = msg.sender_id === currentUser.id;
+
               return (
                 <div
                   key={msg.id}
-                  className={`flex gap-3 max-w-xl ${isMe ? 'ml-auto flex-row-reverse' : ''}`}
+                  className={`flex items-start gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   <img
-                    src={msg.sender_avatar}
-                    alt={msg.sender_name}
-                    className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-zinc-300 dark:ring-zinc-700"
+                    src={author.avatar_url}
+                    alt={author.full_name}
+                    className="w-8 h-8 rounded-xl object-cover ring-2 ring-indigo-500/20 shrink-0"
                   />
-                  <div className={`space-y-1 ${isMe ? 'items-end' : ''}`}>
-                    <div className={`flex items-center gap-2 text-[11px] ${isMe ? 'flex-row-reverse' : ''}`}>
-                      <span className="font-bold text-zinc-800 dark:text-zinc-200">
-                        {msg.sender_name}
-                      </span>
-                      <span className="text-zinc-400">
+                  <div className={`space-y-1 max-w-md ${isMe ? 'items-end text-right' : 'items-start text-left'}`}>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">{author.full_name}</span>
+                      <span className="text-zinc-400 text-[10px]">
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 
                     <div
-                      className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                      className={`p-3 rounded-2xl text-xs ${
                         isMe
                           ? 'bg-indigo-600 text-white rounded-tr-none'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-none'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-tl-none'
                       }`}
                     >
-                      {msg.message}
-
+                      <p className="whitespace-pre-wrap">{msg.message}</p>
                       {msg.attachment_url && (
-                        <div className="mt-2 rounded-xl overflow-hidden border border-white/20">
+                        <div className="mt-2">
                           <img
                             src={msg.attachment_url}
-                            alt="Attachment preview"
-                            className="max-h-48 object-cover w-full"
+                            alt="Attachment"
+                            className="rounded-lg max-h-48 object-cover border border-white/20"
                           />
                         </div>
                       )}
@@ -188,97 +224,93 @@ export const ChatSystem: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Bar */}
-        <form
-          onSubmit={handleSendMessage}
-          className="p-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-2 bg-zinc-50/50 dark:bg-zinc-950/40"
-        >
+        {/* Channel Input Box */}
+        <form onSubmit={handleSendMessage} className="p-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
           <input
             type="text"
             placeholder={`Message ${activeChannel}...`}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="flex-1 px-4 py-2.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 px-4 py-2.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white transition-colors cursor-pointer"
+            className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-colors disabled:opacity-50 cursor-pointer"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
       </div>
 
-      {/* Admin Broadcast Modal */}
+      {/* Broadcast Alert Modal */}
       {isBroadcastModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
             <button
               onClick={() => setIsBroadcastModalOpen(false)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              className="absolute top-5 right-5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400 mb-3">
-              <Megaphone className="w-6 h-6" />
-              <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-100">
-                Send Urgent Broadcast to ALL Employees
-              </h3>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/80 text-red-600 dark:text-red-400 flex items-center justify-center">
+                <Megaphone className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-zinc-900 dark:text-zinc-100">
+                  Broadcast Urgent Alert
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  Pushes an audible alarm chime to all team members instantly.
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-              This message will immediately pop up at the top of every employee screen with an alarm chime and dispatch automated email warnings.
-            </p>
 
-            <form onSubmit={handleSendBroadcast} className="space-y-4">
+            <form onSubmit={handleSendBroadcast} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Broadcast Title / Headline
+                  Alert Title
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g., 🚨 ALL-HANDS SPRINT DEMO AT 4:00 PM"
+                  placeholder="e.g. CRITICAL: Client Presentation in 1 Hour"
                   value={broadcastTitle}
                   onChange={(e) => setBroadcastTitle(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Urgent Announcement Details
+                  Message Details
                 </label>
                 <textarea
-                  rows={3}
-                  required
-                  placeholder="State the deadline, action items, or critical notification..."
+                  placeholder="Describe the urgent requirement or blocker..."
                   value={broadcastMessage}
                   onChange={(e) => setBroadcastMessage(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  rows={3}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                  required
                 />
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-[11px] text-zinc-400">
-                  🔔 Will trigger Web Audio alert & Resend email logs
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsBroadcastModalOpen(false)}
-                    className="px-4 py-2 text-xs font-semibold rounded-xl text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-md cursor-pointer"
-                  >
-                    Fire Broadcast 🚨
-                  </button>
-                </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsBroadcastModalOpen(false)}
+                  className="flex-1 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-700 dark:text-zinc-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md transition-colors"
+                >
+                  Broadcast Push Alert
+                </button>
               </div>
             </form>
           </div>

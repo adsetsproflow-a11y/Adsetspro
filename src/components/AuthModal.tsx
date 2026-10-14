@@ -47,6 +47,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
     setLoading(true);
 
+    try {
+      // 1. Call backend Next.js API /api/auth/login with JWT & cookie
+      await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+    } catch {
+      // Non-blocking fallback
+    }
+
     const res = await authService.login(email.trim(), password);
     setLoading(false);
 
@@ -58,7 +69,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     audioEngine.playSuccessChime();
     onClose();
 
-    // If company admin or employee, navigate to company workspace; if super admin, stay on main or console
+    // If company admin or employee, navigate to company workspace; if super admin, stay on main
     if (res.session?.user.role === 'super_admin') {
       window.location.href = '/';
     } else if (res.session?.company) {
@@ -253,36 +264,64 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* Quick Demo Credential Buttons */}
             <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block text-center">
-                Quick Demo Role Switch:
+                Quick Demo Role & Designation Switch:
               </span>
               <div className="grid grid-cols-2 gap-1.5 text-[11px]">
                 <button
                   type="button"
                   onClick={() => fillQuickLogin('owner@adsetspro.com')}
-                  className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-medium"
+                  className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-bold"
                 >
-                  👑 SaaS Owner
+                  👑 Super Admin
                 </button>
                 <button
                   type="button"
                   onClick={() => fillQuickLogin('sarah@apex.agency')}
                   className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-medium"
                 >
-                  🏢 Apex Admin
+                  🏢 Sarah (CEO)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillQuickLogin('daniel@apex.agency')}
+                  className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-medium"
+                >
+                  💻 Daniel (Developer)
                 </button>
                 <button
                   type="button"
                   onClick={() => fillQuickLogin('elena@apex.agency')}
                   className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-medium"
                 >
-                  👷 Elena (Designer)
+                  🎨 Elena (Designer)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillQuickLogin('priya@apex.agency')}
+                  className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-medium"
+                >
+                  📈 Priya (Marketer)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillQuickLogin('alex@apex.agency')}
+                  className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-medium"
+                >
+                  🧪 Alex (Tester)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillQuickLogin('aisha@apex.agency')}
+                  className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-medium"
+                >
+                  ✍️ Aisha (Writer)
                 </button>
                 <button
                   type="button"
                   onClick={() => fillQuickLogin('vikram@techflow.io')}
                   className="p-1.5 text-left rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-medium"
                 >
-                  🏢 TechFlow Admin
+                  🏢 Vikram (TechFlow)
                 </button>
               </div>
             </div>
