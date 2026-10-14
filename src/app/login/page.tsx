@@ -210,7 +210,7 @@ export default function StandaloneLoginPage() {
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <button
                 type="button"
-                onClick={() => fillQuick('owner@adsetspro.com', 'SuperAdmin@2026!Secure')}
+                onClick={() => fillQuick('owner@adsetsproflow.com', 'SuperAdmin@2026!Secure')}
                 className="p-2 text-left rounded-xl bg-zinc-100 dark:bg-zinc-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 truncate cursor-pointer font-bold border border-transparent hover:border-indigo-300 dark:hover:border-indigo-800"
               >
                 👑 Super Admin

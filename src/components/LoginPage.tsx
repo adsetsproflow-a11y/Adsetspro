@@ -21,7 +21,7 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [activeTab, setActiveTab] = useState<'super_admin' | 'company'>('super_admin');
-  const [email, setEmail] = useState('owner@adsetspro.com');
+  const [email, setEmail] = useState('owner@adsetsproflow.com');
   const [password, setPassword] = useState('admin123');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
     setSuccess(null);
     if (tab === 'super_admin') {
-      setEmail('owner@adsetspro.com');
+      setEmail('owner@adsetsproflow.com');
     } else {
       setEmail('sarah@apex.agency');
     }
@@ -174,7 +174,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <input
                   type="email"
                   required
-                  placeholder={activeTab === 'super_admin' ? 'owner@adsetspro.com' : 'sarah@apex.agency'}
+                  placeholder={activeTab === 'super_admin' ? 'owner@adsetsproflow.com' : 'sarah@apex.agency'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-3.5 py-2.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"

@@ -310,7 +310,7 @@ export const SuperAdminPortalView: React.FC<SuperAdminPortalViewProps> = ({ onLo
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
             <Lock className="w-3.5 h-3.5 text-indigo-500" />
-            <span>owner@adsetspro.com</span>
+            <span>owner@adsetsproflow.com</span>
           </div>
 
           <ThemeToggle />
