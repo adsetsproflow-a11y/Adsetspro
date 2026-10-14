@@ -224,9 +224,64 @@ export class AuthService {
     return { success: true };
   }
 
+  public async syncBackendSession(): Promise<AuthSession | null> {
+    if (typeof window === 'undefined') return null;
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data.success && data.user) {
+        const globalRole = data.user.globalRole === 'SUPER_ADMIN' ? 'super_admin' : 'company_admin';
+        const role = data.activeMembership ? (data.activeMembership.role === 'COMPANY_ADMIN' ? 'company_admin' : 'worker') : globalRole;
+
+        const sessionUser: UserProfile = {
+          id: data.user.id,
+          company_id: data.activeMembership?.companyId || '',
+          full_name: data.user.name,
+          email: data.user.email,
+          avatar_url: data.user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          role: role as any,
+          designation: data.activeMembership?.designation || (data.user.globalRole === 'SUPER_ADMIN' ? 'Platform Owner' : 'Company CEO'),
+          department: (data.activeMembership?.department as any) || 'Development',
+          total_xp: 500,
+          current_streak: 1,
+          created_at: data.user.createdAt,
+        };
+
+        const sessionCompany: Company | null = data.activeMembership
+          ? {
+              id: data.activeMembership.companyId,
+              name: data.activeMembership.companyName,
+              subdomain: data.activeMembership.companySlug,
+              plan: 'pro',
+              max_users: 50,
+              storage_limit_mb: 10000,
+              is_active: data.activeMembership.companyStatus === 'ACTIVE',
+              approval_status: data.activeMembership.companyStatus.toLowerCase() as any,
+              mrr: 2400,
+              created_at: new Date().toISOString(),
+            }
+          : null;
+
+        const session: AuthSession = {
+          user: sessionUser,
+          company: sessionCompany,
+          token: 'active_db_session',
+        };
+
+        this.setSession(session);
+        return session;
+      }
+    } catch {}
+    return this.getSession();
+  }
+
   public logout() {
     this.setSession(null);
+    if (typeof window !== 'undefined') {
+      fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    }
   }
 }
 
 export const authService = AuthService.getInstance();
+

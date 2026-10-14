@@ -13,10 +13,10 @@ export default function Home() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const syncSession = () => {
+  const syncSession = async () => {
     saasStore.initData();
-    const current = authService.getSession();
-    setSession(current);
+    const synced = await authService.syncBackendSession();
+    setSession(synced || authService.getSession());
   };
 
   useEffect(() => {
