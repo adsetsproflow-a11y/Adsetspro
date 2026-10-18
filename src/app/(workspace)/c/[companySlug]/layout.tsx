@@ -92,7 +92,7 @@ export default async function WorkspaceLayout({
 
   // 3. Fetch company
   const compRes = await pool.query(
-    `SELECT id, name, slug, status FROM public.companies WHERE slug = $1 LIMIT 1;`,
+    `SELECT id, name, slug, status, logo_url FROM public.companies WHERE slug = $1 LIMIT 1;`,
     [companySlug]
   );
   const company = compRes.rows[0];
@@ -152,6 +152,7 @@ export default async function WorkspaceLayout({
     <WorkspaceShell
       companySlug={companySlug}
       companyName={company.name}
+      companyLogo={company.logo_url || null}
       userName={profile.full_name || profile.email}
       userRole={role}
       unreadNotifications={unreadCount || 0}

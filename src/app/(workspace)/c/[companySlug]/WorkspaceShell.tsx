@@ -35,6 +35,7 @@ interface WorkspaceShellProps {
   children: React.ReactNode;
   companySlug: string;
   companyName: string;
+  companyLogo?: string | null;
   userName: string;
   userRole: UserRole;
   unreadNotifications: number;
@@ -45,6 +46,7 @@ export default function WorkspaceShell({
   children,
   companySlug,
   companyName,
+  companyLogo,
   userName,
   userRole,
   unreadNotifications,
@@ -125,9 +127,17 @@ export default function WorkspaceShell({
       {/* Mobile Top Header */}
       <header className="md:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-zinc-800">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-bold">
-            <Layers className="w-4 h-4" />
-          </div>
+          {companyLogo ? (
+            <img
+              src={companyLogo}
+              alt={companyName}
+              className="w-8 h-8 rounded-lg object-cover border border-zinc-700/50 shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
+              <Layers className="w-4 h-4" />
+            </div>
+          )}
           <div>
             <h2 className="font-bold text-xs text-white truncate max-w-[150px]">{companyName}</h2>
             <span
@@ -162,9 +172,17 @@ export default function WorkspaceShell({
           {/* Company Brand Header */}
           <div className="px-2 space-y-2">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 font-bold shrink-0">
-                <Layers className="w-5 h-5" />
-              </div>
+              {companyLogo ? (
+                <img
+                  src={companyLogo}
+                  alt={companyName}
+                  className="w-10 h-10 rounded-xl object-cover shadow-lg border border-zinc-700/60 shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 font-bold shrink-0">
+                  <Layers className="w-5 h-5" />
+                </div>
+              )}
               <div className="min-w-0">
                 <h2 className="font-bold text-sm tracking-tight text-white truncate">
                   {companyName}

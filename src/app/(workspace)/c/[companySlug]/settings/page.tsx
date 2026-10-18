@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Settings,
@@ -33,6 +33,7 @@ interface DesignationItem {
 }
 
 export default function WorkspaceSettingsPage() {
+  const router = useRouter();
   const params = useParams();
   const companySlug = params.companySlug as string;
 
@@ -74,6 +75,9 @@ export default function WorkspaceSettingsPage() {
       if (settingsData.success && settingsData.company) {
         setCompanyName(settingsData.company.name || '');
         setCompanyCreatedAt(settingsData.company.created_at || '');
+        if (settingsData.company.logo_url) {
+          setLogoPreview(settingsData.company.logo_url);
+        }
       }
 
       if (desigData.success && desigData.designations) {
@@ -103,13 +107,17 @@ export default function WorkspaceSettingsPage() {
       const res = await fetch(`/api/companies/${companySlug}/settings`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: companyName.trim() }),
+        body: JSON.stringify({ 
+          name: companyName.trim(),
+          logo_url: logoPreview || null,
+        }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update workspace name');
 
-      setFeedback({ type: 'success', message: 'Workspace profile updated successfully.' });
+      setFeedback({ type: 'success', message: 'Workspace logo and profile updated successfully.' });
+      router.refresh();
       setTimeout(() => setFeedback(null), 3000);
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Failed to save changes.' });
