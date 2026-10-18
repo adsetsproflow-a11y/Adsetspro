@@ -20,6 +20,7 @@ import {
   RefreshCw,
   BarChart3,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface DepartmentDetailData {
   department: {
@@ -334,7 +335,7 @@ export default function DepartmentDetailPage() {
                   <th className="py-3.5 px-4">Designation</th>
                   <th className="py-3.5 px-4">Reporting To</th>
                   <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 text-right">Joined Date</th>
+                  <th className="py-3.5 px-4 text-right">Joined Date (DD/MM/YYYY)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
@@ -379,8 +380,8 @@ export default function DepartmentDetailPage() {
                           {m.status}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right text-zinc-400">
-                        {new Date(m.created_at).toLocaleDateString()}
+                      <td className="py-3.5 px-4 text-right text-zinc-400 font-mono">
+                        {formatDate(m.created_at, 'short')}
                       </td>
                     </tr>
                   ))

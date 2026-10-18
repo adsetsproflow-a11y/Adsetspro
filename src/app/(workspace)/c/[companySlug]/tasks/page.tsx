@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   Users,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface TaskItem {
   id: string;
@@ -508,7 +509,7 @@ export default function WorkspaceTasksPage() {
           {/* Due Date Filter */}
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
-              Deadline
+              Deadline (DD/MM/YYYY)
             </label>
             <input
               type="date"
@@ -540,7 +541,7 @@ export default function WorkspaceTasksPage() {
                 <th className="px-4 py-3.5 min-w-[140px]">Project</th>
                 <th className="px-4 py-3.5 min-w-[90px]">Priority</th>
                 <th className="px-4 py-3.5 min-w-[120px]">Status</th>
-                <th className="px-4 py-3.5 min-w-[100px]">Due Date</th>
+                <th className="px-4 py-3.5 min-w-[110px]">Due Date (DD/MM/YYYY)</th>
                 <th className="px-4 py-3.5 text-right min-w-[80px]">Action</th>
               </tr>
             </thead>
@@ -669,8 +670,8 @@ export default function WorkspaceTasksPage() {
                     </td>
 
                     {/* Due Date */}
-                    <td className="px-4 py-3.5 font-mono text-zinc-400 whitespace-nowrap">
-                      {task.due_date ? new Date(task.due_date).toLocaleDateString() : '—'}
+                    <td className="px-4 py-3.5 font-mono text-zinc-300 whitespace-nowrap">
+                      {task.due_date ? formatDate(task.due_date, 'short') : '—'}
                     </td>
 
                     {/* Action */}
@@ -874,25 +875,27 @@ export default function WorkspaceTasksPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-300">Start Date</label>
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Start Date <span className="text-zinc-500 font-normal">(DD/MM/YYYY)</span>
+                  </label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
-                  >
-                  </input>
+                  />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-300">Due Date</label>
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Due Date <span className="text-zinc-500 font-normal">(DD/MM/YYYY)</span>
+                  </label>
                   <input
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
-                  >
-                  </input>
+                  />
                 </div>
               </div>
 

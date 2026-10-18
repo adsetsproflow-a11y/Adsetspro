@@ -23,6 +23,7 @@ import {
   ChevronRight,
   TrendingUp,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface MyTaskItem {
   id: string;
@@ -440,7 +441,7 @@ export default function MyTasksDashboard() {
                   </th>
                   <th className="px-4 py-3.5">Project</th>
                   <th className="px-4 py-3.5">Priority</th>
-                  <th className="px-4 py-3.5">Due Date</th>
+                  <th className="px-4 py-3.5">Due Date (DD/MM/YYYY)</th>
                   <th className="px-4 py-3.5">Status</th>
                   <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
@@ -519,7 +520,7 @@ export default function MyTasksDashboard() {
                             }
                           >
                             {task.is_overdue && <AlertTriangle className="w-3 h-3 text-red-400" />}
-                            <span>{new Date(task.due_date).toLocaleDateString()}</span>
+                            <span>{formatDate(task.due_date, 'short')}</span>
                           </span>
                         ) : (
                           <span className="text-zinc-600">—</span>
@@ -605,7 +606,7 @@ export default function MyTasksDashboard() {
                         {task.priority}
                       </span>
                       <span className="text-zinc-500 font-mono">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}
+                        {task.due_date ? formatDate(task.due_date, 'short') : 'No date'}
                       </span>
                     </div>
                     <button
@@ -654,7 +655,7 @@ export default function MyTasksDashboard() {
                         {task.priority}
                       </span>
                       <span className={task.is_overdue ? 'text-red-400 font-bold font-mono' : 'text-zinc-500 font-mono'}>
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}
+                        {task.due_date ? formatDate(task.due_date, 'short') : 'No date'}
                       </span>
                     </div>
                     <Link

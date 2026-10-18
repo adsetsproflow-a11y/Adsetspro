@@ -17,6 +17,7 @@ import {
   Eye,
   RefreshCw,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 export interface TaskAttachmentItem {
   id: string;
@@ -406,7 +407,7 @@ export default function FileList({
                         </span>
                         <span>•</span>
                         <span className="font-mono text-zinc-500">
-                          {new Date(file.created_at).toLocaleDateString()}
+                          {formatDate(file.created_at, 'short')}
                         </span>
                       </div>
                     </div>
@@ -472,7 +473,7 @@ export default function FileList({
                   </h3>
                   <p className="text-[11px] text-zinc-400 truncate">
                     Uploaded by {lightboxImage.uploader || 'Team Member'}{' '}
-                    {lightboxImage.date ? `• ${new Date(lightboxImage.date).toLocaleString()}` : ''}
+                    {lightboxImage.date ? `• ${formatDate(lightboxImage.date, 'long')}` : ''}
                   </p>
                 </div>
               </div>

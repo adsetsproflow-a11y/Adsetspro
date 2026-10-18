@@ -21,6 +21,7 @@ import {
   Layers,
   Trash2,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface InvitationItem {
   id: string;
@@ -403,8 +404,8 @@ export default function InvitationsPage() {
                 <th className="py-3.5 px-4">Department</th>
                 <th className="py-3.5 px-4">Role</th>
                 <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4">Sent Date</th>
-                <th className="py-3.5 px-4">Expires</th>
+                <th className="py-3.5 px-4">Sent Date (DD/MM/YYYY)</th>
+                <th className="py-3.5 px-4">Expires (DD/MM/YYYY)</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -455,13 +456,13 @@ export default function InvitationsPage() {
                       </td>
 
                       {/* Sent Date */}
-                      <td className="py-3.5 px-4 text-zinc-400">
-                        {new Date(inv.created_at).toLocaleDateString()}
+                      <td className="py-3.5 px-4 text-zinc-400 font-mono">
+                        {formatDate(inv.created_at, 'short')}
                       </td>
 
                       {/* Expires */}
                       <td className="py-3.5 px-4 text-zinc-400 font-mono">
-                        {new Date(inv.expires_at).toLocaleDateString()}
+                        {formatDate(inv.expires_at, 'short')}
                       </td>
 
                       {/* Action buttons */}

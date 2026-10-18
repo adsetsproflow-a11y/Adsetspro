@@ -23,6 +23,7 @@ import {
   History,
 } from 'lucide-react';
 import FileList, { TaskAttachmentItem } from '@/components/tasks/FileList';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface TaskDetail {
   id: string;
@@ -475,14 +476,14 @@ export default function ReviewDetailPage() {
               }`}
             >
               <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                Target Deadline
+                Target Deadline (DD/MM/YYYY)
               </span>
               <span
                 className={`text-xs font-mono block ${
                   isOverdue ? 'text-red-400 font-bold' : 'text-zinc-200'
                 }`}
               >
-                {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Open-ended'}
+                {task.due_date ? formatDate(task.due_date, 'short') : 'Open-ended'}
               </span>
             </div>
           </div>

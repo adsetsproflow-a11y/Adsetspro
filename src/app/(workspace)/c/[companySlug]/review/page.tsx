@@ -19,6 +19,7 @@ import {
   Check,
   RotateCcw,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface ReviewQueueTask {
   id: string;
@@ -272,8 +273,8 @@ export default function ReviewQueuePage() {
                 </th>
                 <th className="px-5 py-3.5">Assignee</th>
                 <th className="px-5 py-3.5">Department</th>
-                <th className="px-5 py-3.5">Submitted Date</th>
-                <th className="px-5 py-3.5">Due Date</th>
+                <th className="px-5 py-3.5">Submitted Date (DD/MM/YYYY)</th>
+                <th className="px-5 py-3.5">Due Date (DD/MM/YYYY)</th>
                 <th className="px-5 py-3.5">Priority</th>
                 <th className="px-5 py-3.5 text-right">Action</th>
               </tr>
@@ -345,11 +346,8 @@ export default function ReviewQueuePage() {
                       </span>
                     </td>
 
-                    <td className="px-5 py-3.5 font-mono text-zinc-400">
-                      {new Date(task.submitted_at).toLocaleDateString([], {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                    <td className="px-5 py-3.5 font-mono text-zinc-300">
+                      {formatDate(task.submitted_at, 'short')}
                     </td>
 
                     <td className="px-5 py-3.5 font-mono">
@@ -358,11 +356,11 @@ export default function ReviewQueuePage() {
                           className={
                             task.is_overdue
                               ? 'text-red-400 font-bold flex items-center gap-1'
-                              : 'text-zinc-400'
+                              : 'text-zinc-300'
                           }
                         >
                           {task.is_overdue && <AlertTriangle className="w-3 h-3 text-red-400" />}
-                          <span>{new Date(task.due_date).toLocaleDateString()}</span>
+                          <span>{formatDate(task.due_date, 'short')}</span>
                         </span>
                       ) : (
                         <span className="text-zinc-600">—</span>

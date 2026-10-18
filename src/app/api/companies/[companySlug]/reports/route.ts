@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { adminClient } from '@/lib/supabase/admin';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 export async function GET(
   request: Request,
@@ -177,9 +178,9 @@ export async function GET(
         departmentId: t.department_id || null,
         status: t.status,
         priority: t.priority,
-        dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString() : 'None',
+        dueDate: t.due_date ? formatDate(t.due_date, 'short') : 'None',
         rawDueDate: t.due_date,
-        completionDate: isApproved ? new Date(t.updated_at).toLocaleDateString() : 'Pending',
+        completionDate: isApproved ? formatDate(t.updated_at, 'short') : 'Pending',
         rawCompletionDate: isApproved ? t.updated_at : null,
       };
     });

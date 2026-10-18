@@ -34,6 +34,7 @@ import {
   Check,
   Pencil,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface TaskData {
   id: string;
@@ -758,7 +759,7 @@ export default function EmployeeTaskDetailPage() {
                           </span>
                           <span className="text-[10px] text-zinc-500 block">
                             {(att.file_size / (1024 * 1024)).toFixed(2)} MB • {att.uploader_name} •{' '}
-                            {new Date(att.created_at).toLocaleDateString()}
+                            {formatDate(att.created_at, 'short')}
                           </span>
                         </div>
                       </div>
@@ -862,7 +863,7 @@ export default function EmployeeTaskDetailPage() {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}{' '}
-                        • {new Date(c.created_at).toLocaleDateString()}
+                        • {formatDate(c.created_at, 'short')}
                       </span>
                     </div>
                     <p className="text-xs text-zinc-300 leading-relaxed pl-8">{c.content}</p>
@@ -951,10 +952,10 @@ export default function EmployeeTaskDetailPage() {
             <div className="grid grid-cols-2 gap-2">
               <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
                 <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                  Start Date
+                  Start Date (DD/MM/YYYY)
                 </span>
                 <span className="text-xs font-mono text-zinc-300 block">
-                  {task.start_date ? new Date(task.start_date).toLocaleDateString() : '—'}
+                  {task.start_date ? formatDate(task.start_date, 'short') : '—'}
                 </span>
               </div>
 
@@ -966,14 +967,14 @@ export default function EmployeeTaskDetailPage() {
                 }`}
               >
                 <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                  Deadline
+                  Deadline (DD/MM/YYYY)
                 </span>
                 <span
                   className={`text-xs font-mono block ${
                     isOverdue ? 'text-red-400 font-bold' : 'text-zinc-300'
                   }`}
                 >
-                  {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Open-ended'}
+                  {task.due_date ? formatDate(task.due_date, 'short') : 'Open-ended'}
                 </span>
               </div>
             </div>
@@ -1386,7 +1387,7 @@ export default function EmployeeTaskDetailPage() {
               <p className="text-sm font-bold text-white">{galleryLightbox.title}</p>
               <p className="text-xs text-zinc-400">
                 Uploaded by {galleryLightbox.uploader || 'Team member'}{' '}
-                {galleryLightbox.date && `• ${new Date(galleryLightbox.date).toLocaleDateString()}`}
+                {galleryLightbox.date && `• ${formatDate(galleryLightbox.date, 'short')}`}
               </p>
             </div>
           </div>

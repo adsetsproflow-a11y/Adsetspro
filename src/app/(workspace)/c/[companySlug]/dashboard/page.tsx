@@ -20,6 +20,7 @@ import {
   CheckSquare,
   Sparkles,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 import {
   ResponsiveContainer,
   PieChart,
@@ -537,7 +538,7 @@ export default function WorkspaceDashboardPage() {
                   <th className="pb-2.5">Task</th>
                   <th className="pb-2.5">Priority</th>
                   <th className="pb-2.5">Status</th>
-                  <th className="pb-2.5 text-right">Deadline</th>
+                  <th className="pb-2.5 text-right">Deadline (DD/MM/YYYY)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
@@ -575,7 +576,7 @@ export default function WorkspaceDashboardPage() {
                         </span>
                       </td>
                       <td className="py-3 text-right text-zinc-400 font-mono text-[11px]">
-                        {new Date(task.due_date).toLocaleDateString()}
+                        {formatDate(task.due_date, 'short')}
                       </td>
                     </tr>
                   ))

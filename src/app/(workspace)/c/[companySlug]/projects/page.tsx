@@ -19,6 +19,7 @@ import {
   ChevronRight,
   TrendingUp,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface ProjectCardData {
   id: string;
@@ -420,7 +421,7 @@ export default function ProjectsPage() {
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-zinc-500" />
                     <span className="text-[11px] font-mono">
-                      {project.due_date ? new Date(project.due_date).toLocaleDateString() : 'No deadline'}
+                      {project.due_date ? formatDate(project.due_date, 'short') : 'No deadline'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">

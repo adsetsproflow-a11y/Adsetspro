@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import FileUpload from '@/components/tasks/FileUpload';
 import { TaskAttachmentItem } from '@/components/tasks/FileList';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface TaskData {
   id: string;
@@ -470,7 +471,7 @@ export default function SingleTaskDetailPage() {
             <p className="text-xs text-zinc-400 flex items-center gap-2">
               <span>Task ID: {task.id.slice(0, 8)}</span>
               <span>•</span>
-              <span>Created {new Date(task.created_at).toLocaleDateString()}</span>
+              <span>Created {formatDate(task.created_at, 'medium')}</span>
             </p>
           </div>
 
@@ -650,7 +651,7 @@ export default function SingleTaskDetailPage() {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}{' '}
-                        • {new Date(c.created_at).toLocaleDateString()}
+                        • {formatDate(c.created_at, 'short')}
                       </span>
                     </div>
                     <p className="text-xs text-zinc-300 leading-relaxed pl-8">{c.content}</p>
@@ -763,19 +764,19 @@ export default function SingleTaskDetailPage() {
             <div className="grid grid-cols-2 gap-2">
               <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
                 <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                  Start Date
+                  Start Date (DD/MM/YYYY)
                 </span>
                 <span className="text-xs font-mono text-zinc-300 block">
-                  {task.start_date ? new Date(task.start_date).toLocaleDateString() : '—'}
+                  {task.start_date ? formatDate(task.start_date, 'short') : '—'}
                 </span>
               </div>
 
               <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
                 <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                  Due Date
+                  Due Date (DD/MM/YYYY)
                 </span>
                 <span className="text-xs font-mono text-zinc-300 block">
-                  {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Open-ended'}
+                  {task.due_date ? formatDate(task.due_date, 'short') : 'Open-ended'}
                 </span>
               </div>
             </div>
@@ -1033,7 +1034,9 @@ export default function SingleTaskDetailPage() {
               {/* Start & Due Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-300">Start Date</label>
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Start Date <span className="text-zinc-500 font-normal">(DD/MM/YYYY)</span>
+                  </label>
                   <input
                     type="date"
                     value={editStartDate}
@@ -1043,7 +1046,9 @@ export default function SingleTaskDetailPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-300">Due Date</label>
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Due Date <span className="text-zinc-500 font-normal">(DD/MM/YYYY)</span>
+                  </label>
                   <input
                     type="date"
                     value={editDueDate}

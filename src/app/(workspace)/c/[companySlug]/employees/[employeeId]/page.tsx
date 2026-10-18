@@ -20,6 +20,7 @@ import {
   Award,
   Trash2,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface EmployeeProfileData {
   currentUserId?: string;
@@ -293,11 +294,11 @@ export default function EmployeeDetailPage() {
 
           <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
             <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-              Onboarding Date
+              Onboarding Date (DD/MM/YYYY)
             </span>
             <div className="flex items-center gap-2 text-zinc-200">
               <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-              <span>{new Date(profile.joined_at).toLocaleDateString()}</span>
+              <span>{formatDate(profile.joined_at, 'short')}</span>
             </div>
           </div>
         </div>
@@ -388,7 +389,7 @@ export default function EmployeeDetailPage() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-right text-zinc-400 font-mono">
-                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}
+                        {task.due_date ? formatDate(task.due_date, 'short') : 'No date'}
                       </td>
                     </tr>
                   ))
@@ -414,7 +415,7 @@ export default function EmployeeDetailPage() {
                   <th className="py-3.5 px-4">Task Name</th>
                   <th className="py-3.5 px-4">Priority</th>
                   <th className="py-3.5 px-4">Final Status</th>
-                  <th className="py-3.5 px-4 text-right">Resolved Date</th>
+                  <th className="py-3.5 px-4 text-right">Resolved Date (DD/MM/YYYY)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
@@ -441,7 +442,7 @@ export default function EmployeeDetailPage() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-right text-zinc-400 font-mono">
-                        {h.completed_at ? new Date(h.completed_at).toLocaleDateString() : 'Active'}
+                        {h.completed_at ? formatDate(h.completed_at, 'short') : 'Active'}
                       </td>
                     </tr>
                   ))

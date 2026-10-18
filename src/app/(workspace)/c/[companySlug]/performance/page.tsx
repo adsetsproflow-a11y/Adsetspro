@@ -23,6 +23,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
+import { formatDate } from '@/lib/utils/dateFormat';
 import { createClient } from '@/lib/supabase/client';
 
 interface EmployeePerformanceData {
@@ -282,7 +283,7 @@ export default function WorkspaceMyPerformancePage() {
                 <th className="pb-3 pl-2">Task Title</th>
                 <th className="pb-3">Project / Dept</th>
                 <th className="pb-3">Priority</th>
-                <th className="pb-3">Due Date</th>
+                <th className="pb-3">Due Date (DD/MM/YYYY)</th>
                 <th className="pb-3 text-center">Revision Cycles</th>
                 <th className="pb-3 text-right pr-2">Status</th>
               </tr>
@@ -319,7 +320,7 @@ export default function WorkspaceMyPerformancePage() {
                     <td className="py-3.5 text-zinc-400 font-mono text-[11px]">
                       {task.due_date ? (
                         <span className={task.isOverdue ? 'text-red-400 font-bold' : ''}>
-                          {new Date(task.due_date).toLocaleDateString()}
+                          {formatDate(task.due_date, 'short')}
                           {task.isOverdue && ' (Overdue)'}
                         </span>
                       ) : (

@@ -20,6 +20,7 @@ import {
   Plus,
   TrendingUp,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface ProjectDetailData {
   project: {
@@ -281,19 +282,19 @@ export default function ProjectDetailPage() {
 
           <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
             <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-              Start Date
+              Start Date (DD/MM/YYYY)
             </span>
             <span className="font-mono text-zinc-300 block">
-              {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'Immediate'}
+              {project.start_date ? formatDate(project.start_date, 'short') : 'Immediate'}
             </span>
           </div>
 
           <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
             <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-              Target Deadline
+              Target Deadline (DD/MM/YYYY)
             </span>
             <span className="font-mono text-zinc-300 block">
-              {project.due_date ? new Date(project.due_date).toLocaleDateString() : 'Open-ended'}
+              {project.due_date ? formatDate(project.due_date, 'short') : 'Open-ended'}
             </span>
           </div>
         </div>
@@ -396,7 +397,7 @@ export default function ProjectDetailPage() {
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-right text-zinc-400 font-mono">
-                            {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No deadline'}
+                            {task.due_date ? formatDate(task.due_date, 'short') : 'No deadline'}
                           </td>
                         </tr>
                       ))
