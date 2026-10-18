@@ -32,6 +32,7 @@ import {
   Sparkles,
   Eye,
   Check,
+  Pencil,
 } from 'lucide-react';
 
 interface TaskData {
@@ -95,7 +96,67 @@ export default function EmployeeTaskDetailPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [editingAttachment, setEditingAttachment] = useState<AttachmentItem | null>(null);
+  const [galleryLightbox, setGalleryLightbox] = useState<{
+    url: string;
+    title: string;
+    uploader?: string;
+    date?: string;
+  } | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const isImageAttachment = (att: AttachmentItem) => {
+    return (
+      att.file_type?.startsWith('image/') ||
+      /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(att.file_name || att.storage_path) ||
+      att.storage_path?.startsWith('data:image/')
+    );
+  };
+
+  const handleDeleteAttachment = async (attachment: AttachmentItem) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${attachment.file_name}"? If this was the wrong deliverable, you can upload the correct one.`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(
+        `/api/companies/${companySlug}/tasks/${taskId}/attachments?attachmentId=${attachment.id}`,
+        { method: 'DELETE' }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete attachment');
+      await fetchTaskDetails();
+    } catch (err: any) {
+      alert(err.message || 'Error deleting attachment');
+    }
+  };
+
+  const handleOpenReplaceModal = (attachment: AttachmentItem) => {
+    setEditingAttachment(attachment);
+    setSubmissionFileName(attachment.file_name);
+    setSubmissionFileUrl(attachment.storage_path.startsWith('http') ? attachment.storage_path : '');
+    setIsSubmitModalOpen(true);
+  };
+
+  const handleDownloadAttachment = async (attachment: AttachmentItem) => {
+    try {
+      const res = await fetch(`/api/files/${attachment.id}/download`);
+      const data = await res.json();
+      const url = data.downloadUrl || attachment.storage_path;
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = attachment.file_name;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      window.open(attachment.storage_path, '_blank');
+    }
+  };
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -313,7 +374,20 @@ export default function EmployeeTaskDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to submit for review');
 
+      // If replacing an existing attachment, remove the old one
+      if (editingAttachment) {
+        try {
+          await fetch(
+            `/api/companies/${companySlug}/tasks/${taskId}/attachments?attachmentId=${editingAttachment.id}`,
+            { method: 'DELETE' }
+          );
+        } catch (e) {
+          console.warn('Failed to delete previous attachment:', e);
+        }
+      }
+
       setIsSubmitModalOpen(false);
+      setEditingAttachment(null);
       handleClearFile();
       setSubmissionFileName('');
       setSubmissionFileUrl('');
@@ -532,17 +606,28 @@ export default function EmployeeTaskDetailPage() {
       )}
 
       {task.status === 'submitted_for_review' && (
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 text-amber-300 text-xs font-semibold">
             <Clock className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              Your deliverable has been submitted and is currently awaiting inspection by{' '}
-              {task.reviewer?.full_name || 'the reviewer'}.
+              Deliverable is submitted and awaiting review by {task.reviewer?.full_name || 'the reviewer'}.
             </span>
           </div>
-          <span className="text-[10px] uppercase tracking-wider font-bold text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-full">
-            Under Review
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setEditingAttachment(null);
+                setIsSubmitModalOpen(true);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Update / Re-submit Deliverable</span>
+            </button>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-amber-400 bg-amber-500/20 px-2.5 py-1 rounded-full">
+              Under Review
+            </span>
+          </div>
         </div>
       )}
 
@@ -573,17 +658,28 @@ export default function EmployeeTaskDetailPage() {
             </div>
           </div>
 
-          {/* Download Reference Attachments (Uploaded by Admin/Manager) */}
+          {/* Reference Attachments & Deliverables Gallery */}
           <div className="p-6 rounded-3xl bg-zinc-900/50 border border-zinc-800/80 shadow-xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Paperclip className="w-4 h-4 text-indigo-400" />
-                <span>Reference Attachments & Deliverables ({attachments.length})</span>
-              </h2>
-              {(task.status === 'in_progress' || task.status === 'revision_required') && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-800/80">
+              <div>
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Paperclip className="w-4 h-4 text-indigo-400" />
+                  <span>Reference Attachments & Deliverables ({attachments.length})</span>
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Visual deliverable preview, image zoom, downloads, and correction controls.
+                </p>
+              </div>
+
+              {(task.status === 'in_progress' ||
+                task.status === 'revision_required' ||
+                task.status === 'submitted_for_review') && (
                 <button
-                  onClick={() => setIsSubmitModalOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setEditingAttachment(null);
+                    setIsSubmitModalOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   <span>Attach Deliverable</span>
@@ -592,38 +688,137 @@ export default function EmployeeTaskDetailPage() {
             </div>
 
             {attachments.length === 0 ? (
-              <p className="text-xs text-zinc-500 italic py-2">
-                No reference documents or deliverable files attached yet.
-              </p>
+              <div className="py-8 text-center border-2 border-dashed border-zinc-800/80 rounded-2xl space-y-2">
+                <ImageIcon className="w-8 h-8 text-zinc-600 mx-auto" />
+                <p className="text-xs text-zinc-400 font-semibold">No deliverable files or images attached yet.</p>
+                <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
+                  Click &quot;Attach Deliverable&quot; above or &quot;Submit Deliverable for Review&quot; to upload your work.
+                </p>
+              </div>
             ) : (
-              <div className="space-y-2">
-                {attachments.map((att) => (
-                  <div
-                    key={att.id}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
-                        <Paperclip className="w-4 h-4" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {attachments.map((att) => {
+                  const isImg = isImageAttachment(att);
+                  return (
+                    <div
+                      key={att.id}
+                      className="group relative rounded-2xl bg-zinc-950/80 border border-zinc-800/90 hover:border-zinc-700 p-3.5 space-y-3 transition-all shadow-md flex flex-col justify-between"
+                    >
+                      <div className="space-y-2.5">
+                        {isImg ? (
+                          /* Visual Image Thumbnail with Hover Zoom */
+                          <div
+                            onClick={() =>
+                              setGalleryLightbox({
+                                url: att.storage_path,
+                                title: att.file_name,
+                                uploader: att.uploader_name,
+                                date: att.created_at,
+                              })
+                            }
+                            className="relative aspect-video w-full rounded-xl overflow-hidden bg-black/60 border border-zinc-800 flex items-center justify-center cursor-pointer group/img"
+                          >
+                            <img
+                              src={att.storage_path}
+                              alt={att.file_name}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-105"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-xs">
+                              <Maximize2 className="w-4 h-4 text-amber-400" />
+                              <span>Click to Zoom</span>
+                            </div>
+                            <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-md text-[9px] font-mono text-zinc-300 border border-zinc-700/60 uppercase">
+                              {att.file_type?.split('/')[1] || 'IMAGE'}
+                            </span>
+                          </div>
+                        ) : (
+                          /* Non-image Document Header */
+                          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
+                            <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
+                              <FileText className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[10px] font-mono uppercase text-zinc-500 block">
+                                {att.file_type || 'DOCUMENT'}
+                              </span>
+                              <span className="text-xs font-bold text-white truncate block">
+                                {att.file_name}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* File Info */}
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-bold text-white truncate block" title={att.file_name}>
+                            {att.file_name}
+                          </span>
+                          <span className="text-[10px] text-zinc-500 block">
+                            {(att.file_size / (1024 * 1024)).toFixed(2)} MB • {att.uploader_name} •{' '}
+                            {new Date(att.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-xs font-semibold text-white block">{att.file_name}</span>
-                        <span className="text-[10px] text-zinc-500 block">
-                          Uploaded by {att.uploader_name} • {new Date(att.created_at).toLocaleDateString()}
-                        </span>
+
+                      {/* Action Buttons Row */}
+                      <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          {isImg && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setGalleryLightbox({
+                                  url: att.storage_path,
+                                  title: att.file_name,
+                                  uploader: att.uploader_name,
+                                  date: att.created_at,
+                                })
+                              }
+                              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                              title="Zoom / Preview Image"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Zoom</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadAttachment(att)}
+                            className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Download Deliverable"
+                          >
+                            <Download className="w-3.5 h-3.5 text-sky-400" />
+                            <span>Download</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReplaceModal(att)}
+                            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 transition-colors cursor-pointer"
+                            title="Edit / Replace Wrong File"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAttachment(att)}
+                            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
+                            title="Delete Wrong File"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <a
-                      href={att.storage_path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download</span>
-                    </a>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -797,15 +992,20 @@ export default function EmployeeTaskDetailPage() {
                   <Send className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">Submit Deliverable for Review</h3>
+                  <h3 className="text-base font-bold text-white">
+                    {editingAttachment ? 'Replace Deliverable / Correct Image' : 'Submit Deliverable for Review'}
+                  </h3>
                   <p className="text-xs text-zinc-400">
-                    Upload asset files, provide external links, and preview before submitting to reviewer.
+                    {editingAttachment
+                      ? 'Upload the corrected image or file to replace the previous deliverable.'
+                      : 'Upload asset files, provide external links, and preview before submitting to reviewer.'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => {
                   setIsSubmitModalOpen(false);
+                  setEditingAttachment(null);
                   handleClearFile();
                 }}
                 className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
@@ -1127,7 +1327,9 @@ export default function EmployeeTaskDetailPage() {
                   ) : (
                     <Send className="w-3.5 h-3.5" />
                   )}
-                  <span>Submit for Review</span>
+                  <span>
+                    {editingAttachment ? 'Replace & Update Deliverable' : 'Submit for Review'}
+                  </span>
                 </button>
               </div>
             </form>
@@ -1135,7 +1337,7 @@ export default function EmployeeTaskDetailPage() {
         </div>
       )}
 
-      {/* FULLSCREEN LIGHTBOX PREVIEW MODAL */}
+      {/* FULLSCREEN LIGHTBOX PREVIEW MODAL FOR UPLOAD PREVIEW */}
       {isLightboxOpen && activeImagePreview && (
         <div
           className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
@@ -1157,6 +1359,36 @@ export default function EmployeeTaskDetailPage() {
             <p className="text-xs text-zinc-400 mt-3 text-center">
               {selectedFile?.name || submissionFileName || 'Deliverable Asset'}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* GALLERY LIGHTBOX FOR ATTACHED DELIVERABLE IMAGES */}
+      {galleryLightbox && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setGalleryLightbox(null)}
+        >
+          <div className="relative max-w-4xl max-h-[92vh] flex flex-col items-center">
+            <button
+              onClick={() => setGalleryLightbox(null)}
+              className="absolute -top-12 right-0 p-2 rounded-full bg-zinc-900 text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={galleryLightbox.url}
+              alt={galleryLightbox.title}
+              className="max-h-[80vh] max-w-full rounded-2xl object-contain border border-zinc-800 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="mt-3 text-center space-y-1">
+              <p className="text-sm font-bold text-white">{galleryLightbox.title}</p>
+              <p className="text-xs text-zinc-400">
+                Uploaded by {galleryLightbox.uploader || 'Team member'}{' '}
+                {galleryLightbox.date && `• ${new Date(galleryLightbox.date).toLocaleDateString()}`}
+              </p>
+            </div>
           </div>
         </div>
       )}

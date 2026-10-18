@@ -61,7 +61,7 @@ export async function DELETE(
         .eq('status', 'active')
         .maybeSingle();
 
-      if (membership?.role === 'COMPANY_ADMIN') {
+      if (membership?.role === 'COMPANY_ADMIN' || membership?.role === 'DEPARTMENT_HEAD') {
         isAuthorized = true;
       }
     }

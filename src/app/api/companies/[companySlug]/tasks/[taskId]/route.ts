@@ -167,7 +167,7 @@ export async function GET(
     // 9. Fetch task attachments
     const { data: rawAttachments } = await adminClient
       .from('task_attachments')
-      .select('id, task_id, file_name, file_size, file_type, uploaded_by, version, created_at')
+      .select('id, task_id, storage_path, file_name, file_size, file_type, uploaded_by, version, created_at')
       .eq('task_id', taskId)
       .order('created_at', { ascending: false });
 
@@ -185,6 +185,7 @@ export async function GET(
     const attachments = (rawAttachments || []).map((att) => ({
       id: att.id,
       task_id: att.task_id,
+      storage_path: att.storage_path,
       file_name: att.file_name,
       file_size: att.file_size,
       file_type: att.file_type,
@@ -251,10 +252,126 @@ export async function GET(
         canRequestRevision: (isReviewer || isAdmin) && task.status === 'submitted_for_review',
         canCancel: isAdmin && task.status !== 'cancelled' && task.status !== 'approved',
         canReassign: isAdmin || isDeptHead,
+        canEdit: isAdmin || isDeptHead,
+        canRevoke: (isReviewer || isAdmin || isDeptHead) && task.status === 'approved',
       },
     });
   } catch (error: any) {
     console.error('Fetch task details error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ companySlug: string; taskId: string }> }
+) {
+  try {
+    const { companySlug, taskId } = await params;
+    const body = await request.json();
+    const {
+      title,
+      description,
+      priority,
+      start_date,
+      due_date,
+      reviewer_id,
+      department_id,
+      project_id,
+    } = body;
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: company } = await adminClient
+      .from('companies')
+      .select('id')
+      .eq('slug', companySlug)
+      .single();
+
+    if (!company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    }
+
+    // Verify user is Admin or Dept Head
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('is_super_admin, full_name')
+      .eq('id', user.id)
+      .single();
+
+    let isAuthorized = Boolean(profile?.is_super_admin);
+    if (!isAuthorized) {
+      const { data: membership } = await adminClient
+        .from('company_memberships')
+        .select('role')
+        .eq('company_id', company.id)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (membership?.role === 'COMPANY_ADMIN' || membership?.role === 'DEPARTMENT_HEAD') {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only company admins or department heads can edit task specifications.' },
+        { status: 403 }
+      );
+    }
+
+    // Build update payload
+    const updatePayload: any = {
+      updated_at: new Date().toISOString(),
+    };
+    if (title && title.trim()) updatePayload.title = title.trim();
+    if (description !== undefined) updatePayload.description = description.trim();
+    if (priority) updatePayload.priority = priority;
+    if (start_date !== undefined) updatePayload.start_date = start_date ? new Date(start_date).toISOString() : null;
+    if (due_date !== undefined) updatePayload.due_date = due_date ? new Date(due_date).toISOString() : null;
+    if (reviewer_id) updatePayload.reviewer_id = reviewer_id;
+    if (department_id !== undefined) updatePayload.department_id = department_id || null;
+    if (project_id !== undefined) updatePayload.project_id = project_id || null;
+
+    const { data: updatedTask, error: updateErr } = await adminClient
+      .from('tasks')
+      .update(updatePayload)
+      .eq('id', taskId)
+      .eq('company_id', company.id)
+      .select('*')
+      .single();
+
+    if (updateErr) throw updateErr;
+
+    // Record activity
+    await adminClient.from('task_activities').insert({
+      task_id: taskId,
+      actor_id: user.id,
+      action: 'TASK_UPDATED',
+      details: {
+        updated_fields: Object.keys(updatePayload).filter((k) => k !== 'updated_at'),
+        actor_name: profile?.full_name || 'Admin',
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      task: updatedTask,
+      message: 'Task specifications updated successfully.',
+    });
+  } catch (error: any) {
+    console.error('Update task error:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }

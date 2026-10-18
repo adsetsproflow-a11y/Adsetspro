@@ -130,3 +130,64 @@ export async function POST(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ companySlug: string; taskId: string }> }
+) {
+  try {
+    const { companySlug, taskId } = await params;
+    const url = new URL(request.url);
+    let attachmentId = url.searchParams.get('attachmentId');
+    if (!attachmentId) {
+      const body = await request.json().catch(() => ({}));
+      attachmentId = body.attachmentId;
+    }
+
+    if (!attachmentId) {
+      return NextResponse.json({ error: 'attachmentId is required' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Fetch attachment
+    const { data: attachment } = await adminClient
+      .from('task_attachments')
+      .select('*')
+      .eq('id', attachmentId)
+      .eq('task_id', taskId)
+      .single();
+
+    if (!attachment) {
+      return NextResponse.json({ error: 'Attachment not found' }, { status: 404 });
+    }
+
+    // Delete from storage
+    if (attachment.storage_path) {
+      await adminClient.storage.from('task-attachments').remove([attachment.storage_path]);
+    }
+
+    // Delete record
+    await adminClient.from('task_attachments').delete().eq('id', attachmentId);
+
+    // Record activity
+    await adminClient.from('task_activities').insert({
+      task_id: taskId,
+      actor_id: user.id,
+      action: 'ATTACHMENT_DELETED',
+      details: { file_name: attachment.file_name },
+    });
+
+    return NextResponse.json({ success: true, message: 'Attachment deleted successfully.' });
+  } catch (error: any) {
+    console.error('Delete attachment error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}

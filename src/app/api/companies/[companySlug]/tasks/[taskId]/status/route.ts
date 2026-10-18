@@ -110,34 +110,52 @@ export async function PATCH(
     let denialReason = '';
 
     if (isAdmin) {
-      // Admins have override capabilities (including cancel and block)
+      // Admins have full override capabilities
       isAllowed = true;
     } else if (isAssignee) {
       // Employee rules:
       // assigned -> in_progress
       // in_progress -> submitted_for_review
-      // revision_required -> in_progress
+      // revision_required -> in_progress or direct submitted_for_review
+      // submitted_for_review -> submitted_for_review (re-submitting or updating deliverable)
       if (currentStatus === 'assigned' && targetStatus === 'in_progress') {
         isAllowed = true;
-      } else if (currentStatus === 'in_progress' && targetStatus === 'submitted_for_review') {
+      } else if (
+        (currentStatus === 'in_progress' || currentStatus === 'revision_required' || currentStatus === 'submitted_for_review') &&
+        targetStatus === 'submitted_for_review'
+      ) {
         isAllowed = true;
       } else if (currentStatus === 'revision_required' && targetStatus === 'in_progress') {
         isAllowed = true;
       } else if (targetStatus === 'blocked') {
         isAllowed = true;
       } else {
-        denialReason = `Assignee can only transition assigned→in_progress, in_progress→submitted_for_review, or revision_required→in_progress. (Current: ${currentStatus}, Requested: ${targetStatus})`;
+        denialReason = `Assignee cannot transition from ${currentStatus} to ${targetStatus}.`;
       }
     } else if (isReviewer || isDeptHead) {
-      // Reviewer rules:
-      // submitted_for_review -> approved
-      // submitted_for_review -> revision_required
-      if (currentStatus === 'submitted_for_review' && (targetStatus === 'approved' || targetStatus === 'revision_required')) {
+      // Reviewer / Dept Head rules:
+      // submitted_for_review -> approved or revision_required
+      // approved -> revision_required or in_progress (revoke approval / reopen)
+      // revision_required -> in_progress
+      // assigned -> in_progress
+      if (
+        currentStatus === 'submitted_for_review' &&
+        (targetStatus === 'approved' || targetStatus === 'revision_required')
+      ) {
+        isAllowed = true;
+      } else if (
+        currentStatus === 'approved' &&
+        (targetStatus === 'revision_required' || targetStatus === 'in_progress')
+      ) {
+        isAllowed = true;
+      } else if (currentStatus === 'revision_required' && targetStatus === 'in_progress') {
+        isAllowed = true;
+      } else if (currentStatus === 'assigned' && targetStatus === 'in_progress') {
         isAllowed = true;
       } else if (targetStatus === 'blocked') {
         isAllowed = true;
       } else {
-        denialReason = `Reviewer can only transition submitted_for_review→approved or submitted_for_review→revision_required. (Current: ${currentStatus}, Requested: ${targetStatus})`;
+        denialReason = `Reviewer cannot transition from ${currentStatus} to ${targetStatus}.`;
       }
     } else {
       denialReason = 'You are neither the assignee, the reviewer, nor an administrator for this task.';

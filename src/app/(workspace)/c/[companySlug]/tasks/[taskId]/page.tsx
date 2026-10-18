@@ -28,6 +28,7 @@ import {
   X,
   ShieldCheck,
   FileText,
+  Pencil,
 } from 'lucide-react';
 import FileUpload from '@/components/tasks/FileUpload';
 import { TaskAttachmentItem } from '@/components/tasks/FileList';
@@ -101,6 +102,19 @@ export default function SingleTaskDetailPage() {
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
   const [reassignEmployeeId, setReassignEmployeeId] = useState('');
 
+  // Edit Task modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editPriority, setEditPriority] = useState('MEDIUM');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [editReviewerId, setEditReviewerId] = useState('');
+
+  // Revoke Approval modal state
+  const [isRevokeModalOpen, setIsRevokeModalOpen] = useState(false);
+  const [revokeFeedback, setRevokeFeedback] = useState('');
+
   // Comment input
   const [newComment, setNewComment] = useState('');
 
@@ -126,6 +140,19 @@ export default function SingleTaskDetailPage() {
       setActivities(taskData.activities || []);
       setComments(commentData.comments || []);
       setEmployees(empData.employees || []);
+
+      if (taskData.task) {
+        setEditTitle(taskData.task.title || '');
+        setEditDescription(taskData.task.description || '');
+        setEditPriority(taskData.task.priority || 'MEDIUM');
+        setEditStartDate(
+          taskData.task.start_date ? taskData.task.start_date.split('T')[0] : ''
+        );
+        setEditDueDate(
+          taskData.task.due_date ? taskData.task.due_date.split('T')[0] : ''
+        );
+        setEditReviewerId(taskData.task.reviewer?.id || '');
+      }
     } catch (err: any) {
       console.error('Error loading task:', err);
       setError(err.message || 'Error loading task');
@@ -237,6 +264,69 @@ export default function SingleTaskDetailPage() {
     } catch (err: any) {
       console.error('Reassign error:', err);
       setError(err.message || 'Error reassigning task');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Admin / Dept Head: Edit Task Specifications
+  const handleEditTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTitle.trim()) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          priority: editPriority,
+          start_date: editStartDate ? new Date(editStartDate).toISOString() : null,
+          due_date: editDueDate ? new Date(editDueDate).toISOString() : null,
+          reviewer_id: editReviewerId || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update task');
+
+      setIsEditModalOpen(false);
+      await fetchTaskDetails();
+    } catch (err: any) {
+      console.error('Edit task error:', err);
+      setError(err.message || 'Error updating task');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Reviewer / Admin / Dept Head: Revoke Approval
+  const handleRevokeApprovalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/tasks/${taskId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'revision_required',
+          note: revokeFeedback.trim() || 'Approval revoked for further corrections and adjustments.',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to revoke approval');
+
+      setIsRevokeModalOpen(false);
+      setRevokeFeedback('');
+      await fetchTaskDetails();
+    } catch (err: any) {
+      console.error('Revoke approval error:', err);
+      setError(err.message || 'Error revoking approval');
     } finally {
       setIsSubmitting(false);
     }
@@ -434,6 +524,31 @@ export default function SingleTaskDetailPage() {
               </button>
             )}
 
+            {/* REVOKE APPROVAL (Reviewer / Admin / Dept Head) */}
+            {permissions.canRevoke && (
+              <button
+                onClick={() => setIsRevokeModalOpen(true)}
+                disabled={isSubmitting}
+                className="px-3.5 py-2 rounded-xl bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/20 text-orange-400 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Revoke approval and reopen task for corrections"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Revoke Approval</span>
+              </button>
+            )}
+
+            {/* EDIT TASK SPECIFICATIONS (Admin / Dept Head) */}
+            {permissions.canEdit && (
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Edit task specifications, brief, priority, and dates"
+              >
+                <Pencil className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Edit Task</span>
+              </button>
+            )}
+
             {/* ADMIN ACTIONS */}
             {permissions.canReassign && (
               <button
@@ -453,6 +568,18 @@ export default function SingleTaskDetailPage() {
               >
                 <Ban className="w-3.5 h-3.5" />
                 <span>Cancel Task</span>
+              </button>
+            )}
+
+            {/* REOPEN CANCELLED TASK (Admin) */}
+            {task.status === 'cancelled' && permissions.isAdmin && (
+              <button
+                onClick={() => handleStatusChange('in_progress', 'Task reopened by admin')}
+                disabled={isSubmitting}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reopen Task</span>
               </button>
             )}
           </div>
@@ -817,6 +944,206 @@ export default function SingleTaskDetailPage() {
         </div>
       )}
 
+      {/* EDIT TASK SPECIFICATIONS MODAL */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-xl bg-zinc-950 border border-zinc-800/90 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Edit Task Specifications</h3>
+                  <p className="text-xs text-zinc-400">
+                    Update task brief, priority, dates, or assign a reviewer.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditTaskSubmit} className="space-y-4">
+              {/* Title */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Task Title <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+              </div>
+
+              {/* Description Brief */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Specification Brief & Deliverable Requirements
+                </label>
+                <textarea
+                  rows={5}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Outline the scope, milestones, or specific guidelines..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none font-mono"
+                />
+              </div>
+
+              {/* Priority & Reviewer */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-300">Priority</label>
+                  <select
+                    value={editPriority}
+                    onChange={(e) => setEditPriority(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-300">Reviewer</label>
+                  <select
+                    value={editReviewerId}
+                    onChange={(e) => setEditReviewerId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    <option value="">No Reviewer (Auto-approve)</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.user_id || emp.id}>
+                        {emp.full_name} ({emp.designation || 'Member'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Start & Due Dates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-300">Start Date</label>
+                  <input
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-zinc-300">Due Date</label>
+                  <input
+                    type="date"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="pt-3 flex items-center justify-end gap-3 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-zinc-900 text-zinc-400 text-xs font-semibold hover:bg-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !editTitle.trim()}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Pencil className="w-3.5 h-3.5" />
+                  )}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* REVOKE APPROVAL MODAL */}
+      {isRevokeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800/90 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                  <RotateCcw className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Revoke Task Approval</h3>
+                  <p className="text-xs text-zinc-400">
+                    Reopen task to Revision Required so corrections can be submitted.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRevokeModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRevokeApprovalSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Correction Instructions for Assignee <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Explain why approval was revoked and what adjustments or file replacements are required..."
+                  value={revokeFeedback}
+                  onChange={(e) => setRevokeFeedback(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsRevokeModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-zinc-900 text-zinc-400 text-xs font-semibold hover:bg-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !revokeFeedback.trim()}
+                  className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  )}
+                  <span>Revoke Approval & Reopen</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
