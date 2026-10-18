@@ -281,7 +281,7 @@ export default function WorkspaceTasksPage() {
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
 
-          {(userRole === 'COMPANY_ADMIN' || userRole === 'DEPARTMENT_HEAD' || userRole === 'SUPER_ADMIN') && (
+          {Boolean(userRole) && (
             <button
               onClick={() => setIsModalOpen(true)}
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-indigo-600/25 transition-all cursor-pointer"

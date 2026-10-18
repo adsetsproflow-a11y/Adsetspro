@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { ensureTaskChatRoom } from '@/lib/chat/rooms';
+import { getDbPool } from '@/lib/db';
 
 export async function GET(
   request: Request,
@@ -269,37 +270,37 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const pool = getDbPool();
+
     // 2. Fetch company
-    const { data: company } = await adminClient
-      .from('companies')
-      .select('id, name')
-      .eq('slug', companySlug)
-      .single();
+    const compRes = await pool.query(
+      'SELECT id, name, slug FROM companies WHERE slug = $1 LIMIT 1',
+      [companySlug]
+    );
+    const company = compRes.rows[0];
 
     if (!company) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    // 3. Verify permissions: Only admin, dept head, or super admin can create tasks
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('is_super_admin, full_name')
-      .eq('id', user.id)
-      .single();
+    // 3. Verify permissions: Active company members or super admin can create tasks
+    const profRes = await pool.query(
+      'SELECT id, is_super_admin, full_name FROM profiles WHERE id = $1 LIMIT 1',
+      [user.id]
+    );
+    const profile = profRes.rows[0];
 
     let actorRole = 'EMPLOYEE';
     if (!profile?.is_super_admin) {
-      const { data: membership } = await adminClient
-        .from('company_memberships')
-        .select('role, status')
-        .eq('company_id', company.id)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
+      const memRes = await pool.query(
+        'SELECT id, role, status FROM company_memberships WHERE company_id = $1 AND user_id = $2 AND status = $3 LIMIT 1',
+        [company.id, user.id, 'active']
+      );
+      const membership = memRes.rows[0];
 
-      if (!membership || (membership.role !== 'COMPANY_ADMIN' && membership.role !== 'DEPARTMENT_HEAD')) {
+      if (!membership) {
         return NextResponse.json(
-          { error: 'Forbidden: Insufficient permissions to create tasks.' },
+          { error: 'Forbidden: Active workspace membership required to create tasks.' },
           { status: 403 }
         );
       }

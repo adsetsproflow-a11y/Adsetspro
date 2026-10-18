@@ -206,6 +206,38 @@ class PgQueryBuilder {
     return this;
   }
 
+  or(filterString: string) {
+    if (!filterString || typeof filterString !== 'string') return this;
+    const parts = filterString.split(',').map((p) => p.trim()).filter(Boolean);
+    const orClauses: string[] = [];
+    for (const part of parts) {
+      const match = part.match(/^([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)\.(.+)$/);
+      if (match) {
+        const [, col, op, val] = match;
+        if (op === 'eq') {
+          this.params.push(val);
+          orClauses.push(`"${col}" = $${this.params.length}`);
+        } else if (op === 'neq') {
+          this.params.push(val);
+          orClauses.push(`"${col}" != $${this.params.length}`);
+        } else if (op === 'is') {
+          if (val === 'null') orClauses.push(`"${col}" IS NULL`);
+        } else if (op === 'in') {
+          const inVals = val.replace(/^\(/, '').replace(/\)$/, '').split(',').map((v) => v.trim());
+          const placeholders = inVals.map((v) => {
+            this.params.push(v);
+            return `$${this.params.length}`;
+          });
+          orClauses.push(`"${col}" IN (${placeholders.join(', ')})`);
+        }
+      }
+    }
+    if (orClauses.length > 0) {
+      this.conditions.push(`(${orClauses.join(' OR ')})`);
+    }
+    return this;
+  }
+
   order(column: string, { ascending = true }: { ascending?: boolean } = {}) {
     this.orderClauses.push(`"${column}" ${ascending ? 'ASC' : 'DESC'}`);
     return this;

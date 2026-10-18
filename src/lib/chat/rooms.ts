@@ -1,4 +1,5 @@
 import { adminClient } from '@/lib/supabase/admin';
+import { getDbPool } from '@/lib/db';
 
 /**
  * Ensure the default '#general' company chat room exists and enroll all active members.
@@ -314,28 +315,19 @@ export async function syncUserChatRooms(userId: string, companyId: string) {
     }
 
     // 4. Task rooms for tasks user is assigned to or reviewing
-    const { data: userAssignments } = await adminClient
-      .from('task_assignments')
-      .select('task_id')
-      .eq('employee_id', userId)
-      .eq('is_current', true);
+    const pool = getDbPool();
+    const taskRows = await pool.query(
+      `SELECT DISTINCT t.id, t.title, t.reviewer_id, t.created_by
+       FROM public.tasks t
+       LEFT JOIN public.task_assignments ta 
+         ON ta.task_id = t.id AND ta.employee_id = $1 AND ta.is_current = true
+       WHERE t.company_id = $2
+         AND (t.reviewer_id = $1 OR t.created_by = $1 OR ta.id IS NOT NULL)
+       LIMIT 30;`,
+      [userId, companyId]
+    );
 
-    const assignedIds = (userAssignments || []).map((a) => a.task_id);
-
-    let taskQuery = adminClient
-      .from('tasks')
-      .select('id, title, reviewer_id, created_by')
-      .eq('company_id', companyId);
-
-    if (assignedIds.length > 0) {
-      taskQuery = taskQuery.or(`reviewer_id.eq.${userId},created_by.eq.${userId},id.in.(${assignedIds.join(',')})`);
-    } else {
-      taskQuery = taskQuery.or(`reviewer_id.eq.${userId},created_by.eq.${userId}`);
-    }
-
-    const { data: userTasks } = await taskQuery.limit(30);
-
-    for (const t of userTasks || []) {
+    for (const t of taskRows.rows) {
       await ensureTaskChatRoom(t.id, companyId, t.title, null, t.reviewer_id, t.created_by);
     }
   } catch (err) {
