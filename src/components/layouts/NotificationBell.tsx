@@ -49,13 +49,15 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
     setIsLoading(true);
     try {
       const res = await fetch('/api/notifications?limit=10');
+      if (!res.ok) return;
       const data = await res.json();
       if (data.success) {
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
       }
     } catch (err) {
-      console.error('Failed to fetch notifications in bell:', err);
+      // Gracefully handle server reload/network hiccups without triggering Next.js dev overlay
+      console.warn('Notifications temporarily unavailable:', err);
     } finally {
       setIsLoading(false);
     }

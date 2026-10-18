@@ -19,6 +19,7 @@ import {
   ExternalLink,
   Shield,
   Layers,
+  Trash2,
 } from 'lucide-react';
 
 interface InvitationItem {
@@ -164,6 +165,32 @@ export default function InvitationsPage() {
       setFeedback({
         type: 'error',
         text: err.message || 'Error revoking invitation',
+      });
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDeleteInvitation = async (invId: string, targetEmail: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the invitation for ${targetEmail}?`)) return;
+
+    setActionLoadingId(invId);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/invitations/${invId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete invitation');
+
+      setFeedback({
+        type: 'success',
+        text: `Invitation for ${targetEmail} has been permanently deleted.`,
+      });
+      fetchInvitations();
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        text: err.message || 'Error deleting invitation',
       });
     } finally {
       setActionLoadingId(null);
@@ -405,22 +432,42 @@ export default function InvitationsPage() {
                               <button
                                 disabled={isActionLoading}
                                 onClick={() => handleRevokeInvitation(inv.id)}
-                                className="px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 text-[11px] font-medium transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
+                                className="px-2.5 py-1 rounded-lg bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 text-[11px] font-medium transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
                                 title="Revoke invitation"
                               >
                                 <Ban className="w-3 h-3" />
                                 <span>Revoke</span>
                               </button>
+                              <button
+                                disabled={isActionLoading}
+                                onClick={() => handleDeleteInvitation(inv.id, inv.email)}
+                                className="px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 text-[11px] font-medium transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
+                                title="Permanently delete invitation"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Delete</span>
+                              </button>
                             </>
                           )}
                           {inv.status === 'revoked' && (
-                            <button
-                              disabled={isActionLoading}
-                              onClick={() => handleResendInvitation(inv.id)}
-                              className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-[11px] font-medium transition-colors cursor-pointer"
-                            >
-                              Re-invite
-                            </button>
+                            <>
+                              <button
+                                disabled={isActionLoading}
+                                onClick={() => handleResendInvitation(inv.id)}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-[11px] font-medium transition-colors cursor-pointer"
+                              >
+                                Re-invite
+                              </button>
+                              <button
+                                disabled={isActionLoading}
+                                onClick={() => handleDeleteInvitation(inv.id, inv.email)}
+                                className="px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 text-[11px] font-medium transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
+                                title="Permanently delete invitation"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Delete</span>
+                              </button>
+                            </>
                           )}
                           {inv.status === 'accepted' && (
                             <span className="text-[11px] text-emerald-400 font-medium">Onboarded</span>
