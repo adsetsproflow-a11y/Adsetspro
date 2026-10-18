@@ -429,15 +429,20 @@ export default function MyTasksDashboard() {
         /* LIST VIEW TABLE */
         <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-950/70 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
+            <table className="w-full text-left text-xs min-w-[800px]">
+              <thead className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
                 <tr>
-                  <th className="px-5 py-3.5">Task Title</th>
-                  <th className="px-5 py-3.5">Project</th>
-                  <th className="px-5 py-3.5">Priority</th>
-                  <th className="px-5 py-3.5">Due Date</th>
-                  <th className="px-5 py-3.5">Status</th>
-                  <th className="px-5 py-3.5 text-right">Actions</th>
+                  <th className="px-4 py-3.5 sticky left-0 z-20 bg-zinc-950 min-w-[240px] max-w-[300px] border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.6)]">
+                    <div className="flex items-center gap-2">
+                      <ListTodo className="w-4 h-4 text-indigo-400 shrink-0" />
+                      <span className="text-white font-bold tracking-wider">Task Title & Brief</span>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3.5">Project</th>
+                  <th className="px-4 py-3.5">Priority</th>
+                  <th className="px-4 py-3.5">Due Date</th>
+                  <th className="px-4 py-3.5">Status</th>
+                  <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
@@ -463,13 +468,26 @@ export default function MyTasksDashboard() {
                     <tr
                       key={task.id}
                       onClick={() => router.push(`/c/${companySlug}/my-tasks/${task.id}`)}
-                      className="hover:bg-zinc-800/40 transition-colors group cursor-pointer"
+                      className="hover:bg-zinc-800/50 transition-colors group cursor-pointer"
                     >
-                      <td className="px-5 py-3.5 font-semibold text-white">
-                        <div className="flex items-center gap-2">
-                          <span className="line-clamp-1 group-hover:text-indigo-400 transition-colors">
-                            {task.title}
-                          </span>
+                      <td className="px-4 py-3.5 font-semibold text-white sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-850 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)] transition-colors min-w-[240px] max-w-[300px]">
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="line-clamp-1 group-hover:text-indigo-400 transition-colors font-bold text-xs">
+                              {task.title}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+                            <span className="text-indigo-400 font-semibold">#{task.id.slice(0, 8)}</span>
+                            {task.description && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate max-w-[170px] font-sans text-zinc-400">
+                                  {task.description}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5 text-zinc-400">

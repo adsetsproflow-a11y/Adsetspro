@@ -262,9 +262,14 @@ export default function ReviewQueuePage() {
       <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-zinc-950/70 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
+            <thead className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
               <tr>
-                <th className="px-5 py-3.5">Deliverable Title</th>
+                <th className="px-4 py-3.5 sticky left-0 z-20 bg-zinc-950 min-w-[240px] max-w-[300px] border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.6)]">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="text-white font-bold tracking-wider">Deliverable Title</span>
+                  </div>
+                </th>
                 <th className="px-5 py-3.5">Assignee</th>
                 <th className="px-5 py-3.5">Department</th>
                 <th className="px-5 py-3.5">Submitted Date</th>
@@ -302,20 +307,25 @@ export default function ReviewQueuePage() {
                         : 'hover:bg-zinc-800/40'
                     }`}
                   >
-                    <td className="px-5 py-3.5 font-semibold text-white">
-                      <div className="flex items-center gap-2">
-                        {task.is_overdue && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping shrink-0" />
-                        )}
-                        <span className="line-clamp-1 group-hover:text-amber-400 transition-colors">
-                          {task.title}
-                        </span>
-                        {task.attachment_count > 0 && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
-                            <Paperclip className="w-3 h-3 text-indigo-400" />
-                            <span>{task.attachment_count}</span>
+                    <td className="px-4 py-3.5 font-semibold text-white sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-850 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)] transition-colors min-w-[240px] max-w-[300px]">
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {task.is_overdue && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping shrink-0" />
+                          )}
+                          <span className="line-clamp-1 group-hover:text-amber-400 transition-colors font-bold text-xs">
+                            {task.title}
                           </span>
-                        )}
+                          {task.attachment_count > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800 shrink-0">
+                              <Paperclip className="w-3 h-3 text-indigo-400" />
+                              <span>{task.attachment_count}</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-zinc-500 font-mono">
+                          <span className="text-amber-400 font-semibold">#{task.id.slice(0, 8)}</span>
+                        </div>
                       </div>
                     </td>
 

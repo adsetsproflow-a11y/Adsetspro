@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -48,6 +48,7 @@ export default function WorkspaceTasksPage() {
   const params = useParams();
   const router = useRouter();
   const companySlug = params.companySlug as string;
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -524,18 +525,23 @@ export default function WorkspaceTasksPage() {
 
       {/* Tasks Table */}
       <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-zinc-950/70 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
+        <div ref={tableContainerRef} className="overflow-x-auto scroll-smooth">
+          <table className="w-full text-left text-xs min-w-[960px]">
+            <thead className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
               <tr>
-                <th className="px-5 py-3.5">Task Title</th>
-                <th className="px-5 py-3.5">Assignee</th>
-                <th className="px-5 py-3.5">Department</th>
-                <th className="px-5 py-3.5">Project</th>
-                <th className="px-5 py-3.5">Priority</th>
-                <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5">Due Date</th>
-                <th className="px-5 py-3.5 text-right">Action</th>
+                <th className="px-4 py-3.5 sticky left-0 z-20 bg-zinc-950 min-w-[240px] max-w-[300px] border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.6)]">
+                  <div className="flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <span className="text-white font-bold tracking-wider">Task Title & Brief</span>
+                  </div>
+                </th>
+                <th className="px-4 py-3.5 min-w-[140px]">Assignee</th>
+                <th className="px-4 py-3.5 min-w-[130px]">Department</th>
+                <th className="px-4 py-3.5 min-w-[140px]">Project</th>
+                <th className="px-4 py-3.5 min-w-[90px]">Priority</th>
+                <th className="px-4 py-3.5 min-w-[120px]">Status</th>
+                <th className="px-4 py-3.5 min-w-[100px]">Due Date</th>
+                <th className="px-4 py-3.5 text-right min-w-[80px]">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60">
@@ -543,14 +549,16 @@ export default function WorkspaceTasksPage() {
                 <>
                   {[...Array(6)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td className="px-5 py-4"><div className="h-4 bg-zinc-800/80 rounded w-48" /></td>
-                      <td className="px-5 py-4"><div className="h-4 bg-zinc-800/80 rounded w-28" /></td>
-                      <td className="px-5 py-4"><div className="h-4 bg-zinc-800/80 rounded w-24" /></td>
-                      <td className="px-5 py-4"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
-                      <td className="px-5 py-4"><div className="h-4 bg-zinc-800/80 rounded w-16" /></td>
-                      <td className="px-5 py-4"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
-                      <td className="px-5 py-4"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
-                      <td className="px-5 py-4 text-right"><div className="h-4 bg-zinc-800/80 rounded w-12 ml-auto" /></td>
+                      <td className="px-4 py-3.5 sticky left-0 z-10 bg-zinc-900 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)]">
+                        <div className="h-4 bg-zinc-800/80 rounded w-48" />
+                      </td>
+                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-28" /></td>
+                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-24" /></td>
+                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
+                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-16" /></td>
+                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
+                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
+                      <td className="px-4 py-3.5 text-right"><div className="h-4 bg-zinc-800/80 rounded w-12 ml-auto" /></td>
                     </tr>
                   ))}
                 </>
@@ -578,40 +586,68 @@ export default function WorkspaceTasksPage() {
                   <tr
                     key={task.id}
                     onClick={() => router.push(`/c/${companySlug}/tasks/${task.id}`)}
-                    className="hover:bg-zinc-800/40 transition-colors group cursor-pointer"
+                    className="hover:bg-zinc-800/50 transition-colors group cursor-pointer"
                   >
-                    <td className="px-5 py-3.5 font-semibold text-white">
-                      <div className="flex items-center gap-2">
-                        <span className="line-clamp-1 group-hover:text-indigo-400 transition-colors">
-                          {task.title}
-                        </span>
+                    {/* Sticky Task Title Column - Always Visible in Front */}
+                    <td className="px-4 py-3.5 font-semibold text-white sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-850 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)] transition-colors min-w-[240px] max-w-[300px]">
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <CheckSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          <Link
+                            href={`/c/${companySlug}/tasks/${task.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-bold text-white group-hover:text-indigo-400 transition-colors truncate block text-xs hover:underline"
+                            title={task.title}
+                          >
+                            {task.title}
+                          </Link>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono pl-5">
+                          <span className="text-indigo-400/90 font-semibold">#{task.id.slice(0, 8)}</span>
+                          {task.description && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate max-w-[170px] font-sans text-zinc-400">
+                                {task.description}
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-zinc-300">
+
+                    {/* Assignee */}
+                    <td className="px-4 py-3.5 text-zinc-300">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 font-bold flex items-center justify-center text-[10px] shrink-0 border border-indigo-500/30">
                           {task.assignee_name.slice(0, 1)}
                         </div>
-                        <span className="truncate max-w-[120px]">{task.assignee_name}</span>
+                        <span className="truncate max-w-[120px] font-medium">{task.assignee_name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-zinc-400">
+
+                    {/* Department */}
+                    <td className="px-4 py-3.5 text-zinc-400">
                       <span className="inline-flex items-center gap-1.5">
-                        <Building className="w-3.5 h-3.5 text-zinc-500" />
-                        <span>{task.department_name}</span>
+                        <Building className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                        <span className="truncate max-w-[120px]">{task.department_name}</span>
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-zinc-400">
+
+                    {/* Project */}
+                    <td className="px-4 py-3.5 text-zinc-400">
                       {task.project_name ? (
                         <span className="inline-flex items-center gap-1.5 text-zinc-300">
-                          <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
+                          <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                           <span className="truncate max-w-[120px]">{task.project_name}</span>
                         </span>
                       ) : (
                         <span className="text-zinc-600 italic">None</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5">
+
+                    {/* Priority */}
+                    <td className="px-4 py-3.5">
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getPriorityBadge(
                           task.priority
@@ -620,7 +656,9 @@ export default function WorkspaceTasksPage() {
                         {task.priority}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
+
+                    {/* Status */}
+                    <td className="px-4 py-3.5">
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusBadge(
                           task.status
@@ -629,10 +667,14 @@ export default function WorkspaceTasksPage() {
                         {task.status.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 font-mono text-zinc-400">
+
+                    {/* Due Date */}
+                    <td className="px-4 py-3.5 font-mono text-zinc-400 whitespace-nowrap">
                       {task.due_date ? new Date(task.due_date).toLocaleDateString() : '—'}
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+
+                    {/* Action */}
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
                       <Link
                         href={`/c/${companySlug}/tasks/${task.id}`}
                         onClick={(e) => e.stopPropagation()}
