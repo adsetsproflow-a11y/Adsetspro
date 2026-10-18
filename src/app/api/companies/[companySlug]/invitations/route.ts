@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { adminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { getDbPool } from '@/lib/db';
 
 export async function GET(
   request: Request,
@@ -249,3 +250,88 @@ export async function POST(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ companySlug: string }> }
+) {
+  try {
+    const { companySlug } = await params;
+    const supabase = await createClient();
+
+    // 1. Authenticate caller
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 2. Fetch company
+    const { data: company } = await adminClient
+      .from('companies')
+      .select('id, name')
+      .eq('slug', companySlug)
+      .single();
+
+    if (!company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    }
+
+    // 3. Verify admin / dept head permissions
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.is_super_admin) {
+      const { data: membership } = await adminClient
+        .from('company_memberships')
+        .select('role')
+        .eq('company_id', company.id)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (!membership || (membership.role !== 'COMPANY_ADMIN' && membership.role !== 'DEPARTMENT_HEAD')) {
+        return NextResponse.json(
+          { error: 'Forbidden: Insufficient privileges to clear invitations.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 4. Delete all invitations for this company
+    const pool = getDbPool();
+    const delRes = await pool.query(
+      `DELETE FROM public.invitations WHERE company_id = $1 RETURNING id;`,
+      [company.id]
+    );
+
+    const deletedCount = delRes.rowCount || 0;
+
+    // 5. Audit log
+    await adminClient.from('audit_logs').insert({
+      actor_id: user.id,
+      company_id: company.id,
+      action: 'INVITATIONS_CLEARED_ALL',
+      target_type: 'invitations',
+      details: { count: deletedCount },
+    });
+
+    return NextResponse.json({
+      success: true,
+      count: deletedCount,
+      message: `Successfully cleared all ${deletedCount} invitation records.`,
+    });
+  } catch (error: any) {
+    console.error('Clear invitations error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+

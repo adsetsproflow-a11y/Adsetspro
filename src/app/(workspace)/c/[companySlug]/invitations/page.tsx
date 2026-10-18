@@ -48,6 +48,7 @@ export default function InvitationsPage() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [copiedTokenUrl, setCopiedTokenUrl] = useState<string | null>(null);
   const [isForbidden, setIsForbidden] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -197,6 +198,39 @@ export default function InvitationsPage() {
     }
   };
 
+  const handleClearAllInvitations = async () => {
+    if (invitations.length === 0) return;
+    if (
+      !window.confirm(
+        `⚠️ Are you sure you want to CLEAR ALL (${invitations.length}) invitations?\n\nThis will permanently delete all pending, accepted, and revoked invitation history.`
+      )
+    ) {
+      return;
+    }
+
+    setIsClearingAll(true);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/invitations`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to clear invitations');
+
+      setFeedback({
+        type: 'success',
+        text: data.message || 'All invitations cleared successfully.',
+      });
+      fetchInvitations();
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        text: err.message || 'Error clearing invitations',
+      });
+    } finally {
+      setIsClearingAll(false);
+    }
+  };
+
   const handleResendInvitation = async (invId: string) => {
     setActionLoadingId(invId);
     try {
@@ -290,6 +324,21 @@ export default function InvitationsPage() {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
+          {invitations.length > 0 && (
+            <button
+              onClick={handleClearAllInvitations}
+              disabled={isClearingAll || isLoading}
+              className="px-3.5 py-2.5 rounded-xl bg-red-600/15 hover:bg-red-600/25 text-red-400 hover:text-red-300 border border-red-500/30 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+              title="Permanently clear all invitation history"
+            >
+              {isClearingAll ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+              <span>Clear All</span>
+            </button>
+          )}
           <button
             onClick={() => {
               setIsModalOpen(true);
@@ -417,7 +466,7 @@ export default function InvitationsPage() {
 
                       {/* Action buttons */}
                       <td className="py-3.5 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1.5 justify-end">
                           {inv.status === 'pending' && (
                             <>
                               <button
@@ -438,40 +487,33 @@ export default function InvitationsPage() {
                                 <Ban className="w-3 h-3" />
                                 <span>Revoke</span>
                               </button>
-                              <button
-                                disabled={isActionLoading}
-                                onClick={() => handleDeleteInvitation(inv.id, inv.email)}
-                                className="px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 text-[11px] font-medium transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
-                                title="Permanently delete invitation"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                <span>Delete</span>
-                              </button>
                             </>
                           )}
                           {inv.status === 'revoked' && (
-                            <>
-                              <button
-                                disabled={isActionLoading}
-                                onClick={() => handleResendInvitation(inv.id)}
-                                className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-[11px] font-medium transition-colors cursor-pointer"
-                              >
-                                Re-invite
-                              </button>
-                              <button
-                                disabled={isActionLoading}
-                                onClick={() => handleDeleteInvitation(inv.id, inv.email)}
-                                className="px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 text-[11px] font-medium transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
-                                title="Permanently delete invitation"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                <span>Delete</span>
-                              </button>
-                            </>
+                            <button
+                              disabled={isActionLoading}
+                              onClick={() => handleResendInvitation(inv.id)}
+                              className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-[11px] font-medium transition-colors cursor-pointer"
+                            >
+                              Re-invite
+                            </button>
                           )}
                           {inv.status === 'accepted' && (
-                            <span className="text-[11px] text-emerald-400 font-medium">Onboarded</span>
+                            <span className="text-[11px] text-emerald-400 font-medium bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                              Onboarded
+                            </span>
                           )}
+
+                          {/* Individual Delete Button - Available for ALL rows */}
+                          <button
+                            disabled={isActionLoading}
+                            onClick={() => handleDeleteInvitation(inv.id, inv.email)}
+                            className="px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 text-[11px] font-medium transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
+                            title="Permanently delete invitation"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
