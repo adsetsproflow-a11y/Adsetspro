@@ -15,9 +15,13 @@ import {
   Building,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   MoreVertical,
   ExternalLink,
   TrendingUp,
+  Trash2,
+  UserX,
+  UserCheck,
 } from 'lucide-react';
 
 interface EmployeeItem {
@@ -41,12 +45,17 @@ export default function EmployeesPage() {
   const companySlug = params.companySlug as string;
 
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('EMPLOYEE');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [departments, setDepartments] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingStatusId, setTogglingStatusId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchEmployees = async () => {
@@ -59,6 +68,8 @@ export default function EmployeesPage() {
 
       const emps: EmployeeItem[] = data.employees || [];
       setEmployees(emps);
+      if (data.currentUserId) setCurrentUserId(data.currentUserId);
+      if (data.currentUserRole) setCurrentUserRole(data.currentUserRole);
 
       // Collect distinct department names
       const depts = Array.from(new Set(emps.map((e) => e.department_name))).filter(Boolean);
@@ -76,6 +87,93 @@ export default function EmployeesPage() {
       fetchEmployees();
     }
   }, [companySlug]);
+
+  const canDeleteEmployee = (emp: EmployeeItem) => {
+    // Cannot delete yourself
+    if (emp.id === currentUserId) return false;
+    // Super Admin / Company Admin can delete anyone except self
+    if (currentUserRole === 'COMPANY_ADMIN') return true;
+    // Department Head can only delete team employees
+    if (currentUserRole === 'DEPARTMENT_HEAD' && emp.role === 'EMPLOYEE') return true;
+    return false;
+  };
+
+  const canToggleStatus = (emp: EmployeeItem) => {
+    if (emp.id === currentUserId) return false;
+    if (currentUserRole === 'COMPANY_ADMIN') return true;
+    if (currentUserRole === 'DEPARTMENT_HEAD' && emp.role === 'EMPLOYEE') return true;
+    return false;
+  };
+
+  const handleToggleStatus = async (e: React.MouseEvent, emp: EmployeeItem) => {
+    e.stopPropagation();
+    const newStatus = emp.status === 'active' ? 'deactivated' : 'active';
+    const actionLabel = newStatus === 'active' ? 'activate' : 'deactivate';
+
+    if (!window.confirm(`Are you sure you want to ${actionLabel} "${emp.full_name}"?`)) {
+      return;
+    }
+
+    setTogglingStatusId(emp.id);
+    setActionMessage(null);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/employees/${emp.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Failed to ${actionLabel} employee`);
+
+      setActionMessage({
+        type: 'success',
+        text: `Status for "${emp.full_name}" successfully updated to ${newStatus}.`,
+      });
+      fetchEmployees();
+    } catch (err: any) {
+      setActionMessage({
+        type: 'error',
+        text: err.message || 'Failed to update employee status',
+      });
+    } finally {
+      setTogglingStatusId(null);
+    }
+  };
+
+  const handleDeleteEmployee = async (e: React.MouseEvent, emp: EmployeeItem) => {
+    e.stopPropagation();
+
+    if (
+      !window.confirm(
+        `⚠️ Are you sure you want to PERMANENTLY DELETE employee "${emp.full_name}" (${emp.email})?\n\nThis will completely purge all their company memberships, department assignments, task allocations, and platform access.\n\nThis action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(emp.id);
+    setActionMessage(null);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/employees/${emp.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete employee');
+
+      setActionMessage({
+        type: 'success',
+        text: data.message || `Employee "${emp.full_name}" permanently deleted.`,
+      });
+      fetchEmployees();
+    } catch (err: any) {
+      setActionMessage({
+        type: 'error',
+        text: err.message || 'Failed to delete employee',
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredEmployees = employees.filter((emp) => {
     const q = searchQuery.toLowerCase();
@@ -107,6 +205,7 @@ export default function EmployeesPage() {
       case 'active':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
       case 'suspended':
+      case 'deactivated':
         return 'bg-red-500/10 text-red-400 border-red-500/30';
       default:
         return 'bg-zinc-800 text-zinc-400 border-zinc-700';
@@ -148,6 +247,32 @@ export default function EmployeesPage() {
           </Link>
         </div>
       </div>
+
+      {/* Action feedback toast / banner */}
+      {actionMessage && (
+        <div
+          className={`p-4 rounded-xl border text-xs flex items-center justify-between gap-3 ${
+            actionMessage.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : 'bg-red-500/10 border-red-500/30 text-red-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {actionMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+            )}
+            <span>{actionMessage.text}</span>
+          </div>
+          <button
+            onClick={() => setActionMessage(null)}
+            className="text-zinc-400 hover:text-white text-xs font-bold px-2 py-0.5 rounded cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Error alert */}
       {error && (
@@ -207,6 +332,7 @@ export default function EmployeesPage() {
             <option value="all">All Statuses</option>
             <option value="active">Active</option>
             <option value="suspended">Suspended</option>
+            <option value="deactivated">Deactivated</option>
             <option value="inactive">Inactive</option>
           </select>
         </div>
@@ -325,7 +451,7 @@ export default function EmployeesPage() {
 
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right">
-                      <div className="inline-flex items-center gap-1.5">
+                      <div className="inline-flex items-center gap-1.5 flex-wrap justify-end">
                         <Link
                           href={`/c/${companySlug}/employees/${emp.id}/performance`}
                           onClick={(e) => e.stopPropagation()}
@@ -333,7 +459,7 @@ export default function EmployeesPage() {
                           title="View Performance Analytics"
                         >
                           <TrendingUp className="w-3 h-3" />
-                          <span>Performance</span>
+                          <span className="hidden sm:inline">Performance</span>
                         </Link>
                         <Link
                           href={`/c/${companySlug}/employees/${emp.id}`}
@@ -341,9 +467,55 @@ export default function EmployeesPage() {
                           className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-indigo-600/20 text-zinc-400 hover:text-indigo-400 transition-colors inline-flex items-center gap-1"
                           title="View Employee Profile"
                         >
-                          <span className="text-[11px] font-semibold">Profile</span>
+                          <span className="text-[11px] font-semibold hidden sm:inline">Profile</span>
                           <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
+
+                        {/* Deactivate / Reactivate button */}
+                        {canToggleStatus(emp) && (
+                          <button
+                            onClick={(e) => handleToggleStatus(e, emp)}
+                            disabled={togglingStatusId === emp.id}
+                            className={`px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all inline-flex items-center gap-1 cursor-pointer ${
+                              emp.status === 'active'
+                                ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/20 hover:border-amber-500/40'
+                                : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20 hover:border-emerald-500/40'
+                            }`}
+                            title={emp.status === 'active' ? 'Deactivate access' : 'Activate access'}
+                          >
+                            {togglingStatusId === emp.id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : emp.status === 'active' ? (
+                              <UserX className="w-3 h-3" />
+                            ) : (
+                              <UserCheck className="w-3 h-3" />
+                            )}
+                            <span>{emp.status === 'active' ? 'Deactivate' : 'Activate'}</span>
+                          </button>
+                        )}
+
+                        {/* Delete button (Prominent) */}
+                        {canDeleteEmployee(emp) && (
+                          <button
+                            onClick={(e) => handleDeleteEmployee(e, emp)}
+                            disabled={deletingId === emp.id}
+                            className="px-2.5 py-1 rounded-lg bg-red-600/15 hover:bg-red-600/30 text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/60 font-bold text-[11px] inline-flex items-center gap-1 transition-all shadow-sm cursor-pointer"
+                            title="Permanently Delete Employee"
+                          >
+                            {deletingId === emp.id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                            <span>Delete</span>
+                          </button>
+                        )}
+
+                        {emp.id === currentUserId && (
+                          <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-[10px] text-zinc-400 border border-zinc-700/60 font-semibold">
+                            You
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>

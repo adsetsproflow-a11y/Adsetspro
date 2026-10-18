@@ -99,9 +99,32 @@ export async function GET(
       };
     });
 
+    // Fetch caller role
+    const { data: callerProfile } = await adminClient
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', user.id)
+      .single();
+
+    let callerRole = 'EMPLOYEE';
+    if (callerProfile?.is_super_admin) {
+      callerRole = 'COMPANY_ADMIN';
+    } else {
+      const { data: callerMem } = await adminClient
+        .from('company_memberships')
+        .select('role')
+        .eq('company_id', company.id)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (callerMem) callerRole = callerMem.role;
+    }
+
     return NextResponse.json({
       success: true,
       employees,
+      currentUserId: user.id,
+      currentUserRole: callerRole,
     });
   } catch (error: any) {
     console.error('Fetch employees error:', error);

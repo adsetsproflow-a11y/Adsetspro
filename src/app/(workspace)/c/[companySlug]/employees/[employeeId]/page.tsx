@@ -18,9 +18,11 @@ import {
   XCircle,
   RefreshCw,
   Award,
+  Trash2,
 } from 'lucide-react';
 
 interface EmployeeProfileData {
+  currentUserId?: string;
   profile: {
     id: string;
     full_name: string;
@@ -71,6 +73,7 @@ export default function EmployeeDetailPage() {
   const [data, setData] = useState<EmployeeProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchEmployeeData = async () => {
@@ -115,6 +118,32 @@ export default function EmployeeDetailPage() {
       alert(err.message || 'Status update failed');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleDeleteEmployee = async () => {
+    if (!data?.profile) return;
+    if (
+      !window.confirm(
+        `⚠️ Are you sure you want to PERMANENTLY DELETE "${data.profile.full_name}" (${data.profile.email})?\n\nThis will completely purge their organization membership, department assignments, task allocations, and platform access.\n\nThis action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/employees/${employeeId}`, {
+        method: 'DELETE',
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to delete member');
+
+      alert(resData.message || 'Employee permanently deleted');
+      router.push(`/c/${companySlug}/employees`);
+    } catch (err: any) {
+      alert(err.message || 'Deletion failed');
+      setIsDeleting(false);
     }
   };
 
@@ -191,7 +220,7 @@ export default function EmployeeDetailPage() {
           </div>
 
           {/* Account Status Management Actions */}
-          <div className="flex items-center gap-2 self-start sm:self-center">
+          <div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
             {profile.membership_status !== 'active' && (
               <button
                 disabled={isUpdatingStatus}
@@ -218,10 +247,23 @@ export default function EmployeeDetailPage() {
               <button
                 disabled={isUpdatingStatus}
                 onClick={() => handleUpdateStatus('deactivated')}
-                className="px-3.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-semibold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <XCircle className="w-3.5 h-3.5" />
                 <span>Deactivate</span>
+              </button>
+            )}
+
+            {/* Permanent Delete Member Action */}
+            {data.currentUserId !== profile.id && (
+              <button
+                disabled={isDeleting}
+                onClick={handleDeleteEmployee}
+                className="px-3.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 border border-red-500/30 font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-red-500/10"
+                title="Permanently Delete Member from Organization"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Deleting...' : 'Delete Member'}</span>
               </button>
             )}
           </div>
