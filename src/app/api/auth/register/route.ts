@@ -1,142 +1,171 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { registerCompanySchema } from '@/lib/validations/auth';
-import { hashPassword } from '@/lib/security/password';
-import { generateUniqueCompanySlug } from '@/lib/slug';
-import { generateSecureToken, createExpiryDate } from '@/lib/security/tokens';
-import { sendVerificationEmail } from '@/lib/email';
-import { recordAuditLog } from '@/lib/auth-helpers';
-import { GlobalRole, CompanyRole, CompanyStatus, AccountStatus, MembershipStatus } from '@prisma/client';
+import { NextResponse } from 'next/server';
+import { adminClient } from '@/lib/supabase/admin';
+import { registerCompanySchema } from '@/lib/validation';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const json = await request.json();
-    const result = registerCompanySchema.safeParse(json);
+    const body = await request.json();
 
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.error.issues[0]?.message || 'Invalid registration form data.',
-          errors: result.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+    // 1. Zod Validation
+    const validation = registerCompanySchema.safeParse(body);
+    if (!validation.success) {
+      const err = validation.error as any;
+      const message =
+        err.issues?.[0]?.message || err.errors?.[0]?.message || 'Invalid input parameters.';
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const { companyName, adminName, email, password, department } = result.data;
-    const normalizedEmail = email.trim().toLowerCase();
+    const { companyName, fullName, email, password } = validation.data;
 
-    // 1. Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    // 2. Check if user email already exists in profiles
+    const { data: existingUser } = await adminClient
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
 
     if (existingUser) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'An account with this email address already exists. Please sign in or use another email.',
-        },
+        { error: 'An account with this email address already exists.' },
         { status: 409 }
       );
     }
 
-    // 2. Hash password securely
-    const passwordHash = await hashPassword(password);
+    // 3. Generate unique company slug using database function or helper
+    const baseSlug = companyName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'company';
 
-    // 3. Generate collision-safe unique company slug (e.g. acme-media-a4b2)
-    const slug = await generateUniqueCompanySlug(prisma, companyName);
+    let uniqueSlug = baseSlug;
+    let counter = 1;
+    while (true) {
+      const { data: existingCompany } = await adminClient
+        .from('companies')
+        .select('id')
+        .eq('slug', uniqueSlug)
+        .maybeSingle();
 
-    // 4. Generate verification token
-    const { rawToken, tokenHash } = generateSecureToken(32);
-    const verificationExpiry = createExpiryDate(24 * 60); // 24 hours
+      if (!existingCompany) break;
+      uniqueSlug = `${baseSlug}-${counter++}`;
+    }
 
-    // 5. Transactional creation: User, Company, CompanyMembership, and EmailVerificationToken
-    const { user, company } = await prisma.$transaction(async (tx) => {
-      // Create user
-      const newUser = await tx.user.create({
-        data: {
-          name: adminName.trim(),
-          email: normalizedEmail,
-          passwordHash,
-          globalRole: GlobalRole.USER,
-          accountStatus: AccountStatus.ACTIVE,
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        },
-      });
-
-      // Create company in PENDING state
-      const newCompany = await tx.company.create({
-        data: {
-          name: companyName.trim(),
-          slug,
-          status: CompanyStatus.PENDING,
-        },
-      });
-
-      // Create company membership as COMPANY_ADMIN
-      await tx.companyMembership.create({
-        data: {
-          userId: newUser.id,
-          companyId: newCompany.id,
-          role: CompanyRole.COMPANY_ADMIN,
-          designation: 'Company Administrator',
-          department: department || 'Management',
-          membershipStatus: MembershipStatus.ACTIVE,
-        },
-      });
-
-      // Save verification token hash
-      await tx.emailVerificationToken.create({
-        data: {
-          userId: newUser.id,
-          tokenHash,
-          expiresAt: verificationExpiry,
-        },
-      });
-
-      return { user: newUser, company: newCompany };
+    // 4. Create user in Supabase Auth via Admin Client
+    const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
+      email: email.toLowerCase().trim(),
+      password,
+      email_confirm: true, // auto-confirm for administrative creation
+      user_metadata: {
+        full_name: fullName.trim(),
+      },
     });
 
-    // 6. Send verification email (non-blocking failure resilience)
-    await sendVerificationEmail(normalizedEmail, rawToken, adminName, user.id);
+    if (authError || !authUser?.user) {
+      return NextResponse.json(
+        { error: authError?.message || 'Failed to create user authentication account.' },
+        { status: 400 }
+      );
+    }
 
-    // 7. Audit log registration event
-    await recordAuditLog({
-      actorUserId: user.id,
-      companyId: company.id,
+    const userId = authUser.user.id;
+
+    // 5. Create Profile Record
+    const { error: profileError } = await adminClient.from('profiles').upsert({
+      id: userId,
+      full_name: fullName.trim(),
+      email: email.toLowerCase().trim(),
+      is_super_admin: false,
+      account_status: 'active',
+    });
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
+    }
+
+    // 6. Create Company with status 'pending'
+    const { data: company, error: companyError } = await adminClient
+      .from('companies')
+      .insert({
+        name: companyName.trim(),
+        slug: uniqueSlug,
+        status: 'pending',
+        created_by: userId,
+      })
+      .select()
+      .single();
+
+    if (companyError || !company) {
+      console.error('Error creating company:', companyError);
+      return NextResponse.json(
+        { error: companyError?.message || 'Failed to initialize organization workspace.' },
+        { status: 500 }
+      );
+    }
+
+    // 7. Create Company Membership with role 'COMPANY_ADMIN'
+    const { error: membershipError } = await adminClient.from('company_memberships').insert({
+      user_id: userId,
+      company_id: company.id,
+      role: 'COMPANY_ADMIN',
+      status: 'active',
+    });
+
+    if (membershipError) {
+      console.error('Error creating company membership:', membershipError);
+    }
+
+    // 8. Create Notification for Super Admin
+    const { data: superAdmins } = await adminClient
+      .from('profiles')
+      .select('id')
+      .eq('is_super_admin', true);
+
+    if (superAdmins && superAdmins.length > 0) {
+      const notificationsToInsert = superAdmins.map((admin) => ({
+        user_id: admin.id,
+        company_id: company.id,
+        type: 'company_registration_pending',
+        title: 'New Company Pending Approval',
+        body: `${companyName} registered by ${fullName} (${email}) and requires authorization.`,
+        payload: {
+          company_id: company.id,
+          company_name: companyName,
+          slug: uniqueSlug,
+          creator_id: userId,
+        },
+      }));
+
+      await adminClient.from('notifications').insert(notificationsToInsert as any);
+    }
+
+    // 9. Write to Audit Logs
+    await adminClient.from('audit_logs').insert({
+      actor_id: userId,
+      company_id: company.id,
       action: 'COMPANY_REGISTERED',
-      targetType: 'COMPANY',
-      targetId: company.id,
-      metadata: {
-        companyName: company.name,
-        companySlug: company.slug,
-        adminEmail: user.email,
+      target_id: company.id,
+      target_type: 'company',
+      details: {
+        name: companyName,
+        slug: uniqueSlug,
+        status: 'pending',
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Company registered successfully. Account is pending administrator review.',
+      company: {
+        id: company.id,
+        name: company.name,
+        slug: company.slug,
         status: company.status,
       },
     });
-
-    return NextResponse.json(
-      {
-        success: true,
-        message:
-          'Company registered successfully! Please check your email to verify your address. Note that your workspace requires Super Admin approval before activation.',
-        company: {
-          id: company.id,
-          name: company.name,
-          slug: company.slug,
-          status: company.status,
-        },
-        requiresApproval: true,
-        emailSent: true,
-      },
-      { status: 201 }
-    );
   } catch (error: any) {
-    console.error('[API Register Error]', error);
+    console.error('Registration route error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Registration failed due to a server error.' },
+      { error: error.message || 'An unexpected internal error occurred.' },
       { status: 500 }
     );
   }

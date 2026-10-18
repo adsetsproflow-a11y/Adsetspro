@@ -1,37 +1,83 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireSuperAdmin } from '@/lib/auth-helpers';
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { getDbPool } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    const authCheck = await requireSuperAdmin(request);
-    if ('response' in authCheck) return authCheck.response;
+    const supabase = await createClient();
+
+    // 1. Authenticate user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const pool = getDbPool();
+
+    // 2. Verify Super Admin authority
+    const profRes = await pool.query(
+      `SELECT is_super_admin FROM public.profiles WHERE id = $1 LIMIT 1;`,
+      [user.id]
+    );
+
+    if (!profRes.rows[0]?.is_super_admin) {
+      return NextResponse.json(
+        { error: 'Forbidden: Super Admin access required' },
+        { status: 403 }
+      );
+    }
 
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
+    const action = searchParams.get('action');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
-    const logs = await prisma.auditLog.findMany({
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        actor: {
-          select: { id: true, name: true, email: true },
-        },
-        company: {
-          select: { id: true, name: true, slug: true },
-        },
-      },
-    });
+    let query = `
+      SELECT al.id, al.action, al.target_type, al.target_id, al.actor_id, al.company_id, al.details, al.created_at,
+             json_build_object('full_name', p.full_name, 'email', p.email) as actor
+      FROM public.audit_logs al
+      LEFT JOIN public.profiles p ON p.id = al.actor_id
+    `;
+
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    if (action && action !== 'all') {
+      params.push(action);
+      conditions.push(`al.action = $${params.length}`);
+    }
+
+    if (startDate) {
+      params.push(new Date(startDate).toISOString());
+      conditions.push(`al.created_at >= $${params.length}`);
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      params.push(end.toISOString());
+      conditions.push(`al.created_at <= $${params.length}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    query += ` ORDER BY al.created_at DESC LIMIT 200;`;
+
+    const logsRes = await pool.query(query, params);
 
     return NextResponse.json({
       success: true,
-      logs,
-      total: logs.length,
+      logs: logsRes.rows,
     });
   } catch (error: any) {
-    console.error('[API Super Admin Audit Logs Error]', error);
+    console.error('Super Admin audit logs API error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Error fetching audit logs.' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }

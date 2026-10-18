@@ -1,90 +1,59 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireSuperAdmin } from '@/lib/auth-helpers';
-import { CompanyStatus } from '@prisma/client';
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { getDbPool } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    const authCheck = await requireSuperAdmin(request);
-    if ('response' in authCheck) return authCheck.response;
+    const supabase = await createClient();
 
-    const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
+    // 1. Authenticate user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    let whereClause: any = {};
-    if (statusParam && Object.values(CompanyStatus).includes(statusParam as CompanyStatus)) {
-      whereClause.status = statusParam as CompanyStatus;
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const companies = await prisma.company.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        approvedBy: {
-          select: { id: true, name: true, email: true },
-        },
-        memberships: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                emailVerifiedAt: true,
-                accountStatus: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            memberships: true,
-            tasks: true,
-            invitations: true,
-          },
-        },
-      },
-    });
+    const pool = getDbPool();
 
-    const formatted = companies.map((c) => {
-      const adminMember = c.memberships.find((m) => m.role === 'COMPANY_ADMIN');
-      return {
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        status: c.status,
-        rejectionReason: c.rejectionReason,
-        suspensionReason: c.suspensionReason,
-        createdAt: c.createdAt,
-        approvedAt: c.approvedAt,
-        approvedBy: c.approvedBy,
-        adminName: adminMember?.user.name || 'N/A',
-        adminEmail: adminMember?.user.email || 'N/A',
-        adminEmailVerified: !!adminMember?.user.emailVerifiedAt,
-        employeeCount: c._count.memberships,
-        taskCount: c._count.tasks,
-        invitationCount: c._count.invitations,
-        workspaceUrl: `/c/${c.slug}/dashboard`,
-      };
-    });
+    // 2. Verify Super Admin authority
+    const profRes = await pool.query(
+      `SELECT is_super_admin FROM public.profiles WHERE id = $1 LIMIT 1;`,
+      [user.id]
+    );
+
+    if (!profRes.rows[0]?.is_super_admin) {
+      return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const statusFilter = searchParams.get('status');
+
+    let query = `
+      SELECT c.id, c.name, c.slug, c.status, c.created_at, c.approved_at, c.rejected_at, c.reject_reason,
+             json_build_object('id', p.id, 'full_name', p.full_name, 'email', p.email) as created_by_profile,
+             (SELECT COUNT(*)::int FROM public.company_memberships cm WHERE cm.company_id = c.id) as member_count
+      FROM public.companies c
+      LEFT JOIN public.profiles p ON p.id = c.created_by
+    `;
+
+    const params: any[] = [];
+    if (statusFilter && statusFilter !== 'all') {
+      params.push(statusFilter);
+      query += ` WHERE c.status = $${params.length}`;
+    }
+
+    query += ` ORDER BY c.created_at DESC;`;
+
+    const compRes = await pool.query(query, params);
 
     return NextResponse.json({
       success: true,
-      companies: formatted,
-      total: formatted.length,
-      counts: {
-        all: formatted.length,
-        pending: formatted.filter((c) => c.status === 'PENDING').length,
-        active: formatted.filter((c) => c.status === 'ACTIVE').length,
-        rejected: formatted.filter((c) => c.status === 'REJECTED').length,
-        suspended: formatted.filter((c) => c.status === 'SUSPENDED').length,
-      },
+      companies: compRes.rows,
     });
   } catch (error: any) {
-    console.error('[API Super Admin Companies Error]', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Error fetching companies.' },
-      { status: 500 }
-    );
+    console.error('Super Admin companies API error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

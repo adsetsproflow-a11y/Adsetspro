@@ -1,135 +1,136 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { LoginPage } from '@/components/LoginPage';
-import { WorkspaceView } from '@/components/WorkspaceView';
-import { SuperAdminPortalView } from '@/components/SuperAdminPortalView';
-import { authService, AuthSession } from '@/lib/auth';
-import { saasStore } from '@/lib/storage';
-import { Shield, Building2, AlertTriangle, LogOut, Lock, RefreshCw } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Building2, ArrowRight, Layers, Zap, LogOut, LayoutDashboard } from 'lucide-react';
 
-export default function Home() {
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  const syncSession = async () => {
-    saasStore.initData();
-    const synced = await authService.syncBackendSession();
-    setSession(synced || authService.getSession());
-  };
+export default function HomePage() {
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    email: string;
+    full_name?: string;
+    is_super_admin?: boolean;
+    companySlug?: string;
+  } | null>(null);
 
   useEffect(() => {
-    syncSession();
-    setMounted(true);
-
-    const unsub = saasStore.subscribe(() => {
-      const current = authService.getSession();
-      setSession(current);
-    });
-    return unsub;
+    // Read session directly from saaa_session cookie
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/(?:^|;\s*)saaa_session=([^;]+)/);
+      if (match && match[1]) {
+        try {
+          const decoded = atob(decodeURIComponent(match[1]));
+          const parsed = JSON.parse(decoded);
+          if (parsed?.id) {
+            setCurrentUser(parsed);
+          }
+        } catch {}
+      }
+    }
   }, []);
 
-  const handleLoginSuccess = (_role: string, _subdomain?: string) => {
-    syncSession();
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    window.location.href = '/';
   };
 
-  const handleLogout = () => {
-    authService.logout();
-    setSession(null);
-  };
+  const dashboardUrl = currentUser?.is_super_admin
+    ? '/super-admin/dashboard'
+    : currentUser?.companySlug
+    ? `/c/${currentUser.companySlug}/dashboard`
+    : '/login';
 
-  // SSR or initial mounting state
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-[#090d16] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-semibold text-zinc-500">Initializing Adsetspro Portal...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 1. Mandatory Gate: If not authenticated, ALWAYS present the Login Page first
-  if (!session) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  // 2. Platform Owner / Super Admin: Dedicated Master Console (Zero Tasks, Full Tenant Management)
-  if (session.user.role === 'super_admin') {
-    return <SuperAdminPortalView onLogout={handleLogout} />;
-  }
-
-  // 3. Client Company Users: Check Approval and Active Status
-  const companies = saasStore.getCompanies();
-  const currentCompany = companies.find((c) => c.id === session.user.company_id) || session.company;
-
-  if (currentCompany && !currentCompany.is_active) {
-    return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-[#090d16] text-zinc-900 dark:text-zinc-100 flex flex-col justify-center items-center px-4 font-sans">
-        <div className="max-w-lg w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-2xl text-center space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center border border-red-500/30">
-            <AlertTriangle className="w-8 h-8" />
-          </div>
-
-          <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300">
-              ⛔ Tenant Access Suspended (Toggled OFF)
-            </span>
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
-              {currentCompany.name} Workspace Locked
-            </h1>
-            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              This company workspace has been suspended by the platform administrator. All employee access is temporarily paused.
-            </p>
-          </div>
-
-          <div className="bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl p-4 text-left text-xs space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500">Tenant Subdomain:</span>
-              <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">{currentCompany.subdomain}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500">Account Admin:</span>
-              <span className="font-bold text-zinc-800 dark:text-zinc-200">{session.user.full_name} ({session.user.email})</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500">Status:</span>
-              <span className="font-bold uppercase text-red-600 dark:text-red-400 text-[11px]">Suspended (OFF)</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500">Super Admin Contact:</span>
-              <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">owner@adsetsproflow.com</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <button
-              onClick={() => syncSession()}
-              className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>Check Approval Status</span>
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex-1 py-3 px-4 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
-            >
-              <LogOut className="w-4 h-4 text-red-500" />
-              <span>Log Out / Switch Account</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 4. Approved Client Company: Locked strictly to their tenant subdomain
   return (
-    <WorkspaceView
-      forcedSubdomain={currentCompany?.subdomain}
-      onLogout={handleLogout}
-    />
+    <div className="min-h-screen bg-[#070b14] text-zinc-100 flex flex-col justify-between relative overflow-hidden font-sans">
+      {/* Ambient background glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-600/15 rounded-full blur-[160px] pointer-events-none" />
+
+      {/* Navigation bar */}
+      <header className="border-b border-zinc-800/80 bg-zinc-950/40 backdrop-blur-xl px-6 py-4 flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+            <Layers className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-base tracking-tight text-white">SAAA Platform</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {currentUser ? (
+            <>
+              <Link
+                href={dashboardUrl}
+                className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-200 hover:text-white hover:bg-zinc-800 transition-colors inline-flex items-center gap-1.5"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-indigo-400" />
+                <span>My Workspace</span>
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
+            >
+              Sign In
+            </Link>
+          )}
+
+          <Link
+            href="/register"
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+          >
+            Register Company
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero section */}
+      <main className="flex-1 flex items-center justify-center px-4 py-16 relative z-10 text-center">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+            <Zap className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Enterprise Multi-Tenant SaaS Workspace</span>
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight">
+            Next-Gen Project &amp; Task Orchestration
+          </h1>
+
+          <p className="text-base sm:text-lg text-zinc-400 max-w-xl mx-auto leading-relaxed">
+            Multi-tier role delegation, departmental task pipelines, peer reviews, realtime messaging, and deep team analytics.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Link
+              href={currentUser ? dashboardUrl : '/login'}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+            >
+              <span>{currentUser ? 'Open Your Workspace' : 'Access Your Workspace'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/register"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Building2 className="w-4 h-4 text-indigo-400" />
+              <span>Register New Organization</span>
+            </Link>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-zinc-800/80 py-6 text-center text-xs text-zinc-500 relative z-10">
+        <p>© 2026 SAAA Platform. Powered by Supabase &amp; Next.js 15.</p>
+      </footer>
+    </div>
   );
 }
