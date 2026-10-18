@@ -426,3 +426,124 @@ export async function POST(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ companySlug: string }> }
+) {
+  try {
+    const { companySlug } = await params;
+    const supabase = await createClient();
+
+    // 1. Authenticate user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 2. Fetch company
+    const { data: company } = await adminClient
+      .from('companies')
+      .select('id, name')
+      .eq('slug', companySlug)
+      .single();
+
+    if (!company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    }
+
+    // 3. Verify user permissions (Admin or Super Admin required for bulk/clear-all)
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', user.id)
+      .single();
+
+    let isAuthorized = Boolean(profile?.is_super_admin);
+    let userRole = profile?.is_super_admin ? 'SUPER_ADMIN' : 'EMPLOYEE';
+
+    if (!isAuthorized) {
+      const { data: membership } = await adminClient
+        .from('company_memberships')
+        .select('role')
+        .eq('company_id', company.id)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (membership?.role === 'COMPANY_ADMIN' || membership?.role === 'DEPARTMENT_HEAD') {
+        isAuthorized = true;
+        userRole = membership.role;
+      }
+    }
+
+    if (!isAuthorized) {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required to bulk delete or clear tasks.' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const { taskIds, clearAll } = body;
+
+    if (clearAll === true) {
+      if (userRole !== 'COMPANY_ADMIN' && userRole !== 'SUPER_ADMIN') {
+        return NextResponse.json(
+          { error: 'Forbidden: Only Company Admins can clear all company tasks.' },
+          { status: 403 }
+        );
+      }
+
+      // Count tasks before deleting
+      const { count } = await adminClient
+        .from('tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', company.id);
+
+      const { error: deleteErr } = await adminClient
+        .from('tasks')
+        .delete()
+        .eq('company_id', company.id);
+
+      if (deleteErr) throw deleteErr;
+
+      return NextResponse.json({
+        success: true,
+        count: count || 0,
+        message: `Successfully cleared all ${count || 0} tasks for ${company.name}.`,
+      });
+    }
+
+    if (Array.isArray(taskIds) && taskIds.length > 0) {
+      const { error: deleteErr } = await adminClient
+        .from('tasks')
+        .delete()
+        .in('id', taskIds)
+        .eq('company_id', company.id);
+
+      if (deleteErr) throw deleteErr;
+
+      return NextResponse.json({
+        success: true,
+        count: taskIds.length,
+        message: `Successfully deleted ${taskIds.length} task(s).`,
+      });
+    }
+
+    return NextResponse.json(
+      { error: 'Bad Request: Please provide either taskIds or clearAll: true.' },
+      { status: 400 }
+    );
+  } catch (error: any) {
+    console.error('Bulk delete tasks error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+

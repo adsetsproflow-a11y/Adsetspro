@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Users,
+  Trash2,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 
@@ -77,6 +78,91 @@ export default function WorkspaceTasksPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Deletion States
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [taskToDelete, setTaskToDelete] = useState<TaskItem | null>(null);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+
+  const handleToggleSelect = (taskId: string) => {
+    setSelectedTaskIds((prev) =>
+      prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTaskIds.length === tasks.length) {
+      setSelectedTaskIds([]);
+    } else {
+      setSelectedTaskIds(tasks.map((t) => t.id));
+    }
+  };
+
+  const handleDeleteIndividual = async (task: TaskItem) => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/tasks/${task.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete task');
+      setTasks((prev) => prev.filter((t) => t.id !== task.id));
+      setSelectedTaskIds((prev) => prev.filter((id) => id !== task.id));
+      setTaskToDelete(null);
+      setTotalTasks((prev) => Math.max(0, prev - 1));
+    } catch (err: any) {
+      alert(err.message || 'Error deleting task');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedTaskIds.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedTaskIds.length} selected task(s)?`)) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/tasks`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskIds: selectedTaskIds }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete selected tasks');
+      setTasks((prev) => prev.filter((t) => !selectedTaskIds.includes(t.id)));
+      setTotalTasks((prev) => Math.max(0, prev - selectedTaskIds.length));
+      setSelectedTaskIds([]);
+    } catch (err: any) {
+      alert(err.message || 'Error deleting selected tasks');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleClearAllTasks = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/tasks`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clearAll: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to clear all tasks');
+      setTasks([]);
+      setSelectedTaskIds([]);
+      setTotalTasks(0);
+      setIsClearAllModalOpen(false);
+      setDeleteConfirmationText('');
+      fetchTasks();
+    } catch (err: any) {
+      alert(err.message || 'Error clearing tasks');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Create Task Form State
   const [title, setTitle] = useState('');
@@ -282,6 +368,18 @@ export default function WorkspaceTasksPage() {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
+
+          {(userRole === 'COMPANY_ADMIN' || userRole === 'SUPER_ADMIN') && totalTasks > 0 && (
+            <button
+              onClick={() => setIsClearAllModalOpen(true)}
+              disabled={isDeleting}
+              className="px-3.5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Clear all tasks for this company workspace"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Clear All</span>
+            </button>
+          )}
 
           {Boolean(userRole) && (
             <button
@@ -530,8 +628,15 @@ export default function WorkspaceTasksPage() {
           <table className="w-full text-left text-xs min-w-[960px]">
             <thead className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
               <tr>
-                <th className="px-4 py-3.5 sticky left-0 z-20 bg-zinc-950 min-w-[240px] max-w-[300px] border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.6)]">
-                  <div className="flex items-center gap-2">
+                <th className="px-4 py-3.5 sticky left-0 z-20 bg-zinc-950 min-w-[270px] max-w-[340px] border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.6)]">
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={tasks.length > 0 && selectedTaskIds.length === tasks.length}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                      title={selectedTaskIds.length === tasks.length ? 'Deselect all' : 'Select all'}
+                    />
                     <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
                     <span className="text-white font-bold tracking-wider">Task Title & Brief</span>
                   </div>
@@ -590,29 +695,39 @@ export default function WorkspaceTasksPage() {
                     className="hover:bg-zinc-800/50 transition-colors group cursor-pointer"
                   >
                     {/* Sticky Task Title Column - Always Visible in Front */}
-                    <td className="px-4 py-3.5 font-semibold text-white sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-850 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)] transition-colors min-w-[240px] max-w-[300px]">
-                      <div className="space-y-0.5 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <CheckSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                          <Link
-                            href={`/c/${companySlug}/tasks/${task.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="font-bold text-white group-hover:text-indigo-400 transition-colors truncate block text-xs hover:underline"
-                            title={task.title}
-                          >
-                            {task.title}
-                          </Link>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono pl-5">
-                          <span className="text-indigo-400/90 font-semibold">#{task.id.slice(0, 8)}</span>
-                          {task.description && (
-                            <>
-                              <span>•</span>
-                              <span className="truncate max-w-[170px] font-sans text-zinc-400">
-                                {task.description}
-                              </span>
-                            </>
-                          )}
+                    <td className="px-4 py-3.5 font-semibold text-white sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-850 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)] transition-colors min-w-[270px] max-w-[340px]">
+                      <div className="flex items-start gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedTaskIds.includes(task.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => handleToggleSelect(task.id)}
+                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-0 focus:ring-offset-0 cursor-pointer mt-0.5 shrink-0"
+                          title="Select task"
+                        />
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <CheckSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <Link
+                              href={`/c/${companySlug}/tasks/${task.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-bold text-white group-hover:text-indigo-400 transition-colors truncate block text-xs hover:underline"
+                              title={task.title}
+                            >
+                              {task.title}
+                            </Link>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono pl-5">
+                            <span className="text-indigo-400/90 font-semibold">#{task.id.slice(0, 8)}</span>
+                            {task.description && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate max-w-[170px] font-sans text-zinc-400">
+                                  {task.description}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -676,14 +791,26 @@ export default function WorkspaceTasksPage() {
 
                     {/* Action */}
                     <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                      <Link
-                        href={`/c/${companySlug}/tasks/${task.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold transition-colors inline-flex items-center gap-1"
-                      >
-                        <span>View</span>
-                        <ChevronRight className="w-3 h-3" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <Link
+                          href={`/c/${companySlug}/tasks/${task.id}`}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold transition-colors inline-flex items-center gap-1"
+                        >
+                          <span>View</span>
+                          <ChevronRight className="w-3 h-3" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTaskToDelete(task);
+                          }}
+                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
+                          title={`Delete "${task.title}"`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -924,6 +1051,167 @@ export default function WorkspaceTasksPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedTaskIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-zinc-900/95 border border-indigo-500/40 rounded-2xl px-5 py-3 shadow-2xl flex items-center gap-4 text-xs backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <div className="flex items-center gap-2 font-bold text-white">
+            <span className="w-5 h-5 rounded-full bg-indigo-600 text-[11px] flex items-center justify-center font-mono">
+              {selectedTaskIds.length}
+            </span>
+            <span>task{selectedTaskIds.length > 1 ? 's' : ''} selected</span>
+          </div>
+
+          <div className="h-4 w-px bg-zinc-700" />
+
+          <button
+            onClick={handleDeleteSelected}
+            disabled={isDeleting}
+            className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold inline-flex items-center gap-1.5 shadow-lg shadow-red-600/30 cursor-pointer transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Selected</span>
+          </button>
+
+          <button
+            onClick={() => setSelectedTaskIds([])}
+            className="text-zinc-400 hover:text-white font-medium cursor-pointer transition-colors"
+          >
+            Deselect All
+          </button>
+        </div>
+      )}
+
+      {/* Individual Task Delete Modal */}
+      {taskToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold text-white">Delete Deliverable Task?</h3>
+                <p className="text-xs text-zinc-400 truncate">#{taskToDelete.id.slice(0, 8)} • {taskToDelete.title}</p>
+              </div>
+              <button
+                onClick={() => setTaskToDelete(null)}
+                className="p-1 rounded-lg text-zinc-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-white">"{taskToDelete.title}"</strong>? All associated attachments, reviews, comments, and activities will be removed. This action cannot be undone.
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setTaskToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteIndividual(taskToDelete)}
+                disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Task</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Tasks Modal */}
+      {isClearAllModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-zinc-950 border border-red-500/30 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold text-white">Clear All Tasks?</h3>
+                <p className="text-xs text-red-400/90 font-medium">Danger: Irreversible action</p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsClearAllModalOpen(false);
+                  setDeleteConfirmationText('');
+                }}
+                className="p-1 rounded-lg text-zinc-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              This will permanently delete <strong className="text-white">all {totalTasks} deliverables</strong> in this company workspace, including all their attachments, comments, reviewer records, and chat channels.
+            </p>
+
+            <div className="space-y-1.5 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+              <label className="text-[11px] font-semibold text-zinc-400 block">
+                Type <span className="font-mono text-red-400 font-bold">CLEAR</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                placeholder="CLEAR"
+                className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 font-mono"
+              />
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsClearAllModalOpen(false);
+                  setDeleteConfirmationText('');
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleClearAllTasks}
+                disabled={isDeleting || deleteConfirmationText.trim().toUpperCase() !== 'CLEAR'}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Clearing All...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Clear All Tasks</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

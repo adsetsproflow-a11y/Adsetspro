@@ -20,6 +20,7 @@ import {
   ExternalLink,
   ShieldCheck,
   Check,
+  Trash2,
 } from 'lucide-react';
 
 interface NotificationItem {
@@ -87,6 +88,30 @@ export default function NotificationsPage() {
       console.error('Failed to mark all read:', err);
     } finally {
       setIsMarkingAll(false);
+    }
+  };
+
+  const handleDeleteNotification = async (notifId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await fetch(`/api/notifications/${notifId}`, { method: 'DELETE' });
+      setNotifications((prev) => prev.filter((n) => n.id !== notifId));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      setTotalCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!confirm('Are you sure you want to clear all your notifications?')) return;
+    try {
+      await fetch('/api/notifications', { method: 'DELETE' });
+      setNotifications([]);
+      setUnreadCount(0);
+      setTotalCount(0);
+    } catch (err) {
+      console.error('Failed to clear notifications:', err);
     }
   };
 
@@ -186,6 +211,17 @@ export default function NotificationsPage() {
             >
               <CheckCheck className="w-4 h-4 text-emerald-400" />
               <span>Mark all as read</span>
+            </button>
+          )}
+
+          {notifications.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              className="px-3.5 py-2 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+              title="Clear all notifications"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear all</span>
             </button>
           )}
 
@@ -291,10 +327,18 @@ export default function NotificationsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 shrink-0 self-center">
+              <div className="flex items-center gap-2.5 shrink-0 self-center">
                 <span className="text-[11px] font-mono text-zinc-500">
                   {formatTimeAgo(notif.created_at)}
                 </span>
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteNotification(notif.id, e)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-all cursor-pointer"
+                  title="Delete notification"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
                 <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
               </div>
             </div>

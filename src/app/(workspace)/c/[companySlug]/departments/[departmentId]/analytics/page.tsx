@@ -28,6 +28,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface DepartmentAnalyticsData {
   department: {
@@ -393,7 +394,7 @@ export default function DepartmentAnalyticsPage() {
                 <tr className="border-b border-zinc-800 text-zinc-500 font-semibold uppercase text-[10px] tracking-wider">
                   <th className="pb-2.5">Task</th>
                   <th className="pb-2.5">Assignee</th>
-                  <th className="pb-2.5">Due Date</th>
+                  <th className="pb-2.5">Due Date (DD/MM/YYYY)</th>
                   <th className="pb-2.5 text-right">Action</th>
                 </tr>
               </thead>
@@ -408,7 +409,7 @@ export default function DepartmentAnalyticsPage() {
                       <td className="py-2.5 font-mono text-[11px]">
                         {item.due_date ? (
                           <span className={item.isOverdue ? 'text-red-400 font-bold' : 'text-zinc-400'}>
-                            {new Date(item.due_date).toLocaleDateString()}
+                            {formatDate(item.due_date, 'short')}
                             {item.isOverdue && ' (Overdue)'}
                           </span>
                         ) : (

@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   FileText,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 import FileUpload from '@/components/tasks/FileUpload';
 import { TaskAttachmentItem } from '@/components/tasks/FileList';
@@ -115,6 +116,26 @@ export default function SingleTaskDetailPage() {
   // Revoke Approval modal state
   const [isRevokeModalOpen, setIsRevokeModalOpen] = useState(false);
   const [revokeFeedback, setRevokeFeedback] = useState('');
+
+  // Delete Task modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteTask = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/tasks/${taskId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete task');
+      router.push(`/c/${companySlug}/tasks`);
+    } catch (err: any) {
+      setError(err.message || 'Error deleting task');
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    }
+  };
 
   // Comment input
   const [newComment, setNewComment] = useState('');
@@ -581,6 +602,18 @@ export default function SingleTaskDetailPage() {
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reopen Task</span>
+              </button>
+            )}
+
+            {permissions.canDelete && (
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                disabled={isSubmitting || isDeleting}
+                className="px-3.5 py-2 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Permanently delete this deliverable"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Task</span>
               </button>
             )}
           </div>
@@ -1146,6 +1179,62 @@ export default function SingleTaskDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Task Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold text-white">Delete Deliverable Task?</h3>
+                <p className="text-xs text-zinc-400 truncate">#{task.id.slice(0, 8)} • {task.title}</p>
+              </div>
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="p-1 rounded-lg text-zinc-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-white">"{task.title}"</strong>? All associated attachments, reviews, comments, and activities will be permanently deleted. This action cannot be undone.
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteTask}
+                disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Task</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

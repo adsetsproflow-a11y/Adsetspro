@@ -17,6 +17,7 @@ import {
   ExternalLink,
   X,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -168,6 +169,27 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
     }
   };
 
+  const handleDeleteNotification = async (notifId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await fetch(`/api/notifications/${notifId}`, { method: 'DELETE' });
+      setNotifications((prev) => prev.filter((n) => n.id !== notifId));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Delete notification error:', err);
+    }
+  };
+
+  const handleClearAllNotifications = async () => {
+    try {
+      await fetch('/api/notifications', { method: 'DELETE' });
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Clear all notifications error:', err);
+    }
+  };
+
   const handleNotificationClick = async (notif: NotificationItem) => {
     // 1. Mark as read if not already read
     if (!notif.read_at) {
@@ -278,15 +300,27 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
               )}
             </div>
 
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="text-[11px] font-semibold text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Mark all read</span>
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-[11px] font-semibold text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Mark read</span>
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={handleClearAllNotifications}
+                  className="text-[11px] font-semibold text-zinc-500 hover:text-red-400 transition-colors cursor-pointer flex items-center gap-1"
+                  title="Clear all notifications"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Clear all</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Notifications Feed */}
@@ -328,9 +362,19 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
                       {notif.body}
                     </p>
                   </div>
-                  {!notif.read_at && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-2" />
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0 self-center">
+                    {!notif.read_at && (
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteNotification(notif.id, e)}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-all cursor-pointer"
+                      title="Delete notification"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}

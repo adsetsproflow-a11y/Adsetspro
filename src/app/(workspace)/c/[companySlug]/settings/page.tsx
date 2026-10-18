@@ -23,6 +23,7 @@ import {
   Layers,
   ArrowLeft,
 } from 'lucide-react';
+import { formatDate } from '@/lib/utils/dateFormat';
 
 interface DesignationItem {
   id: string;
@@ -402,7 +403,7 @@ export default function WorkspaceSettingsPage() {
 
             {companyCreatedAt && (
               <p className="text-[11px] text-zinc-500">
-                Created on: <span className="text-zinc-400">{new Date(companyCreatedAt).toLocaleDateString()}</span>
+                Created on: <span className="text-zinc-400 font-mono">{formatDate(companyCreatedAt, 'short')}</span>
               </p>
             )}
 

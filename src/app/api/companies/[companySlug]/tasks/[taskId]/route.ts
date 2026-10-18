@@ -253,6 +253,7 @@ export async function GET(
         canCancel: isAdmin && task.status !== 'cancelled' && task.status !== 'approved',
         canReassign: isAdmin || isDeptHead,
         canEdit: isAdmin || isDeptHead,
+        canDelete: isAdmin || isDeptHead || task.created_by === user.id,
         canRevoke: (isReviewer || isAdmin || isDeptHead) && task.status === 'approved',
       },
     });
@@ -378,3 +379,99 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ companySlug: string; taskId: string }> }
+) {
+  try {
+    const { companySlug, taskId } = await params;
+    const supabase = await createClient();
+
+    // 1. Authenticate user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 2. Fetch company
+    const { data: company } = await adminClient
+      .from('companies')
+      .select('id, name')
+      .eq('slug', companySlug)
+      .single();
+
+    if (!company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    }
+
+    // 3. Fetch task to check existence & department/creator
+    const { data: task } = await adminClient
+      .from('tasks')
+      .select('id, title, department_id, created_by')
+      .eq('id', taskId)
+      .eq('company_id', company.id)
+      .single();
+
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    // 4. Verify user permissions
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('is_super_admin, full_name')
+      .eq('id', user.id)
+      .single();
+
+    let isAuthorized = Boolean(profile?.is_super_admin);
+    if (!isAuthorized) {
+      const { data: membership } = await adminClient
+        .from('company_memberships')
+        .select('role')
+        .eq('company_id', company.id)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (membership?.role === 'COMPANY_ADMIN' || membership?.role === 'DEPARTMENT_HEAD') {
+        isAuthorized = true;
+      } else if (task.created_by === user.id) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to delete this deliverable.' },
+        { status: 403 }
+      );
+    }
+
+    // 5. Delete task (cascades to assignments, comments, attachments, activities, chat rooms)
+    const { error: deleteErr } = await adminClient
+      .from('tasks')
+      .delete()
+      .eq('id', taskId)
+      .eq('company_id', company.id);
+
+    if (deleteErr) {
+      throw deleteErr;
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Task "${task.title}" deleted successfully.`,
+    });
+  } catch (error: any) {
+    console.error('Delete task error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
