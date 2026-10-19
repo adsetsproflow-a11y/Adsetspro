@@ -17,6 +17,8 @@ import { getDbPool } from '@/lib/db';
 import { syncUserChatRooms } from '@/lib/chat/rooms';
 import DirectMessageLink from '@/components/chat/DirectMessageLink';
 import CreateGroupChannelModal from '@/components/chat/CreateGroupChannelModal';
+import ChatChannelCard from '@/components/chat/ChatChannelCard';
+import PrimaryRoomButton from '@/components/chat/PrimaryRoomButton';
 
 interface ChatPageProps {
   params: Promise<{
@@ -147,13 +149,10 @@ export default async function WorkspaceChatHubPage({ params }: ChatPageProps) {
           <CreateGroupChannelModal companySlug={companySlug} colleagues={colleagues} />
 
           {primaryRoom && (
-            <Link
+            <PrimaryRoomButton
               href={`/c/${companySlug}/chat/${primaryRoom.id}`}
-              className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-white text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <span>Open #{primaryRoom.name}</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+              roomName={primaryRoom.name}
+            />
           )}
         </div>
       </div>
@@ -233,26 +232,14 @@ export default async function WorkspaceChatHubPage({ params }: ChatPageProps) {
                 </p>
               ) : (
                 companyRooms.map((room: any) => (
-                  <Link
+                  <ChatChannelCard
                     key={room.id}
                     href={`/c/${companySlug}/chat/${room.id}`}
-                    className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 hover:border-indigo-500/50 hover:bg-zinc-900 transition-all flex items-center justify-between group shadow-sm block"
-                  >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white group-hover:text-indigo-400 transition-colors">
-                          #{room.name}
-                        </span>
-                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                          {room.type === 'company' ? 'General' : 'Group'}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-zinc-400">
-                        {room.type === 'company' ? 'All company members' : 'Team group channel'}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
-                  </Link>
+                    roomName={room.name}
+                    badgeText={room.type === 'company' ? 'General' : 'Group'}
+                    badgeType={room.type === 'company' ? 'company' : 'group'}
+                    subtitle={room.type === 'company' ? 'All company members' : 'Team group channel'}
+                  />
                 ))
               )}
             </div>
@@ -279,26 +266,14 @@ export default async function WorkspaceChatHubPage({ params }: ChatPageProps) {
                 </p>
               ) : (
                 departmentRooms.map((room: any) => (
-                  <Link
+                  <ChatChannelCard
                     key={room.id}
                     href={`/c/${companySlug}/chat/${room.id}`}
-                    className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 hover:border-emerald-500/50 hover:bg-zinc-900 transition-all flex items-center justify-between group shadow-sm block"
-                  >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">
-                          #{room.name}
-                        </span>
-                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          Dept
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-zinc-400 truncate">
-                        {room.department_name || 'Department Team & Admin'}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
-                  </Link>
+                    roomName={room.name}
+                    badgeText="Dept"
+                    badgeType="department"
+                    subtitle={room.department_name || 'Department Team & Admin'}
+                  />
                 ))
               )}
             </div>

@@ -105,7 +105,11 @@ export default function DirectMessageLink({
 
     if (existingRoomId) {
       return (
-        <Link href={`/c/${companySlug}/chat/${existingRoomId}`} className="block">
+        <Link
+          href={`/c/${companySlug}/chat/${existingRoomId}`}
+          className="block"
+          onClick={() => setIsLoading(true)}
+        >
           {cardContent}
         </Link>
       );
@@ -148,7 +152,11 @@ export default function DirectMessageLink({
 
   if (existingRoomId) {
     return (
-      <Link href={`/c/${companySlug}/chat/${existingRoomId}`} className="block">
+      <Link
+        href={`/c/${companySlug}/chat/${existingRoomId}`}
+        className="block"
+        onClick={() => setIsLoading(true)}
+      >
         {sidebarContent}
       </Link>
     );

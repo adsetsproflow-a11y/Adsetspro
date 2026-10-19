@@ -18,6 +18,7 @@ import { syncUserChatRooms } from '@/lib/chat/rooms';
 import ChatRoom from '@/components/chat/ChatRoom';
 import DirectMessageLink from '@/components/chat/DirectMessageLink';
 import CreateGroupChannelModal from '@/components/chat/CreateGroupChannelModal';
+import AllChatsButton from '@/components/chat/AllChatsButton';
 
 interface ChatRoomPageProps {
   params: Promise<{
@@ -259,14 +260,7 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
                 Workspace Chat
               </h2>
             </div>
-            <Link
-              href={`/c/${companySlug}/chat`}
-              className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850 text-[11px] font-semibold text-zinc-300 hover:text-white inline-flex items-center gap-1 transition-all shadow-sm"
-              title="Return to Chat Hub / Discussions"
-            >
-              <ArrowLeft className="w-3 h-3 text-zinc-400" />
-              <span>All Chats</span>
-            </Link>
+            <AllChatsButton href={`/c/${companySlug}/chat`} />
           </div>
 
           {/* 1-on-1 Direct Messages Section */}

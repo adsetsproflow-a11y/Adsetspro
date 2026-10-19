@@ -98,6 +98,7 @@ export default function ChatRoom({
   const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [members, setMembers] = useState<any[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [isNavigatingBack, setIsNavigatingBack] = useState(false);
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -464,10 +465,15 @@ export default function ChatRoom({
           {/* Back Button (Visible to all: Company Admin, Dept Head, Employee) */}
           <Link
             href={`/c/${companySlug}/chat`}
+            onClick={() => setIsNavigatingBack(true)}
             className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850 text-zinc-300 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-all shadow-sm cursor-pointer shrink-0 group"
             title="Back to All Discussions"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white transition-colors" />
+            {isNavigatingBack ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-300" />
+            ) : (
+              <ArrowLeft className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white transition-colors" />
+            )}
             <span className="font-semibold">Back</span>
           </Link>
 
