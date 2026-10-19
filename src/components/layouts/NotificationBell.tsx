@@ -218,6 +218,11 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
       return;
     }
 
+    if (notif.payload?.room_id) {
+      router.push(`/c/${baseSlug}/chat/${notif.payload.room_id}`);
+      return;
+    }
+
     if (companySlug) {
       router.push(`/c/${companySlug}/notifications`);
     }
@@ -235,6 +240,9 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
       case 'deadline_warning':
       case 'overdue_task':
         return <AlertTriangle className="w-4 h-4 text-red-400" />;
+      case 'chat_message':
+      case 'new_message':
+        return <MessageSquare className="w-4 h-4 text-cyan-400" />;
       case 'new_comment':
       case 'comment_added':
       case 'mention':

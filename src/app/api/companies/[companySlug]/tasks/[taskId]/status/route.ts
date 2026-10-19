@@ -199,15 +199,50 @@ export async function PATCH(
     // 9. Dispatch notifications
     const notificationsToInsert: any[] = [];
 
-    if (targetStatus === 'submitted_for_review' && task.reviewer_id) {
-      notificationsToInsert.push({
-        user_id: task.reviewer_id,
-        company_id: company.id,
-        type: 'TASK_SUBMITTED',
-        title: 'Task Submitted for Review',
-        body: `${profile?.full_name || 'Assignee'} submitted task "${task.title}" for your review.`,
-        payload: { task_id: taskId },
+    if (targetStatus === 'submitted_for_review') {
+      const reviewerIds = new Set<string>();
+
+      // A. Explicit reviewer
+      if (task.reviewer_id && task.reviewer_id !== user.id) {
+        reviewerIds.add(task.reviewer_id);
+      }
+
+      // B. Department Head of task's department
+      if (task.department_id) {
+        const { data: dept } = await adminClient
+          .from('departments')
+          .select('head_user_id')
+          .eq('id', task.department_id)
+          .single();
+        if (dept?.head_user_id && dept.head_user_id !== user.id) {
+          reviewerIds.add(dept.head_user_id);
+        }
+      }
+
+      // C. Company Admins
+      const { data: admins } = await adminClient
+        .from('company_memberships')
+        .select('user_id')
+        .eq('company_id', company.id)
+        .eq('role', 'COMPANY_ADMIN')
+        .eq('status', 'active');
+
+      (admins || []).forEach((adm) => {
+        if (adm.user_id !== user.id) {
+          reviewerIds.add(adm.user_id);
+        }
       });
+
+      for (const revId of reviewerIds) {
+        notificationsToInsert.push({
+          user_id: revId,
+          company_id: company.id,
+          type: 'TASK_SUBMITTED',
+          title: 'Task Submitted for Review',
+          body: `${profile?.full_name || 'Assignee'} submitted task "${task.title}" for review.`,
+          payload: { task_id: taskId },
+        });
+      }
     } else if (targetStatus === 'approved' && assignment?.employee_id) {
       notificationsToInsert.push({
         user_id: assignment.employee_id,

@@ -24,8 +24,12 @@ import {
   CheckCircle2,
   Users,
   Trash2,
+  LayoutGrid,
+  Table,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData, invalidateCache } from '@/lib/cache/clientCache';
 
 interface TaskItem {
   id: string;
@@ -57,6 +61,7 @@ export default function WorkspaceTasksPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [userRole, setUserRole] = useState<string>('EMPLOYEE');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -175,22 +180,41 @@ export default function WorkspaceTasksPage() {
   const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
 
-  const fetchTasks = async () => {
-    setIsLoading(true);
+  const fetchTasks = async (force = false) => {
+    const qParams = new URLSearchParams();
+    if (statusFilter !== 'all') qParams.set('status', statusFilter);
+    if (priorityFilter !== 'all') qParams.set('priority', priorityFilter);
+    if (deptFilter !== 'all') qParams.set('department_id', deptFilter);
+    if (assigneeFilter !== 'all') qParams.set('assignee_id', assigneeFilter);
+    if (projFilter !== 'all') qParams.set('project_id', projFilter);
+    if (startDateFilter) qParams.set('startDate', startDateFilter);
+    if (endDateFilter) qParams.set('endDate', endDateFilter);
+    if (searchQuery.trim()) qParams.set('search', searchQuery.trim());
+    qParams.set('page', page.toString());
+    qParams.set('limit', '20');
+
+    const cacheKey = `tasks_${companySlug}_${qParams.toString()}`;
+
+    if (!force) {
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        setTasks(cached.tasks || []);
+        setTotalPages(cached.totalPages || 1);
+        setTotalTasks(cached.totalTasks || 0);
+        setUserRole(cached.userRole || 'EMPLOYEE');
+        if (cached.departments) setDepartments(cached.departments);
+        if (cached.projects) setProjects(cached.projects);
+        if (cached.employees) setEmployees(cached.employees);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     setError(null);
     try {
-      const qParams = new URLSearchParams();
-      if (statusFilter !== 'all') qParams.set('status', statusFilter);
-      if (priorityFilter !== 'all') qParams.set('priority', priorityFilter);
-      if (deptFilter !== 'all') qParams.set('department_id', deptFilter);
-      if (assigneeFilter !== 'all') qParams.set('assignee_id', assigneeFilter);
-      if (projFilter !== 'all') qParams.set('project_id', projFilter);
-      if (startDateFilter) qParams.set('startDate', startDateFilter);
-      if (endDateFilter) qParams.set('endDate', endDateFilter);
-      if (searchQuery.trim()) qParams.set('search', searchQuery.trim());
-      qParams.set('page', page.toString());
-      qParams.set('limit', '20');
-
       const [taskRes, deptRes, projRes, empRes] = await Promise.all([
         fetch(`/api/companies/${companySlug}/tasks?${qParams.toString()}`),
         fetch(`/api/companies/${companySlug}/departments`),
@@ -205,14 +229,31 @@ export default function WorkspaceTasksPage() {
 
       if (!taskRes.ok) throw new Error(taskData.error || 'Failed to fetch tasks');
 
-      setTasks(taskData.tasks || []);
-      setTotalPages(taskData.pagination?.totalPages || 1);
-      setTotalTasks(taskData.pagination?.total || 0);
-      setUserRole(taskData.userRole || 'EMPLOYEE');
+      const loadedTasks = taskData.tasks || [];
+      const loadedPages = taskData.pagination?.totalPages || 1;
+      const loadedTotal = taskData.pagination?.total || 0;
+      const loadedRole = taskData.userRole || 'EMPLOYEE';
+      const loadedDepts = deptData.departments || [];
+      const loadedProjs = projData.projects || [];
+      const loadedEmps = empData.employees || [];
 
-      setDepartments(deptData.departments || []);
-      setProjects(projData.projects || []);
-      setEmployees(empData.employees || []);
+      setTasks(loadedTasks);
+      setTotalPages(loadedPages);
+      setTotalTasks(loadedTotal);
+      setUserRole(loadedRole);
+      setDepartments(loadedDepts);
+      setProjects(loadedProjs);
+      setEmployees(loadedEmps);
+
+      setCachedData(cacheKey, {
+        tasks: loadedTasks,
+        totalPages: loadedPages,
+        totalTasks: loadedTotal,
+        userRole: loadedRole,
+        departments: loadedDepts,
+        projects: loadedProjs,
+        employees: loadedEmps,
+      });
     } catch (err: any) {
       console.error('Failed to load tasks:', err);
       setError(err.message || 'Error loading tasks');
@@ -293,7 +334,9 @@ export default function WorkspaceTasksPage() {
       setDueDate('');
       setIsModalOpen(false);
 
-      fetchTasks();
+      invalidateCache('tasks_' + companySlug);
+      invalidateCache('dashboard_' + companySlug);
+      fetchTasks(true);
     } catch (err: any) {
       console.error('Error creating task:', err);
       setError(err.message || 'Failed to create task');
@@ -302,42 +345,173 @@ export default function WorkspaceTasksPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadgeConfig = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        return {
+          label: 'Approved',
+          classes: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+          dot: 'bg-emerald-400',
+        };
       case 'submitted_for_review':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        return {
+          label: 'Under Review',
+          classes: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+          dot: 'bg-amber-400',
+        };
       case 'in_progress':
-        return 'bg-sky-500/10 text-sky-400 border-sky-500/30';
+        return {
+          label: 'In Progress',
+          classes: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+          dot: 'bg-sky-400 animate-pulse',
+        };
       case 'revision_required':
-        return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+        return {
+          label: 'Revision Req.',
+          classes: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+          dot: 'bg-orange-400',
+        };
       case 'blocked':
-        return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+        return {
+          label: 'Blocked',
+          classes: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+          dot: 'bg-rose-400',
+        };
       case 'cancelled':
-        return 'bg-zinc-800 text-zinc-500 border-zinc-700';
+        return {
+          label: 'Cancelled',
+          classes: 'bg-zinc-800 text-zinc-400 border-zinc-700',
+          dot: 'bg-zinc-500',
+        };
       default:
-        return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
+        return {
+          label: 'Assigned',
+          classes: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+          dot: 'bg-indigo-400',
+        };
     }
   };
 
-  const getPriorityBadge = (p: string) => {
+  const renderStatusBadge = (status: string) => {
+    const config = getStatusBadgeConfig(status);
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap shadow-xs ${config.classes}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${config.dot}`} />
+        <span>{config.label}</span>
+      </span>
+    );
+  };
+
+  const getPriorityBadgeConfig = (p: string) => {
     switch (p.toLowerCase()) {
       case 'urgent':
-        return 'bg-red-500/10 text-red-400 border-red-500/30';
+        return {
+          label: 'Urgent',
+          classes: 'bg-red-500/10 text-red-400 border-red-500/30',
+        };
       case 'high':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        return {
+          label: 'High',
+          classes: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+        };
       case 'medium':
-        return 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30';
+        return {
+          label: 'Medium',
+          classes: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30',
+        };
       default:
-        return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30';
+        return {
+          label: 'Low',
+          classes: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+        };
     }
+  };
+
+  const renderPriorityBadge = (p: string) => {
+    const config = getPriorityBadgeConfig(p);
+    return (
+      <span
+        className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border whitespace-nowrap shadow-xs ${config.classes}`}
+      >
+        {config.label}
+      </span>
+    );
+  };
+
+  const renderDateBadge = (dueDate: string | null) => {
+    if (!dueDate) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/40 border border-zinc-800 text-zinc-400 text-xs font-medium whitespace-nowrap">
+          <Calendar className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+          <span>No deadline</span>
+        </span>
+      );
+    }
+
+    const due = new Date(dueDate);
+    const now = new Date();
+    const isPast = due.getTime() < now.getTime() && (now.getTime() - due.getTime() > 86400000);
+    const isToday = due.toDateString() === now.toDateString();
+
+    if (isPast) {
+      return (
+        <div
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono font-semibold whitespace-nowrap"
+          title={`Overdue: ${formatDate(dueDate, 'medium')}`}
+        >
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-400" />
+          <span>{formatDate(dueDate, 'short')}</span>
+          <span className="text-[9px] font-sans font-bold uppercase bg-red-500/20 px-1 py-0.2 rounded text-red-300">
+            Overdue
+          </span>
+        </div>
+      );
+    }
+
+    if (isToday) {
+      return (
+        <div
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-semibold whitespace-nowrap"
+          title="Due Today"
+        >
+          <Clock className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+          <span>{formatDate(dueDate, 'short')}</span>
+          <span className="text-[9px] font-sans font-bold uppercase bg-amber-500/20 px-1 py-0.2 rounded text-amber-200">
+            Today
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-850/80 border border-zinc-700/60 text-zinc-200 text-xs font-mono font-medium whitespace-nowrap hover:border-zinc-600 transition-colors"
+        title={formatDate(dueDate, 'medium')}
+      >
+        <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+        <span>{formatDate(dueDate, 'short')}</span>
+      </div>
+    );
   };
 
   // KPI calculations
   const inProgressCount = tasks.filter((t) => t.status === 'in_progress').length;
   const reviewCount = tasks.filter((t) => t.status === 'submitted_for_review').length;
   const approvedCount = tasks.filter((t) => t.status === 'approved').length;
+
+  if (isLoading && tasks.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <CenterLoader
+          message="Loading Deliverables & Tasks..."
+          subtitle="Fetching work items, priorities, assignees, and review stages"
+          size="lg"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -359,9 +533,39 @@ export default function WorkspaceTasksPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center flex-wrap gap-2.5">
+          {/* View Mode Switcher */}
+          <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+              title="Table Spreadsheet View"
+            >
+              <Table className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'cards'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+              title="Card Grid View (Great for Mobile & Tablet)"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Cards</span>
+            </button>
+          </div>
+
           <button
-            onClick={fetchTasks}
+            onClick={() => fetchTasks(true)}
             disabled={isLoading}
             className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
             title="Refresh Tasks"
@@ -377,7 +581,7 @@ export default function WorkspaceTasksPage() {
               title="Clear all tasks for this company workspace"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Clear All</span>
+              <span className="hidden sm:inline">Clear All</span>
             </button>
           )}
 
@@ -483,7 +687,7 @@ export default function WorkspaceTasksPage() {
                 setSearchQuery('');
                 setPage(1);
               }}
-              className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors self-start lg:self-auto"
+              className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors self-start lg:self-auto cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
               <span>Reset Filters</span>
@@ -607,246 +811,391 @@ export default function WorkspaceTasksPage() {
           {/* Due Date Filter */}
           <div className="space-y-1">
             <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
-              Deadline (DD/MM/YYYY)
+              Deadline Filter
             </label>
-            <input
-              type="date"
-              value={endDateFilter}
-              onChange={(e) => {
-                setEndDateFilter(e.target.value);
-                setPage(1);
-              }}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
-            />
+            <div className="relative">
+              <input
+                type="date"
+                value={endDateFilter}
+                onChange={(e) => {
+                  setEndDateFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 [color-scheme:dark] focus:outline-none focus:border-indigo-500 cursor-pointer"
+              />
+              {endDateFilter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEndDateFilter('');
+                    setPage(1);
+                  }}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-white"
+                  title="Clear deadline filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Tasks Table */}
-      <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl">
-        <div ref={tableContainerRef} className="overflow-x-auto scroll-smooth">
-          <table className="w-full text-left text-xs min-w-[960px]">
-            <thead className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
-              <tr>
-                <th className="px-4 py-3.5 sticky left-0 z-20 bg-zinc-950 min-w-[270px] max-w-[340px] border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.6)]">
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="checkbox"
-                      checked={tasks.length > 0 && selectedTaskIds.length === tasks.length}
-                      onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                      title={selectedTaskIds.length === tasks.length ? 'Deselect all' : 'Select all'}
-                    />
-                    <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span className="text-white font-bold tracking-wider">Task Title & Brief</span>
-                  </div>
-                </th>
-                <th className="px-4 py-3.5 min-w-[140px]">Assignee</th>
-                <th className="px-4 py-3.5 min-w-[130px]">Department</th>
-                <th className="px-4 py-3.5 min-w-[140px]">Project</th>
-                <th className="px-4 py-3.5 min-w-[90px]">Priority</th>
-                <th className="px-4 py-3.5 min-w-[120px]">Status</th>
-                <th className="px-4 py-3.5 min-w-[110px]">Due Date (DD/MM/YYYY)</th>
-                <th className="px-4 py-3.5 text-right min-w-[80px]">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/60">
-              {isLoading ? (
-                <>
-                  {[...Array(6)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="px-4 py-3.5 sticky left-0 z-10 bg-zinc-900 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)]">
-                        <div className="h-4 bg-zinc-800/80 rounded w-48" />
-                      </td>
-                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-28" /></td>
-                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-24" /></td>
-                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
-                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-16" /></td>
-                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
-                      <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
-                      <td className="px-4 py-3.5 text-right"><div className="h-4 bg-zinc-800/80 rounded w-12 ml-auto" /></td>
-                    </tr>
-                  ))}
-                </>
-              ) : tasks.length === 0 ? (
+      {/* Tasks View: Table View or Cards View */}
+      {viewMode === 'table' ? (
+        /* TABLE VIEW */
+        <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl">
+          <div ref={tableContainerRef} className="overflow-x-auto scroll-smooth">
+            <table className="w-full text-left text-xs min-w-[920px]">
+              <thead className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">
                 <tr>
-                  <td colSpan={8} className="px-5 py-14 text-center text-zinc-500 space-y-3">
-                    <CheckSquare className="w-10 h-10 mx-auto text-zinc-600" />
-                    <div>
-                      <p className="text-sm text-zinc-300 font-bold">No tasks found — Create your first task</p>
-                      <p className="text-xs text-zinc-500 pt-1">
-                        Get started by assigning deliverables to your team members.
-                      </p>
+                  <th className="px-4 py-3.5 w-[280px]">
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={tasks.length > 0 && selectedTaskIds.length === tasks.length}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                        title={selectedTaskIds.length === tasks.length ? 'Deselect all' : 'Select all'}
+                      />
+                      <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
+                      <span className="text-white font-bold tracking-wider">Task Title & Brief</span>
                     </div>
-                    <button
-                      onClick={() => setIsModalOpen(true)}
-                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 cursor-pointer transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Create Task</span>
-                    </button>
-                  </td>
+                  </th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[130px]">Assignee</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[110px]">Department</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[120px]">Project</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[85px]">Priority</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[130px]">Status</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[120px]">Due Date (DD/MM/YYYY)</th>
+                  <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[100px] pr-5">Actions</th>
                 </tr>
-              ) : (
-                tasks.map((task) => (
-                  <tr
-                    key={task.id}
-                    onClick={() => router.push(`/c/${companySlug}/tasks/${task.id}`)}
-                    className="hover:bg-zinc-800/50 transition-colors group cursor-pointer"
-                  >
-                    {/* Sticky Task Title Column - Always Visible in Front */}
-                    <td className="px-4 py-3.5 font-semibold text-white sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-850 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)] transition-colors min-w-[270px] max-w-[340px]">
-                      <div className="flex items-start gap-2.5">
-                        <input
-                          type="checkbox"
-                          checked={selectedTaskIds.includes(task.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={() => handleToggleSelect(task.id)}
-                          className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-0 focus:ring-offset-0 cursor-pointer mt-0.5 shrink-0"
-                          title="Select task"
-                        />
-                        <div className="space-y-0.5 min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <CheckSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                            <Link
-                              href={`/c/${companySlug}/tasks/${task.id}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="font-bold text-white group-hover:text-indigo-400 transition-colors truncate block text-xs hover:underline"
-                              title={task.title}
-                            >
-                              {task.title}
-                            </Link>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono pl-5">
-                            <span className="text-indigo-400/90 font-semibold">#{task.id.slice(0, 8)}</span>
-                            {task.description && (
-                              <>
-                                <span>•</span>
-                                <span className="truncate max-w-[170px] font-sans text-zinc-400">
-                                  {task.description}
-                                </span>
-                              </>
-                            )}
+              </thead>
+              <tbody className="divide-y divide-zinc-800/60">
+                {isLoading ? (
+                  <>
+                    {[...Array(5)].map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="px-4 py-3.5">
+                          <div className="h-4 bg-zinc-800/80 rounded w-48" />
+                        </td>
+                        <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-28" /></td>
+                        <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-24" /></td>
+                        <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
+                        <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-16" /></td>
+                        <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
+                        <td className="px-4 py-3.5"><div className="h-4 bg-zinc-800/80 rounded w-20" /></td>
+                        <td className="px-4 py-3.5 text-right pr-5"><div className="h-4 bg-zinc-800/80 rounded w-14 ml-auto" /></td>
+                      </tr>
+                    ))}
+                  </>
+                ) : tasks.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-14 text-center text-zinc-500 space-y-3">
+                      <CheckSquare className="w-10 h-10 mx-auto text-zinc-600" />
+                      <div>
+                        <p className="text-sm text-zinc-300 font-bold">No tasks found — Create your first task</p>
+                        <p className="text-xs text-zinc-500 pt-1">
+                          Get started by assigning deliverables to your team members.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Create Task</span>
+                      </button>
+                    </td>
+                  </tr>
+                ) : (
+                  tasks.map((task) => (
+                    <tr
+                      key={task.id}
+                      onClick={() => router.push(`/c/${companySlug}/tasks/${task.id}`)}
+                      className="hover:bg-zinc-800/40 transition-colors group cursor-pointer"
+                    >
+                      {/* Task Title & Brief */}
+                      <td className="px-4 py-3.5 font-semibold text-white align-middle max-w-[320px]">
+                        <div className="flex items-start gap-2.5">
+                          <input
+                            type="checkbox"
+                            checked={selectedTaskIds.includes(task.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => handleToggleSelect(task.id)}
+                            className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-0 focus:ring-offset-0 cursor-pointer mt-0.5 shrink-0"
+                            title="Select task"
+                          />
+                          <div className="space-y-0.5 min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/c/${companySlug}/tasks/${task.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-bold text-white group-hover:text-indigo-400 transition-colors truncate block text-xs hover:underline"
+                                title={task.title}
+                              >
+                                {task.title}
+                              </Link>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+                              <span className="text-indigo-400/90 font-semibold">#{task.id.slice(0, 8)}</span>
+                              {task.description && (
+                                <>
+                                  <span>•</span>
+                                  <span className="truncate max-w-[170px] font-sans text-zinc-400">
+                                    {task.description}
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Assignee */}
-                    <td className="px-4 py-3.5 text-zinc-300">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 font-bold flex items-center justify-center text-[10px] shrink-0 border border-indigo-500/30">
-                          {task.assignee_name.slice(0, 1)}
+                      {/* Assignee */}
+                      <td className="px-4 py-3.5 text-zinc-300 align-middle whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 font-bold flex items-center justify-center text-[10px] shrink-0 border border-indigo-500/30">
+                            {task.assignee_name.slice(0, 1)}
+                          </div>
+                          <span className="truncate max-w-[130px] font-medium text-xs">{task.assignee_name}</span>
                         </div>
-                        <span className="truncate max-w-[120px] font-medium">{task.assignee_name}</span>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Department */}
-                    <td className="px-4 py-3.5 text-zinc-400">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Building className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                        <span className="truncate max-w-[120px]">{task.department_name}</span>
-                      </span>
-                    </td>
-
-                    {/* Project */}
-                    <td className="px-4 py-3.5 text-zinc-400">
-                      {task.project_name ? (
-                        <span className="inline-flex items-center gap-1.5 text-zinc-300">
-                          <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                          <span className="truncate max-w-[120px]">{task.project_name}</span>
+                      {/* Department */}
+                      <td className="px-4 py-3.5 text-zinc-400 align-middle whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-300">
+                          <Building className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                          <span className="truncate max-w-[120px]">{task.department_name}</span>
                         </span>
-                      ) : (
-                        <span className="text-zinc-600 italic">None</span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Priority */}
-                    <td className="px-4 py-3.5">
-                      <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getPriorityBadge(
-                          task.priority
-                        )}`}
-                      >
-                        {task.priority}
+                      {/* Project */}
+                      <td className="px-4 py-3.5 text-zinc-400 align-middle whitespace-nowrap">
+                        {task.project_name ? (
+                          <span className="inline-flex items-center gap-1.5 text-zinc-300 text-xs">
+                            <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <span className="truncate max-w-[130px]">{task.project_name}</span>
+                          </span>
+                        ) : (
+                          <span className="text-zinc-600 italic text-xs">None</span>
+                        )}
+                      </td>
+
+                      {/* Priority */}
+                      <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                        {renderPriorityBadge(task.priority)}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                        {renderStatusBadge(task.status)}
+                      </td>
+
+                      {/* Due Date */}
+                      <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                        {renderDateBadge(task.due_date)}
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-4 py-3.5 text-right align-middle whitespace-nowrap pr-5">
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <Link
+                            href={`/c/${companySlug}/tasks/${task.id}`}
+                            className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold transition-colors inline-flex items-center gap-1 text-xs border border-zinc-700/60"
+                          >
+                            <span>View</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTaskToDelete(task);
+                            }}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 border border-zinc-700/60 transition-colors cursor-pointer"
+                            title={`Delete "${task.title}"`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Bar */}
+          {totalPages > 1 && (
+            <div className="p-4 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
+              <span>
+                Showing {tasks.length} of {totalTasks} deliverables
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white font-semibold transition-colors cursor-pointer"
+                >
+                  Previous
+                </button>
+                <span className="font-mono text-zinc-300">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white font-semibold transition-colors cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* CARDS VIEW (Responsive grid for mobile, tablet, and visual scanning) */
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-3 animate-pulse">
+                  <div className="h-4 bg-zinc-800 rounded w-1/3" />
+                  <div className="h-5 bg-zinc-800 rounded w-3/4" />
+                  <div className="h-4 bg-zinc-800 rounded w-1/2" />
+                  <div className="pt-2 border-t border-zinc-800 flex justify-between">
+                    <div className="h-6 bg-zinc-800 rounded w-20" />
+                    <div className="h-6 bg-zinc-800 rounded w-20" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="p-12 text-center text-zinc-500 space-y-3 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
+              <CheckSquare className="w-10 h-10 mx-auto text-zinc-600" />
+              <p className="text-sm text-zinc-300 font-bold">No deliverables found</p>
+              <p className="text-xs text-zinc-500">Create your first task or change your filter criteria.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+              {tasks.map((task) => (
+                <div
+                  key={task.id}
+                  onClick={() => router.push(`/c/${companySlug}/tasks/${task.id}`)}
+                  className="p-4 sm:p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 space-y-3.5 transition-all cursor-pointer shadow-lg hover:shadow-indigo-500/5 group"
+                >
+                  {/* Top Bar: Select + ID + Badges */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedTaskIds.includes(task.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => handleToggleSelect(task.id)}
+                        className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-0 cursor-pointer"
+                      />
+                      <span className="text-[10px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                        #{task.id.slice(0, 8)}
                       </span>
-                    </td>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      {renderPriorityBadge(task.priority)}
+                      {renderStatusBadge(task.status)}
+                    </div>
+                  </div>
 
-                    {/* Status */}
-                    <td className="px-4 py-3.5">
-                      <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusBadge(
-                          task.status
-                        )}`}
-                      >
-                        {task.status.replace(/_/g, ' ')}
+                  {/* Title & Description */}
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-sm text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
+                      {task.title}
+                    </h3>
+                    {task.description && (
+                      <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed font-sans">
+                        {task.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Context: Department & Project */}
+                  <div className="flex items-center gap-2 flex-wrap text-[11px] text-zinc-400">
+                    <span className="inline-flex items-center gap-1.5 bg-zinc-950/80 px-2.5 py-1 rounded-lg border border-zinc-800 text-zinc-300">
+                      <Building className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <span className="truncate max-w-[120px]">{task.department_name}</span>
+                    </span>
+                    {task.project_name && (
+                      <span className="inline-flex items-center gap-1.5 bg-zinc-950/80 px-2.5 py-1 rounded-lg border border-zinc-800 text-zinc-300">
+                        <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span className="truncate max-w-[130px]">{task.project_name}</span>
                       </span>
-                    </td>
+                    )}
+                  </div>
 
-                    {/* Due Date */}
-                    <td className="px-4 py-3.5 font-mono text-zinc-300 whitespace-nowrap">
-                      {task.due_date ? formatDate(task.due_date, 'short') : '—'}
-                    </td>
+                  {/* Footer: Assignee, Due Date & Actions */}
+                  <div className="pt-2.5 border-t border-zinc-800/80 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 font-bold flex items-center justify-center text-[10px] shrink-0 border border-indigo-500/30">
+                        {task.assignee_name.slice(0, 1)}
+                      </div>
+                      <span className="text-xs text-zinc-300 truncate font-medium">{task.assignee_name}</span>
+                    </div>
 
-                    {/* Action */}
-                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      {renderDateBadge(task.due_date)}
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <Link
                           href={`/c/${companySlug}/tasks/${task.id}`}
-                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold transition-colors inline-flex items-center gap-1"
+                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
+                          title="View deliverable"
                         >
-                          <span>View</span>
-                          <ChevronRight className="w-3 h-3" />
+                          <ChevronRight className="w-4 h-4" />
                         </Link>
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTaskToDelete(task);
-                          }}
-                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
-                          title={`Delete "${task.title}"`}
+                          onClick={() => setTaskToDelete(task)}
+                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
+                          title="Delete task"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Bar */}
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
-            <span>
-              Showing {tasks.length} of {totalTasks} deliverables
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white font-semibold transition-colors cursor-pointer"
-              >
-                Previous
-              </button>
-              <span className="font-mono text-zinc-300">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white font-semibold transition-colors cursor-pointer"
-              >
-                Next
-              </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          {/* Pagination for Cards View */}
+          {totalPages > 1 && (
+            <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex items-center justify-between text-xs text-zinc-400">
+              <span>
+                Showing {tasks.length} of {totalTasks} deliverables
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white font-semibold transition-colors cursor-pointer"
+                >
+                  Previous
+                </button>
+                <span className="font-mono text-zinc-300">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-white font-semibold transition-colors cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* CREATE TASK MODAL */}
       {isModalOpen && (
@@ -1009,7 +1358,7 @@ export default function WorkspaceTasksPage() {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white [color-scheme:dark] focus:outline-none focus:border-indigo-500 cursor-pointer"
                   />
                 </div>
 
@@ -1021,7 +1370,7 @@ export default function WorkspaceTasksPage() {
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white [color-scheme:dark] focus:outline-none focus:border-indigo-500 cursor-pointer"
                   />
                 </div>
               </div>

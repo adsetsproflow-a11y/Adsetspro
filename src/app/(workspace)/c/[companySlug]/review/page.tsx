@@ -20,6 +20,8 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
 
 interface ReviewQueueTask {
   id: string;
@@ -66,8 +68,8 @@ export default function ReviewQueuePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchReviewQueue = async () => {
-    setIsLoading(true);
+  const fetchReviewQueue = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const qParams = new URLSearchParams();
@@ -90,6 +92,10 @@ export default function ReviewQueuePage() {
       );
       setDepartments(data.departments || []);
       setUserRole(data.userRole || 'EMPLOYEE');
+
+      // Cache for instant back-navigation
+      const cacheKey = `review_${companySlug}_${departmentFilter}`;
+      setCachedData(cacheKey, data, 45 * 1000);
     } catch (err: any) {
       console.error('Error fetching review queue:', err);
       setError(err.message);
@@ -100,7 +106,24 @@ export default function ReviewQueuePage() {
 
   useEffect(() => {
     if (companySlug) {
-      fetchReviewQueue();
+      const cacheKey = `review_${companySlug}_${departmentFilter}`;
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        setTasks(cached.tasks || []);
+        setStats(
+          cached.stats || {
+            totalAwaitingReview: 0,
+            overdueSubmissions: 0,
+            reviewedToday: 0,
+          }
+        );
+        setDepartments(cached.departments || []);
+        setUserRole(cached.userRole || 'EMPLOYEE');
+        setIsLoading(false);
+        fetchReviewQueue(true);
+      } else {
+        fetchReviewQueue(false);
+      }
     }
   }, [companySlug, departmentFilter]);
 
@@ -122,6 +145,10 @@ export default function ReviewQueuePage() {
     t.assignee_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.department_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isLoading && tasks.length === 0) {
+    return <CenterLoader message="Loading review and sign-off queue..." />;
+  }
 
   if (!isLoading && userRole === 'EMPLOYEE') {
     return (
@@ -163,7 +190,7 @@ export default function ReviewQueuePage() {
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={fetchReviewQueue}
+            onClick={() => fetchReviewQueue(false)}
             disabled={isLoading}
             className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
             title="Refresh Queue"

@@ -46,7 +46,7 @@ export async function GET(
         .single(),
     ]);
 
-    if (!profile || !membership) {
+    if (!profile || !membership || profile.is_super_admin) {
       return NextResponse.json({ error: 'Employee not found in this organization' }, { status: 404 });
     }
 
@@ -237,6 +237,19 @@ export async function PATCH(
       }
     }
 
+    const { data: targetProfile } = await adminClient
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', employeeId)
+      .single();
+
+    if (targetProfile?.is_super_admin) {
+      return NextResponse.json(
+        { error: 'Cannot manage Platform Super Admin within company operations' },
+        { status: 400 }
+      );
+    }
+
     // 3. Update company_memberships
     const updates: any = {};
     if (status) updates.status = status;
@@ -359,7 +372,7 @@ export async function DELETE(
 
     // Target member check
     const targetMemRes = await pool.query(
-      `SELECT cm.role, p.email, p.full_name
+      `SELECT cm.role, p.email, p.full_name, p.is_super_admin
        FROM public.company_memberships cm
        JOIN public.profiles p ON p.id = cm.user_id
        WHERE cm.company_id = $1 AND cm.user_id = $2 LIMIT 1;`,
@@ -374,6 +387,13 @@ export async function DELETE(
     }
 
     const target = targetMemRes.rows[0];
+
+    if (target.is_super_admin) {
+      return NextResponse.json(
+        { error: 'Cannot delete Platform Super Admin from organization roster.' },
+        { status: 400 }
+      );
+    }
 
     // If caller is DEPT_HEAD:
     // Can only delete standard EMPLOYEEs, not admins or department heads

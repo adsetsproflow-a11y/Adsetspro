@@ -75,6 +75,7 @@ export default function WorkspaceShell({
     if (userRole === 'EMPLOYEE') {
       return [
         { label: 'My Tasks', href: `${base}/my-tasks`, icon: ListTodo },
+        { label: 'Chat', href: `${base}/chat`, icon: MessageSquare },
         {
           label: 'Notifications',
           href: `${base}/notifications`,
@@ -92,8 +93,9 @@ export default function WorkspaceShell({
         { label: 'Team Members', href: `${base}/employees`, icon: Users },
         { label: 'Department Tasks', href: `${base}/tasks`, icon: CheckSquare },
         { label: 'Review Queue', href: `${base}/review`, icon: CheckCircle },
-        { label: 'Department Chat', href: `${base}/chat`, icon: MessageSquare },
+        { label: 'Chat', href: `${base}/chat`, icon: MessageSquare },
         { label: 'Analytics', href: `${base}/analytics`, icon: BarChart3 },
+        { label: 'Reports', href: `${base}/reports`, icon: FileText },
       ];
     }
 
@@ -228,6 +230,7 @@ export default function WorkspaceShell({
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={true}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive

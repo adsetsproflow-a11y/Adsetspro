@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminClient } from '@/lib/supabase/admin';
+import { getDbPool } from '@/lib/db';
 import { createClient } from '@/lib/supabase/server';
 
 export async function PATCH(request: Request) {
@@ -15,22 +15,21 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Mark all unread notifications for this user as read
-    const { data: updatedList, error } = await adminClient
-      .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('user_id', user.id)
-      .is('read_at', null)
-      .select('id');
+    const pool = getDbPool();
 
-    if (error) {
-      throw error;
-    }
+    // 2. Mark all unread notifications for this user as read
+    const updateRes = await pool.query(
+      `UPDATE notifications 
+       SET read_at = NOW() 
+       WHERE user_id = $1 AND read_at IS NULL 
+       RETURNING id;`,
+      [user.id]
+    );
 
     return NextResponse.json({
       success: true,
-      markedCount: updatedList?.length || 0,
-      message: `Marked ${updatedList?.length || 0} notifications as read`,
+      markedCount: updateRes.rowCount,
+      message: `Marked ${updateRes.rowCount} notifications as read`,
     });
   } catch (error: any) {
     console.error('Mark all read error:', error);

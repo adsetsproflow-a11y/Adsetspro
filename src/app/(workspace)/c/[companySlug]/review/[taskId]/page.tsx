@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import FileList, { TaskAttachmentItem } from '@/components/tasks/FileList';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
 
 interface TaskDetail {
   id: string;
@@ -229,12 +230,7 @@ export default function ReviewDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="py-20 text-center text-zinc-500 space-y-3">
-        <RefreshCw className="w-8 h-8 animate-spin mx-auto text-amber-400" />
-        <p className="text-sm font-semibold">Loading deliverable review inspection...</p>
-      </div>
-    );
+    return <CenterLoader message="Loading deliverable review inspection..." />;
   }
 
   if (!task) {

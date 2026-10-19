@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminClient } from '@/lib/supabase/admin';
+import { getDbPool } from '@/lib/db';
 import { createClient } from '@/lib/supabase/server';
 
 export async function PATCH(
@@ -19,16 +19,18 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Mark specific notification as read if owned by current user
-    const { data: updated, error } = await adminClient
-      .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .select('*')
-      .single();
+    const pool = getDbPool();
 
-    if (error || !updated) {
+    // 2. Mark specific notification as read if owned by current user
+    const updateRes = await pool.query(
+      `UPDATE notifications 
+       SET read_at = NOW() 
+       WHERE id = $1 AND user_id = $2 
+       RETURNING *;`,
+      [id, user.id]
+    );
+
+    if (updateRes.rows.length === 0) {
       return NextResponse.json(
         { error: 'Notification not found or access denied' },
         { status: 404 }
@@ -37,7 +39,7 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      notification: updated,
+      notification: updateRes.rows[0],
       message: 'Notification marked as read',
     });
   } catch (error: any) {

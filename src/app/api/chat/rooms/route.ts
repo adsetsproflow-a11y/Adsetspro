@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { adminClient } from '@/lib/supabase/admin';
+import { getDbPool } from '@/lib/db';
 import { syncUserChatRooms } from '@/lib/chat/rooms';
 
 export async function GET(request: Request) {
@@ -55,13 +56,15 @@ export async function GET(request: Request) {
         companyRooms: [],
         departmentRooms: [],
         taskRooms: [],
+        directRooms: [],
+        companyMembers: [],
       });
     }
 
     // 3. Ensure rooms & memberships are synced
     await syncUserChatRooms(user.id, companyId);
 
-    // 4. Query chat_members for this user and company
+    // 4. Query chat_members for standard rooms (company, department, task)
     const { data: memberships, error } = await adminClient
       .from('chat_members')
       .select(`
@@ -101,10 +104,55 @@ export async function GET(request: Request) {
       };
     });
 
-    // 5. Categorize into Company, Department, and Task rooms
     const companyRooms = rooms.filter((r) => r.type === 'company');
     const departmentRooms = rooms.filter((r) => r.type === 'department');
     const taskRooms = rooms.filter((r) => r.type === 'task');
+
+    // 5. Query direct 1-on-1 rooms with counterpart details
+    const pool = getDbPool();
+    const directRes = await pool.query(
+      `SELECT 
+        r.id, r.type, r.name, r.created_at, r.company_id,
+        json_build_object(
+          'id', p.id,
+          'full_name', p.full_name,
+          'email', p.email,
+          'avatar_url', p.avatar_url,
+          'role', cm.role
+        ) as other_member
+      FROM chat_rooms r
+      JOIN chat_members m ON m.room_id = r.id AND m.user_id = $1
+      JOIN chat_members om ON om.room_id = r.id AND om.user_id != $1
+      JOIN profiles p ON p.id = om.user_id
+      LEFT JOIN company_memberships cm ON cm.user_id = om.user_id AND cm.company_id = r.company_id
+      WHERE r.type = 'direct' AND r.company_id = $2 AND p.is_super_admin IS NOT TRUE
+      ORDER BY r.created_at DESC;`,
+      [user.id, companyId]
+    );
+    const directRooms = directRes.rows;
+
+    // 6. Query all active colleagues in this company for direct messaging directory (Admin, Dept Head, Employee)
+    const colleaguesRes = await pool.query(
+      `SELECT 
+        p.id, p.full_name, p.email, p.avatar_url, cm.role
+      FROM company_memberships cm
+      JOIN profiles p ON p.id = cm.user_id
+      WHERE cm.company_id = $1 
+        AND cm.status = 'active' 
+        AND cm.user_id != $2
+        AND p.is_super_admin IS NOT TRUE
+        AND cm.role IN ('COMPANY_ADMIN', 'DEPARTMENT_HEAD', 'EMPLOYEE')
+
+      ORDER BY 
+        CASE cm.role 
+          WHEN 'COMPANY_ADMIN' THEN 1 
+          WHEN 'DEPARTMENT_HEAD' THEN 2 
+          ELSE 3 
+        END, 
+        p.full_name ASC;`,
+      [companyId, user.id]
+    );
+    const companyMembers = colleaguesRes.rows;
 
     return NextResponse.json({
       success: true,
@@ -112,6 +160,8 @@ export async function GET(request: Request) {
       companyRooms,
       departmentRooms,
       taskRooms,
+      directRooms,
+      companyMembers,
     });
   } catch (err: any) {
     console.error('GET /api/chat/rooms error:', err);

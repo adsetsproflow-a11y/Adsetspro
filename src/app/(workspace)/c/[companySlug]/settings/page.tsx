@@ -24,6 +24,8 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
 
 interface DesignationItem {
   id: string;
@@ -56,8 +58,8 @@ export default function WorkspaceSettingsPage() {
   const [newDesignation, setNewDesignation] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const fetchSettingsAndDesignations = async () => {
-    setIsLoading(true);
+  const fetchSettingsAndDesignations = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [settingsRes, desigRes] = await Promise.all([
         fetch(`/api/companies/${companySlug}/settings`),
@@ -84,6 +86,12 @@ export default function WorkspaceSettingsPage() {
       if (desigData.success && desigData.designations) {
         setDesignations(desigData.designations);
       }
+
+      const cacheKey = `settings_${companySlug}`;
+      setCachedData(cacheKey, {
+        company: settingsData.company,
+        designations: desigData.designations || [],
+      }, 60 * 1000);
     } catch (err: any) {
       console.error('Failed to load settings:', err);
       setFeedback({ type: 'error', message: 'Something went wrong. Please try again.' });
@@ -94,7 +102,20 @@ export default function WorkspaceSettingsPage() {
 
   useEffect(() => {
     if (companySlug) {
-      fetchSettingsAndDesignations();
+      const cacheKey = `settings_${companySlug}`;
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        if (cached.company) {
+          setCompanyName(cached.company.name || '');
+          setCompanyCreatedAt(cached.company.created_at || '');
+          if (cached.company.logo_url) setLogoPreview(cached.company.logo_url);
+        }
+        if (cached.designations) setDesignations(cached.designations);
+        setIsLoading(false);
+        fetchSettingsAndDesignations(true);
+      } else {
+        fetchSettingsAndDesignations(false);
+      }
     }
   }, [companySlug]);
 
@@ -229,6 +250,10 @@ export default function WorkspaceSettingsPage() {
         </Link>
       </div>
     );
+  }
+
+  if (isLoading && !companyName && designations.length === 0) {
+    return <CenterLoader message="Loading company settings..." />;
   }
 
   return (

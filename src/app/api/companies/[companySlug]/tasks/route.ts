@@ -309,9 +309,50 @@ export async function POST(
       actorRole = 'SUPER_ADMIN';
     }
 
-    // 4. Resolve reviewer: defaults to department head or creator if not specified
+    // 4. Validate assignee is not super admin and is a valid active tenant member
+    const { data: assigneeProfile } = await adminClient
+      .from('profiles')
+      .select('id, is_super_admin')
+      .eq('id', assignee_id)
+      .single();
+
+    if (!assigneeProfile || assigneeProfile.is_super_admin) {
+      return NextResponse.json(
+        { error: 'Invalid assignee: Platform Super Admin cannot be assigned tasks.' },
+        { status: 400 }
+      );
+    }
+
+    const { data: assigneeMem } = await adminClient
+      .from('company_memberships')
+      .select('id')
+      .eq('company_id', company.id)
+      .eq('user_id', assignee_id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!assigneeMem) {
+      return NextResponse.json(
+        { error: 'Invalid assignee: User is not an active member of this organization.' },
+        { status: 400 }
+      );
+    }
+
+    // 5. Resolve reviewer: defaults to department head or company admin
     let finalReviewerId = reviewer_id || null;
-    if (!finalReviewerId && department_id) {
+    if (finalReviewerId) {
+      const { data: revProfile } = await adminClient
+        .from('profiles')
+        .select('id, is_super_admin')
+        .eq('id', finalReviewerId)
+        .single();
+      if (revProfile?.is_super_admin) {
+        return NextResponse.json(
+          { error: 'Invalid reviewer: Platform Super Admin cannot review organization tasks.' },
+          { status: 400 }
+        );
+      }
+    } else if (department_id) {
       const { data: dept } = await adminClient
         .from('departments')
         .select('head_user_id')
@@ -321,8 +362,18 @@ export async function POST(
         finalReviewerId = dept.head_user_id;
       }
     }
-    if (!finalReviewerId) {
-      finalReviewerId = user.id;
+
+    if (!finalReviewerId || (profile?.is_super_admin && finalReviewerId === user.id)) {
+      // Find company admin
+      const { data: compAdmin } = await adminClient
+        .from('company_memberships')
+        .select('user_id')
+        .eq('company_id', company.id)
+        .eq('role', 'COMPANY_ADMIN')
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+      finalReviewerId = compAdmin?.user_id || user.id;
     }
 
     // 5. Insert task
@@ -375,19 +426,49 @@ export async function POST(
       },
     });
 
-    // 8. Create notification for assignee
-    await adminClient.from('notifications').insert({
-      user_id: assignee_id,
-      company_id: company.id,
-      type: 'TASK_ASSIGNED',
-      title: 'New Task Assigned',
-      body: `You have been assigned to task "${newTask.title}" by ${profile?.full_name || 'your manager'}.`,
-      payload: {
-        task_id: newTask.id,
-        project_id: newTask.project_id,
-        department_id: newTask.department_id,
-      },
-    });
+    // 8. Create notifications for assignee and department head
+    const taskNotifs: any[] = [];
+
+    if (assignee_id && assignee_id !== user.id) {
+      taskNotifs.push({
+        user_id: assignee_id,
+        company_id: company.id,
+        type: 'TASK_ASSIGNED',
+        title: 'New Task Assigned',
+        body: `You have been assigned to task "${newTask.title}" by ${profile?.full_name || 'your manager'}.`,
+        payload: {
+          task_id: newTask.id,
+          project_id: newTask.project_id,
+          department_id: newTask.department_id,
+        },
+      });
+    }
+
+    if (newTask.department_id) {
+      const { data: dept } = await adminClient
+        .from('departments')
+        .select('head_user_id, name')
+        .eq('id', newTask.department_id)
+        .single();
+      if (dept?.head_user_id && dept.head_user_id !== user.id && dept.head_user_id !== assignee_id) {
+        taskNotifs.push({
+          user_id: dept.head_user_id,
+          company_id: company.id,
+          type: 'TASK_ASSIGNED',
+          title: `New Task in ${dept.name || 'Department'}`,
+          body: `Task "${newTask.title}" was created and assigned to a team member.`,
+          payload: {
+            task_id: newTask.id,
+            project_id: newTask.project_id,
+            department_id: newTask.department_id,
+          },
+        });
+      }
+    }
+
+    if (taskNotifs.length > 0) {
+      await adminClient.from('notifications').insert(taskNotifs);
+    }
 
     // 9. Write audit log
     await adminClient.from('audit_logs').insert({

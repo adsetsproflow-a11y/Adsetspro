@@ -6,15 +6,18 @@ import {
   ArrowLeft,
   Hash,
   Briefcase,
-  CheckSquare,
   Users,
   MessageSquare,
   Sparkles,
+  User,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { adminClient } from '@/lib/supabase/admin';
+import { getDbPool } from '@/lib/db';
 import { syncUserChatRooms } from '@/lib/chat/rooms';
 import ChatRoom from '@/components/chat/ChatRoom';
+import DirectMessageLink from '@/components/chat/DirectMessageLink';
+import CreateGroupChannelModal from '@/components/chat/CreateGroupChannelModal';
 
 interface ChatRoomPageProps {
   params: Promise<{
@@ -36,29 +39,29 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
     redirect('/login');
   }
 
+  const pool = getDbPool();
+
   // 2. Fetch company
-  const { data: company } = await adminClient
-    .from('companies')
-    .select('id, name, slug')
-    .eq('slug', companySlug)
-    .single();
+  const compRes = await pool.query(
+    `SELECT id, name, slug FROM companies WHERE slug = $1 LIMIT 1`,
+    [companySlug]
+  );
+  const company = compRes.rows[0];
 
   if (!company) {
     redirect('/login');
   }
 
-  // 3. Sync user chat rooms
+  // 3. Sync user chat rooms (excludes Super Admin)
   await syncUserChatRooms(user.id, company.id);
 
-  // 4. Strict Security: Verify user is a member of this chat room (server-side)
-  const { data: membership } = await adminClient
-    .from('chat_members')
-    .select('id')
-    .eq('room_id', roomId)
-    .eq('user_id', user.id)
-    .maybeSingle();
+  // 4. Strict Security: Verify user is a member of this chat room
+  const memberCheck = await pool.query(
+    `SELECT id FROM chat_members WHERE room_id = $1 AND user_id = $2 LIMIT 1`,
+    [roomId, user.id]
+  );
 
-  if (!membership) {
+  if (memberCheck.rows.length === 0) {
     return (
       <div className="h-[calc(100vh-8rem)] flex items-center justify-center p-6">
         <div className="w-full max-w-md p-8 rounded-3xl bg-zinc-950/80 border border-zinc-800 shadow-2xl text-center space-y-6">
@@ -77,7 +80,7 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
           </div>
           <Link
             href={`/c/${companySlug}/chat`}
-            className="w-full py-2.5 px-4 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-semibold text-zinc-200 inline-flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-2.5 px-4 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-semibold text-zinc-200 inline-flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Return to Channels</span>
@@ -88,91 +91,165 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
   }
 
   // 5. Fetch Room Details
-  const { data: room } = await adminClient
-    .from('chat_rooms')
-    .select(`
-      id,
-      company_id,
-      department_id,
-      task_id,
-      type,
-      name,
-      created_at,
-      departments (id, name),
-      tasks (id, title, status)
-    `)
-    .eq('id', roomId)
-    .single();
+  const roomRes = await pool.query(
+    `SELECT r.id, r.company_id, r.department_id, r.type, r.name, r.created_at,
+            d.name as department_name
+     FROM chat_rooms r
+     LEFT JOIN departments d ON d.id = r.department_id
+     WHERE r.id = $1`,
+    [roomId]
+  );
+  const room = roomRes.rows[0];
 
   if (!room) {
     redirect(`/c/${companySlug}/chat`);
   }
 
+  // Check admin role
+  const roleRes = await pool.query(
+    `SELECT role FROM company_memberships 
+     WHERE company_id = $1 AND user_id = $2 AND status = 'active' 
+     LIMIT 1`,
+    [company.id, user.id]
+  );
+  const isAdmin = roleRes.rows[0]?.role === 'COMPANY_ADMIN';
+
+  // If direct room, resolve counterpart info (strictly excluding Super Admin)
+  let directOtherUser: any = null;
+  if (room.type === 'direct') {
+    const counterpartRes = await pool.query(
+      `SELECT p.id, p.full_name, p.email, p.avatar_url, cm.role
+       FROM chat_members om
+       JOIN profiles p ON p.id = om.user_id
+       LEFT JOIN company_memberships cm ON cm.user_id = om.user_id AND cm.company_id = $2
+       WHERE om.room_id = $1 
+         AND om.user_id != $3
+         AND p.is_super_admin IS NOT TRUE
+       LIMIT 1`,
+      [roomId, company.id, user.id]
+    );
+
+    if (counterpartRes.rows[0]) {
+      directOtherUser = {
+        id: counterpartRes.rows[0].id,
+        fullName: counterpartRes.rows[0].full_name,
+        email: counterpartRes.rows[0].email,
+        role: counterpartRes.rows[0].role,
+        avatarUrl: counterpartRes.rows[0].avatar_url,
+      };
+    }
+  }
+
   // 6. Fetch initial last 50 messages
-  const { data: initialMessages } = await adminClient
-    .from('chat_messages')
-    .select(`
-      id,
-      room_id,
-      sender_id,
-      content,
-      created_at,
-      edited_at,
-      profiles (
-        id,
-        full_name,
-        email,
-        avatar_url
-      ),
-      chat_attachments (
-        id,
-        file_name,
-        file_size,
-        file_type,
-        storage_path,
-        created_at
-      )
-    `)
-    .eq('room_id', roomId)
-    .order('created_at', { ascending: true })
-    .limit(50);
+  const messagesRes = await pool.query(
+    `SELECT 
+      m.id, m.room_id, m.sender_id, m.content, m.created_at, m.edited_at,
+      json_build_object(
+        'id', p.id,
+        'full_name', p.full_name,
+        'email', p.email,
+        'avatar_url', p.avatar_url
+      ) as profiles,
+      COALESCE(
+        (SELECT json_agg(
+          json_build_object(
+            'id', a.id,
+            'file_name', a.file_name,
+            'file_size', a.file_size,
+            'file_type', a.file_type,
+            'storage_path', a.storage_path,
+            'created_at', a.created_at
+          )
+        ) FROM chat_attachments a WHERE a.message_id = m.id),
+        '[]'::json
+      ) as chat_attachments
+    FROM chat_messages m
+    JOIN profiles p ON p.id = m.sender_id
+    WHERE m.room_id = $1
+    ORDER BY m.created_at ASC
+    LIMIT 50;`,
+    [roomId]
+  );
+  const initialMessages = messagesRes.rows || [];
 
-  // 7. Fetch user's accessible channels for sidebar navigation
-  const { data: userMemberships } = await adminClient
-    .from('chat_members')
-    .select(`
-      room_id,
-      chat_rooms!inner (
-        id,
-        company_id,
-        department_id,
-        task_id,
-        type,
-        name,
-        departments (name),
-        tasks (title)
-      )
-    `)
-    .eq('user_id', user.id)
-    .eq('chat_rooms.company_id', company.id);
+  // 7. Fetch user's accessible group channels for sidebar navigation
+  const groupRoomsRes = await pool.query(
+    `SELECT r.id, r.type, r.name, r.created_at, r.department_id, d.name as department_name
+     FROM chat_rooms r
+     JOIN chat_members m ON m.room_id = r.id AND m.user_id = $1
+     LEFT JOIN departments d ON d.id = r.department_id
+     WHERE r.company_id = $2 AND r.type IN ('company', 'department', 'group')
+     ORDER BY 
+       CASE r.type 
+         WHEN 'company' THEN 1 
+         WHEN 'group' THEN 2 
+         ELSE 3 
+       END, 
+       r.name ASC;`,
+    [user.id, company.id]
+  );
 
-  const allRooms = (userMemberships || []).map((m: any) => m.chat_rooms);
-  const companyRooms = allRooms.filter((r) => r.type === 'company');
-  const departmentRooms = allRooms.filter((r) => r.type === 'department');
-  const taskRooms = allRooms.filter((r) => r.type === 'task');
+  const allGroupRooms = groupRoomsRes.rows;
+  const companyRooms = allGroupRooms.filter((r) => r.type === 'company' || r.type === 'group');
+  const departmentRooms = allGroupRooms.filter((r) => r.type === 'department');
 
-  // Fetch user profile
-  const { data: profile } = await adminClient
-    .from('profiles')
-    .select('full_name, email')
-    .eq('id', user.id)
-    .single();
+  // 8. Fetch direct rooms with counterpart user info (excluding Super Admin)
+  const directRoomsRes = await pool.query(
+    `SELECT 
+      r.id, r.type, r.name,
+      json_build_object(
+        'id', p.id,
+        'full_name', p.full_name,
+        'email', p.email,
+        'role', cm.role
+      ) as other_member
+     FROM chat_rooms r
+     JOIN chat_members m ON m.room_id = r.id AND m.user_id = $1
+     JOIN chat_members om ON om.room_id = r.id AND om.user_id != $1
+     JOIN profiles p ON p.id = om.user_id
+     LEFT JOIN company_memberships cm ON cm.user_id = om.user_id AND cm.company_id = r.company_id
+     WHERE r.type = 'direct' 
+       AND r.company_id = $2
+       AND p.is_super_admin IS NOT TRUE
+     ORDER BY r.created_at DESC;`,
+    [user.id, company.id]
+  );
+  const directRooms = directRoomsRes.rows;
+
+  // 9. Fetch all company teammates (Admin, Dept Head, Employee — excluding Super Admin & current user)
+  const colleaguesRes = await pool.query(
+    `SELECT 
+      p.id, p.full_name, p.email, p.avatar_url, cm.role
+     FROM company_memberships cm
+     JOIN profiles p ON p.id = cm.user_id
+     WHERE cm.company_id = $1 
+       AND cm.status = 'active' 
+       AND cm.user_id != $2
+       AND p.is_super_admin IS NOT TRUE
+       AND cm.role IN ('COMPANY_ADMIN', 'DEPARTMENT_HEAD', 'EMPLOYEE')
+     ORDER BY 
+       CASE cm.role 
+         WHEN 'COMPANY_ADMIN' THEN 1 
+         WHEN 'DEPARTMENT_HEAD' THEN 2 
+         ELSE 3 
+       END, 
+       p.full_name ASC;`,
+    [company.id, user.id]
+  );
+  const colleagues = colleaguesRes.rows;
+
+  // Fetch current user profile
+  const profileRes = await pool.query(
+    `SELECT full_name, email FROM profiles WHERE id = $1 LIMIT 1`,
+    [user.id]
+  );
+  const profile = profileRes.rows[0];
 
   const userName = profile?.full_name || profile?.email || 'User';
 
   return (
     <div className="h-[calc(100vh-7.5rem)] max-w-7xl mx-auto flex flex-col md:flex-row gap-4 overflow-hidden">
-      {/* CHANNELS SIDEBAR (Hidden on mobile when in room, visible on desktop) */}
+      {/* CHANNELS & DIRECT MESSAGES SIDEBAR */}
       <div className="hidden md:flex w-72 bg-zinc-950/80 border border-zinc-800/80 rounded-3xl p-5 flex-col justify-between shrink-0 overflow-y-auto">
         <div className="space-y-6">
           <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
@@ -182,72 +259,61 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
                 Workspace Chat
               </h2>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
-              {allRooms.length} rooms
-            </span>
+            <Link
+              href={`/c/${companySlug}/chat`}
+              className="text-[10px] text-zinc-400 hover:text-white transition-colors"
+              title="View all discussions"
+            >
+              Overview
+            </Link>
           </div>
 
-          {/* Company Channel */}
+          {/* 1-on-1 Direct Messages Section */}
           <div className="space-y-1.5">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 px-2 block">
-              Company General
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400/90 px-2 block flex items-center justify-between">
+              <span>Direct Messages (1-on-1)</span>
+              <span className="text-zinc-500 font-mono text-[9px]">{colleagues.length}</span>
             </span>
-            {companyRooms.map((r) => {
-              const active = r.id === roomId;
-              return (
-                <Link
-                  key={r.id}
-                  href={`/c/${companySlug}/chat/${r.id}`}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                    active
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <Hash className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                    <span className="truncate">#{r.name}</span>
-                  </div>
-                </Link>
-              );
-            })}
+
+            <div className="space-y-1">
+              {colleagues.map((colleague: any) => {
+                const existingRoom = directRooms.find(
+                  (dr: any) => dr.other_member?.id === colleague.id
+                );
+                const active = existingRoom ? existingRoom.id === roomId : false;
+                return (
+                  <DirectMessageLink
+                    key={colleague.id}
+                    companySlug={companySlug}
+                    targetUserId={colleague.id}
+                    targetUserName={colleague.full_name || colleague.email}
+                    targetUserRole={colleague.role}
+                    targetUserEmail={colleague.email}
+                    existingRoomId={existingRoom?.id}
+                    isActive={active}
+                    variant="sidebar"
+                  />
+                );
+              })}
+            </div>
           </div>
 
-          {/* Department Channels */}
-          {departmentRooms.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 px-2 block">
-                Departments
+          {/* Group Channels Section */}
+          <div className="space-y-3 pt-2 border-t border-zinc-800/60">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 block">
+                Group Channels
               </span>
-              {departmentRooms.map((r) => {
-                const active = r.id === roomId;
-                return (
-                  <Link
-                    key={r.id}
-                    href={`/c/${companySlug}/chat/${r.id}`}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                      active
-                        ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <Briefcase className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span className="truncate">#{r.name}</span>
-                    </div>
-                  </Link>
-                );
-              })}
+              <CreateGroupChannelModal
+                companySlug={companySlug}
+                colleagues={colleagues}
+                triggerVariant="icon"
+              />
             </div>
-          )}
 
-          {/* Task Channels */}
-          {taskRooms.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 px-2 block">
-                Task Threads
-              </span>
-              {taskRooms.map((r) => {
+            {/* Company Channel */}
+            <div className="space-y-1">
+              {companyRooms.map((r) => {
                 const active = r.id === roomId;
                 return (
                   <Link
@@ -260,19 +326,47 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
                     }`}
                   >
                     <div className="flex items-center gap-2.5 truncate">
-                      <CheckSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <Hash className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                       <span className="truncate">#{r.name}</span>
                     </div>
                   </Link>
                 );
               })}
             </div>
-          )}
+
+            {/* Department Channels */}
+            {departmentRooms.length > 0 && (
+              <div className="space-y-1 pt-1">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-600 px-2 block">
+                  Departments
+                </span>
+                {departmentRooms.map((r) => {
+                  const active = r.id === roomId;
+                  return (
+                    <Link
+                      key={r.id}
+                      href={`/c/${companySlug}/chat/${r.id}`}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                        active
+                          ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
+                          : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <Briefcase className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="truncate">#{r.name}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer info */}
         <div className="pt-4 border-t border-zinc-800 text-center">
-          <p className="text-[11px] text-zinc-500">Live chat encrypted & audited</p>
+          <p className="text-[11px] text-zinc-500">Live Workspace Chat</p>
         </div>
       </div>
 
@@ -287,9 +381,10 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
           currentUserName={userName}
           initialMessages={(initialMessages as any) || []}
           contextInfo={{
-            taskTitle: (room.tasks as any)?.title,
             departmentName: (room.departments as any)?.name,
           }}
+          isAdmin={isAdmin}
+          directOtherUser={directOtherUser}
         />
       </div>
     </div>

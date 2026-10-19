@@ -83,7 +83,7 @@ export async function GET(
 
       userDeptId = deptMember?.department_id || null;
     } else {
-      userRole = 'COMPANY_ADMIN';
+      userRole = 'SUPER_ADMIN';
     }
 
     const searchPattern = `%${query}%`;
@@ -130,6 +130,7 @@ export async function GET(
       .from('profiles')
       .select('id, full_name, email, avatar_url')
       .in('id', memberUserIds.length > 0 ? memberUserIds : ['00000000-0000-0000-0000-000000000000'])
+      .eq('is_super_admin', false)
       .or(`full_name.ilike.${searchPattern},email.ilike.${searchPattern}`)
       .limit(6);
 

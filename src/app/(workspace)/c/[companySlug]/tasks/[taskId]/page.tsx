@@ -34,6 +34,7 @@ import {
 import FileUpload from '@/components/tasks/FileUpload';
 import { TaskAttachmentItem } from '@/components/tasks/FileList';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
 
 interface TaskData {
   id: string;
@@ -420,12 +421,7 @@ export default function SingleTaskDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="py-20 text-center text-zinc-500 space-y-3">
-        <RefreshCw className="w-8 h-8 animate-spin mx-auto text-indigo-400" />
-        <p className="text-sm font-semibold">Loading task deliverables & timeline...</p>
-      </div>
-    );
+    return <CenterLoader message="Loading task deliverables & timeline..." />;
   }
 
   if (!task) {
@@ -475,14 +471,15 @@ export default function SingleTaskDetailPage() {
                 {task.title}
               </h1>
               <span
-                className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${getStatusBadge(
+                className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border whitespace-nowrap leading-none ${getStatusBadge(
                   task.status
                 )}`}
               >
-                {task.status.replace(/_/g, ' ')}
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.status === 'in_progress' ? 'bg-sky-400 animate-pulse' : 'bg-current'}`} />
+                <span>{task.status.replace(/_/g, ' ')}</span>
               </span>
               <span
-                className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${getPriorityBadge(
+                className={`inline-flex items-center justify-center text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border whitespace-nowrap leading-none ${getPriorityBadge(
                   task.priority
                 )}`}
               >
@@ -795,22 +792,28 @@ export default function SingleTaskDetailPage() {
 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+              <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
                 <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
                   Start Date (DD/MM/YYYY)
                 </span>
-                <span className="text-xs font-mono text-zinc-300 block">
-                  {task.start_date ? formatDate(task.start_date, 'short') : '—'}
-                </span>
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="text-xs font-mono text-zinc-200 font-medium">
+                    {task.start_date ? formatDate(task.start_date, 'short') : 'Not specified'}
+                  </span>
+                </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+              <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
                 <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
                   Due Date (DD/MM/YYYY)
                 </span>
-                <span className="text-xs font-mono text-zinc-300 block">
-                  {task.due_date ? formatDate(task.due_date, 'short') : 'Open-ended'}
-                </span>
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="text-xs font-mono text-zinc-200 font-medium">
+                    {task.due_date ? formatDate(task.due_date, 'short') : 'Open-ended'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

@@ -75,12 +75,34 @@ export async function POST(
 
     const { data: targetProfile, error: targetErr } = await adminClient
       .from('profiles')
-      .select('id, full_name, email')
+      .select('id, full_name, email, is_super_admin')
       .eq('id', newEmployeeId)
       .single();
 
     if (targetErr || !targetProfile) {
       return NextResponse.json({ error: 'Target employee not found' }, { status: 404 });
+    }
+
+    if (targetProfile.is_super_admin) {
+      return NextResponse.json(
+        { error: 'Cannot assign tasks to Platform Super Admin.' },
+        { status: 400 }
+      );
+    }
+
+    const { data: targetMem } = await adminClient
+      .from('company_memberships')
+      .select('id')
+      .eq('company_id', company.id)
+      .eq('user_id', newEmployeeId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!targetMem) {
+      return NextResponse.json(
+        { error: 'Target employee is not an active member of this organization.' },
+        { status: 400 }
+      );
     }
 
     // 5. Find current assignment
@@ -139,19 +161,42 @@ export async function POST(
       },
     });
 
-    // 9. Create notification for new assignee
-    await adminClient.from('notifications').insert({
-      user_id: newEmployeeId,
-      company_id: company.id,
-      type: 'TASK_ASSIGNED',
-      title: 'Task Reassigned to You',
-      body: `You have been assigned to task "${task.title}" by ${profile?.full_name || 'an administrator'}.`,
-      payload: {
-        task_id: taskId,
-        project_id: task.project_id,
-        department_id: task.department_id,
+    // 9. Create notification for new assignee and previous assignee
+    const reassignNotifs: any[] = [
+      {
+        user_id: newEmployeeId,
+        company_id: company.id,
+        type: 'TASK_ASSIGNED',
+        title: 'Task Reassigned to You',
+        body: `You have been assigned to task "${task.title}" by ${profile?.full_name || 'an administrator'}.`,
+        payload: {
+          task_id: taskId,
+          project_id: task.project_id,
+          department_id: task.department_id,
+        },
       },
-    });
+    ];
+
+    if (
+      currentAssignment?.employee_id &&
+      currentAssignment.employee_id !== newEmployeeId &&
+      currentAssignment.employee_id !== user.id
+    ) {
+      reassignNotifs.push({
+        user_id: currentAssignment.employee_id,
+        company_id: company.id,
+        type: 'TASK_CANCELLED',
+        title: 'Task Reassigned',
+        body: `Task "${task.title}" has been reassigned to ${targetProfile.full_name} by ${profile?.full_name || 'an administrator'}.`,
+        payload: {
+          task_id: taskId,
+          project_id: task.project_id,
+          department_id: task.department_id,
+        },
+      });
+    }
+
+    await adminClient.from('notifications').insert(reassignNotifs);
 
     // 10. Audit log
     await adminClient.from('audit_logs').insert({

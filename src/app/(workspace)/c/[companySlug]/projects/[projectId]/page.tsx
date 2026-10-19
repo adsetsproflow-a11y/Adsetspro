@@ -21,6 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
 
 interface ProjectDetailData {
   project: {
@@ -115,12 +116,7 @@ export default function ProjectDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="py-20 text-center text-zinc-500 flex items-center justify-center gap-2 text-xs">
-        <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
-        <span>Loading project details & milestone analytics...</span>
-      </div>
-    );
+    return <CenterLoader message="Loading project details & milestone analytics..." />;
   }
 
   if (error || !data) {
@@ -377,27 +373,38 @@ export default function ProjectDetailPage() {
                       tasks.map((task) => (
                         <tr key={task.id} className="hover:bg-zinc-800/30 transition-colors">
                           <td className="py-3.5 px-4 font-semibold text-zinc-100">{task.title}</td>
-                          <td className="py-3.5 px-4 text-zinc-300">{task.assignee_name}</td>
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4 text-zinc-300 align-middle whitespace-nowrap">{task.assignee_name}</td>
+                          <td className="py-3.5 px-4 align-middle whitespace-nowrap">
                             <span
-                              className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getPriorityBadgeStyle(
+                              className={`inline-flex items-center justify-center text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border whitespace-nowrap leading-none ${getPriorityBadgeStyle(
                                 task.priority
                               )}`}
                             >
                               {task.priority}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4 align-middle whitespace-nowrap">
                             <span
-                              className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getTaskStatusBadgeStyle(
+                              className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border whitespace-nowrap leading-none ${getTaskStatusBadgeStyle(
                                 task.status
                               )}`}
                             >
-                              {task.status.replace(/_/g, ' ')}
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.status === 'in_progress' ? 'bg-sky-400 animate-pulse' : 'bg-current'}`} />
+                              <span>{task.status.replace(/_/g, ' ')}</span>
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-right text-zinc-400 font-mono">
-                            {task.due_date ? formatDate(task.due_date, 'short') : 'No deadline'}
+                          <td className="py-3.5 px-4 text-right align-middle whitespace-nowrap">
+                            {task.due_date ? (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-850/80 border border-zinc-700/60 text-zinc-200 text-xs font-mono font-medium">
+                                <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                <span>{formatDate(task.due_date, 'short')}</span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-850/60 border border-zinc-800 text-zinc-400 text-xs italic">
+                                <Calendar className="w-3 h-3 text-zinc-500 shrink-0" />
+                                No deadline
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))

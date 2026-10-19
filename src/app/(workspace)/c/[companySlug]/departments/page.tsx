@@ -18,6 +18,8 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData, invalidateCache } from '@/lib/cache/clientCache';
 
 interface DepartmentItem {
   id: string;
@@ -47,14 +49,29 @@ export default function DepartmentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const fetchDepartments = async () => {
-    setIsLoading(true);
+  const fetchDepartments = async (force = false) => {
+    const cacheKey = `departments_${companySlug}`;
+    if (!force) {
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        setDepartments(cached.departments || []);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     setError(null);
     try {
       const res = await fetch(`/api/companies/${companySlug}/departments`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch departments');
-      setDepartments(data.departments || []);
+
+      const loadedDepts = data.departments || [];
+      setDepartments(loadedDepts);
+      setCachedData(cacheKey, { departments: loadedDepts });
     } catch (err: any) {
       console.error('Failed to load departments:', err);
       setError(err.message || 'Error loading departments');
@@ -128,6 +145,18 @@ export default function DepartmentsPage() {
     );
   });
 
+  if (isLoading && departments.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <CenterLoader
+          message="Loading Departments..."
+          subtitle="Retrieving organizational units and designated department heads"
+          size="lg"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -147,7 +176,7 @@ export default function DepartmentsPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchDepartments}
+            onClick={() => fetchDepartments(true)}
             disabled={isLoading}
             className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
             title="Refresh list"

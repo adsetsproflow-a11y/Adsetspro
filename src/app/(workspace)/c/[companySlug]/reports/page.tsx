@@ -21,6 +21,8 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { convertToCSV, downloadCSV } from '@/lib/export/csv';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
 
 export default function WorkspaceReportsPage() {
   const params = useParams();
@@ -48,8 +50,8 @@ export default function WorkspaceReportsPage() {
   const [employeeReports, setEmployeeReports] = useState<any[]>([]);
   const [departmentReports, setDepartmentReports] = useState<any[]>([]);
 
-  const fetchReports = async () => {
-    setIsLoading(true);
+  const fetchReports = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const q = new URLSearchParams();
@@ -79,6 +81,10 @@ export default function WorkspaceReportsPage() {
       setTaskReports(data.reports?.tasks || []);
       setEmployeeReports(data.reports?.employees || []);
       setDepartmentReports(data.reports?.departments || []);
+
+      // Cache result
+      const cacheKey = `reports_${companySlug}_${selectedDept}_${selectedEmployee}_${selectedStatus}_${selectedPriority}_${startDate}_${endDate}`;
+      setCachedData(cacheKey, data, 60 * 1000);
     } catch (err: any) {
       console.error('Reports fetch error:', err);
       setError('Something went wrong. Please try again.');
@@ -89,7 +95,19 @@ export default function WorkspaceReportsPage() {
 
   useEffect(() => {
     if (companySlug) {
-      fetchReports();
+      const cacheKey = `reports_${companySlug}_${selectedDept}_${selectedEmployee}_${selectedStatus}_${selectedPriority}_${startDate}_${endDate}`;
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        setDeptOptions(cached.filters?.departments || []);
+        setEmployeeOptions(cached.filters?.employees || []);
+        setTaskReports(cached.reports?.tasks || []);
+        setEmployeeReports(cached.reports?.employees || []);
+        setDepartmentReports(cached.reports?.departments || []);
+        setIsLoading(false);
+        fetchReports(true);
+      } else {
+        fetchReports(false);
+      }
     }
   }, [companySlug, selectedDept, selectedEmployee, selectedStatus, selectedPriority, startDate, endDate]);
 
@@ -195,6 +213,10 @@ export default function WorkspaceReportsPage() {
     );
   }
 
+  if (isLoading && taskReports.length === 0 && employeeReports.length === 0 && departmentReports.length === 0) {
+    return <CenterLoader message="Compiling intelligence and audit reports..." />;
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -258,7 +280,7 @@ export default function WorkspaceReportsPage() {
             <span>{error}</span>
           </div>
           <button
-            onClick={fetchReports}
+            onClick={() => fetchReports(false)}
             className="px-3 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-white font-semibold inline-flex items-center gap-1.5 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />

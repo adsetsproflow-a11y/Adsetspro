@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminClient } from '@/lib/supabase/admin';
+import { getDbPool } from '@/lib/db';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
@@ -17,72 +17,72 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const filter = url.searchParams.get('filter') || 'all';
-    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
-    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20')));
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
     const offset = (page - 1) * limit;
 
-    // 2. Build notifications query for current user
-    let query = adminClient
-      .from('notifications')
-      .select('*', { count: 'exact' })
-      .eq('user_id', user.id);
+    const pool = getDbPool();
 
-    // Apply category / read filters
+    // 2. Build where clause
+    const conditions: string[] = ['user_id = $1'];
+    const params: any[] = [user.id];
+
     if (filter === 'unread') {
-      query = query.is('read_at', null);
+      conditions.push('read_at IS NULL');
     } else if (filter === 'task') {
-      query = query.in('type', [
-        'task_assigned',
-        'task_approved',
-        'task_revision_requested',
-        'task_submitted',
-        'deadline_warning',
-        'overdue_task',
-        'TASK_ASSIGNED',
-        'TASK_APPROVED',
-        'REVISION_REQUIRED',
-        'TASK_SUBMITTED',
-        'TASK_CANCELLED',
-      ]);
+      conditions.push(`type IN (
+        'task_assigned', 'task_approved', 'task_revision_requested', 'task_submitted',
+        'deadline_warning', 'overdue_task', 'TASK_ASSIGNED', 'TASK_APPROVED',
+        'REVISION_REQUIRED', 'TASK_SUBMITTED', 'TASK_CANCELLED', 'TASK_CREATED'
+      )`);
     } else if (filter === 'system') {
-      query = query.in('type', [
-        'company_approved',
-        'company_rejected',
-        'company_suspended',
-        'invitation_sent',
-        'invitation_accepted',
-      ]);
+      conditions.push(`type IN (
+        'company_approved', 'company_rejected', 'company_suspended',
+        'invitation_sent', 'invitation_accepted', 'company_registration_pending'
+      )`);
     } else if (filter === 'chat') {
-      query = query.in('type', ['new_comment', 'mention', 'COMMENT_ADDED']);
+      conditions.push(`type IN (
+        'new_comment', 'mention', 'COMMENT_ADDED', 'chat_message', 'CHAT_MESSAGE'
+      )`);
     }
 
-    // Sort newest first & range
-    query = query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    const whereSql = conditions.join(' AND ');
 
-    const { data: notifications, count: totalCount, error } = await query;
+    // 3. Count total matching
+    const countRes = await pool.query(
+      `SELECT count(*)::int as count FROM notifications WHERE ${whereSql}`,
+      params
+    );
+    const totalCount = countRes.rows[0]?.count || 0;
 
-    if (error) {
-      throw error;
-    }
+    // 4. Query notifications
+    const dataParams = [...params, limit, offset];
+    const dataRes = await pool.query(
+      `SELECT id, user_id, company_id, type, title, body, payload, read_at, created_at
+       FROM notifications
+       WHERE ${whereSql}
+       ORDER BY created_at DESC
+       LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,
+      dataParams
+    );
+    const notifications = dataRes.rows || [];
 
-    // 3. Count unread notifications
-    const { count: unreadCount } = await adminClient
-      .from('notifications')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .is('read_at', null);
+    // 5. Count unread notifications
+    const unreadRes = await pool.query(
+      `SELECT count(*)::int as count FROM notifications WHERE user_id = $1 AND read_at IS NULL`,
+      [user.id]
+    );
+    const unreadCount = unreadRes.rows[0]?.count || 0;
 
     return NextResponse.json({
       success: true,
-      notifications: notifications || [],
-      unreadCount: unreadCount || 0,
+      notifications,
+      unreadCount,
       pagination: {
-        total: totalCount || (notifications || []).length,
+        total: totalCount,
         page,
         limit,
-        totalPages: Math.ceil((totalCount || (notifications || []).length) / limit),
+        totalPages: Math.ceil(totalCount / limit) || 1,
       },
     });
   } catch (error: any) {
@@ -106,14 +106,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { error } = await adminClient
-      .from('notifications')
-      .delete()
-      .eq('user_id', user.id);
-
-    if (error) {
-      throw error;
-    }
+    const pool = getDbPool();
+    await pool.query(`DELETE FROM notifications WHERE user_id = $1`, [user.id]);
 
     return NextResponse.json({
       success: true,
@@ -127,4 +121,3 @@ export async function DELETE(request: Request) {
     );
   }
 }
-

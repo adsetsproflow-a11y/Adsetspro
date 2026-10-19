@@ -251,6 +251,21 @@ export async function POST(
       }
     }
 
+    if (manager_id) {
+      const { data: targetProfile } = await adminClient
+        .from('profiles')
+        .select('is_super_admin')
+        .eq('id', manager_id)
+        .single();
+
+      if (targetProfile?.is_super_admin) {
+        return NextResponse.json(
+          { error: 'Platform Super Admin cannot be designated as project manager.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // 4. Create project
     const { data: newProject, error: createErr } = await adminClient
       .from('projects')

@@ -120,7 +120,7 @@ export default async function WorkspaceLayout({
   // 5. Validate User Membership in this Company
   let role: UserRole = 'EMPLOYEE';
   if (profile.is_super_admin) {
-    role = 'COMPANY_ADMIN'; // Super Admins get full administrative view
+    role = 'SUPER_ADMIN';
   } else {
     const memRes = await pool.query(
       `SELECT role, status FROM public.company_memberships WHERE user_id = $1 AND company_id = $2 AND status = 'active' LIMIT 1;`,

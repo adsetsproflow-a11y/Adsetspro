@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminClient } from '@/lib/supabase/admin';
+import { getDbPool } from '@/lib/db';
 import { createClient } from '@/lib/supabase/server';
 
 export async function DELETE(
@@ -18,14 +18,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { error } = await adminClient
-      .from('notifications')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
+    const pool = getDbPool();
+    const deleteRes = await pool.query(
+      `DELETE FROM notifications WHERE id = $1 AND user_id = $2`,
+      [id, user.id]
+    );
 
-    if (error) {
-      throw error;
+    if (deleteRes.rowCount === 0) {
+      return NextResponse.json(
+        { error: 'Notification not found or access denied' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({

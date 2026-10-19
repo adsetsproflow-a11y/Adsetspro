@@ -168,9 +168,16 @@ export async function POST(
     // 4. Check if email is already a member of this company
     const { data: existingProfile } = await adminClient
       .from('profiles')
-      .select('id')
+      .select('id, is_super_admin')
       .eq('email', cleanEmail)
       .maybeSingle();
+
+    if (existingProfile?.is_super_admin) {
+      return NextResponse.json(
+        { error: 'Platform Super Admin cannot be invited to join a tenant company.' },
+        { status: 400 }
+      );
+    }
 
     if (existingProfile) {
       const { data: existingMember } = await adminClient

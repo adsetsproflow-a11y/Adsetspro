@@ -23,6 +23,8 @@ import {
   UserX,
   UserCheck,
 } from 'lucide-react';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData, invalidateCache } from '@/lib/cache/clientCache';
 
 interface EmployeeItem {
   id: string;
@@ -58,8 +60,23 @@ export default function EmployeesPage() {
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchEmployees = async () => {
-    setIsLoading(true);
+  const fetchEmployees = async (force = false) => {
+    const cacheKey = `employees_${companySlug}`;
+    if (!force) {
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        setEmployees(cached.employees || []);
+        if (cached.currentUserId) setCurrentUserId(cached.currentUserId);
+        if (cached.currentUserRole) setCurrentUserRole(cached.currentUserRole);
+        if (cached.departments) setDepartments(cached.departments);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     setError(null);
     try {
       const res = await fetch(`/api/companies/${companySlug}/employees`);
@@ -67,13 +84,19 @@ export default function EmployeesPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to fetch employees');
 
       const emps: EmployeeItem[] = data.employees || [];
+      const depts = Array.from(new Set(emps.map((e) => e.department_name))).filter(Boolean);
+
       setEmployees(emps);
       if (data.currentUserId) setCurrentUserId(data.currentUserId);
       if (data.currentUserRole) setCurrentUserRole(data.currentUserRole);
-
-      // Collect distinct department names
-      const depts = Array.from(new Set(emps.map((e) => e.department_name))).filter(Boolean);
       setDepartments(depts);
+
+      setCachedData(cacheKey, {
+        employees: emps,
+        currentUserId: data.currentUserId,
+        currentUserRole: data.currentUserRole,
+        departments: depts,
+      });
     } catch (err: any) {
       console.error('Failed to load employees:', err);
       setError(err.message || 'Error loading employees');
@@ -212,6 +235,18 @@ export default function EmployeesPage() {
     }
   };
 
+  if (isLoading && employees.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <CenterLoader
+          message="Loading Employee Roster..."
+          subtitle="Retrieving staff allocations, roles, and department assignments"
+          size="lg"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
@@ -231,7 +266,7 @@ export default function EmployeesPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchEmployees}
+            onClick={() => fetchEmployees(true)}
             disabled={isLoading}
             className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
             title="Refresh employees"

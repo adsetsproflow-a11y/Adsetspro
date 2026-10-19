@@ -56,6 +56,21 @@ export async function POST(
       }
     }
 
+    if (head_user_id) {
+      const { data: targetProfile } = await adminClient
+        .from('profiles')
+        .select('is_super_admin')
+        .eq('id', head_user_id)
+        .single();
+
+      if (targetProfile?.is_super_admin) {
+        return NextResponse.json(
+          { error: 'Platform Super Admin cannot be designated as a Department Head.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // 3. Update department head
     const { data: updatedDept, error: deptErr } = await adminClient
       .from('departments')

@@ -153,9 +153,11 @@ export async function POST(
       },
     });
 
-    // 9. Notify assignee
-    if (assignment?.employee_id) {
-      await adminClient.from('notifications').insert({
+    // 9. Notify assignee and Department Head
+    const revNotifs: any[] = [];
+
+    if (assignment?.employee_id && assignment.employee_id !== user.id) {
+      revNotifs.push({
         user_id: assignment.employee_id,
         company_id: company.id,
         type: 'REVISION_REQUIRED',
@@ -163,6 +165,28 @@ export async function POST(
         body: `Changes requested on "${task.title}": "${reviewNote.slice(0, 120)}${reviewNote.length > 120 ? '...' : ''}"`,
         payload: { task_id: taskId, comment_id: newComment?.id },
       });
+    }
+
+    if (task.department_id) {
+      const { data: dept } = await adminClient
+        .from('departments')
+        .select('head_user_id')
+        .eq('id', task.department_id)
+        .single();
+      if (dept?.head_user_id && dept.head_user_id !== user.id && dept.head_user_id !== assignment?.employee_id) {
+        revNotifs.push({
+          user_id: dept.head_user_id,
+          company_id: company.id,
+          type: 'REVISION_REQUIRED',
+          title: 'Revision Requested in Department',
+          body: `Revisions requested on "${task.title}" by ${profile?.full_name || 'Admin'}.`,
+          payload: { task_id: taskId, comment_id: newComment?.id },
+        });
+      }
+    }
+
+    if (revNotifs.length > 0) {
+      await adminClient.from('notifications').insert(revNotifs);
     }
 
     // 10. Audit log

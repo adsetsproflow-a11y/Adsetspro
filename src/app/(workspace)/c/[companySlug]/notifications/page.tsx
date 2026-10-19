@@ -22,6 +22,8 @@ import {
   Check,
   Trash2,
 } from 'lucide-react';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
 
 interface NotificationItem {
   id: string;
@@ -48,8 +50,8 @@ export default function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
 
-  const fetchNotifications = async () => {
-    setIsLoading(true);
+  const fetchNotifications = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const qParams = new URLSearchParams();
       qParams.set('filter', activeFilter);
@@ -64,6 +66,9 @@ export default function NotificationsPage() {
         setUnreadCount(data.unreadCount || 0);
         setTotalPages(data.pagination?.totalPages || 1);
         setTotalCount(data.pagination?.total || 0);
+
+        const cacheKey = `notifications_${activeFilter}_${page}`;
+        setCachedData(cacheKey, data, 30 * 1000);
       }
     } catch (err) {
       console.error('Failed to load notifications:', err);
@@ -73,7 +78,18 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    const cacheKey = `notifications_${activeFilter}_${page}`;
+    const cached = getCachedData<any>(cacheKey);
+    if (cached && cached.success) {
+      setNotifications(cached.notifications || []);
+      setUnreadCount(cached.unreadCount || 0);
+      setTotalPages(cached.pagination?.totalPages || 1);
+      setTotalCount(cached.pagination?.total || 0);
+      setIsLoading(false);
+      fetchNotifications(true);
+    } else {
+      fetchNotifications(false);
+    }
   }, [activeFilter, page]);
 
   const handleMarkAllRead = async () => {
@@ -139,6 +155,11 @@ export default function NotificationsPage() {
       return;
     }
 
+    if (notif.payload?.room_id) {
+      router.push(`/c/${companySlug}/chat/${notif.payload.room_id}`);
+      return;
+    }
+
     if (notif.payload?.project_id) {
       router.push(`/c/${companySlug}/projects/${notif.payload.project_id}`);
       return;
@@ -157,6 +178,9 @@ export default function NotificationsPage() {
       case 'deadline_warning':
       case 'overdue_task':
         return <AlertTriangle className="w-5 h-5 text-red-400" />;
+      case 'chat_message':
+      case 'new_message':
+        return <MessageSquare className="w-5 h-5 text-cyan-400" />;
       case 'new_comment':
       case 'comment_added':
       case 'mention':
@@ -226,7 +250,7 @@ export default function NotificationsPage() {
           )}
 
           <button
-            onClick={fetchNotifications}
+            onClick={() => fetchNotifications(false)}
             disabled={isLoading}
             className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
             title="Refresh Notifications"
@@ -263,21 +287,8 @@ export default function NotificationsPage() {
 
       {/* NOTIFICATIONS LIST */}
       <div className="space-y-2.5">
-        {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 animate-pulse flex items-start gap-4"
-              >
-                <div className="w-10 h-10 rounded-2xl bg-zinc-800/80 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-zinc-800/80 rounded w-1/3" />
-                  <div className="h-3 bg-zinc-800/40 rounded w-2/3" />
-                </div>
-              </div>
-            ))}
-          </div>
+        {isLoading && notifications.length === 0 ? (
+          <CenterLoader message="Loading workspace notifications..." />
         ) : notifications.length === 0 ? (
           <div className="p-12 rounded-3xl bg-zinc-900/30 border border-zinc-800/80 text-center space-y-2 shadow-lg">
             <CheckCheck className="w-10 h-10 text-emerald-400 mx-auto" />

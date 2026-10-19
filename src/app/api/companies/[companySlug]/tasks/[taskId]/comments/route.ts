@@ -135,7 +135,7 @@ export async function POST(
     // 4. Fetch task
     const { data: task } = await adminClient
       .from('tasks')
-      .select('id, title, reviewer_id')
+      .select('id, title, reviewer_id, department_id')
       .eq('id', taskId)
       .single();
 
@@ -179,14 +179,42 @@ export async function POST(
       .eq('is_current', true)
       .maybeSingle();
 
-    const recipientId =
-      user.id === currentAssignment?.employee_id
-        ? task.reviewer_id
-        : currentAssignment?.employee_id;
+    const recipientIds = new Set<string>();
 
-    if (recipientId && recipientId !== user.id) {
+    if (user.id === currentAssignment?.employee_id) {
+      // Employee commented -> Notify reviewer, dept head, and company admins
+      if (task.reviewer_id && task.reviewer_id !== user.id) {
+        recipientIds.add(task.reviewer_id);
+      }
+      if (task.department_id) {
+        const { data: dept } = await adminClient
+          .from('departments')
+          .select('head_user_id')
+          .eq('id', task.department_id)
+          .single();
+        if (dept?.head_user_id && dept.head_user_id !== user.id) {
+          recipientIds.add(dept.head_user_id);
+        }
+      }
+      const { data: admins } = await adminClient
+        .from('company_memberships')
+        .select('user_id')
+        .eq('company_id', company.id)
+        .eq('role', 'COMPANY_ADMIN')
+        .eq('status', 'active');
+      (admins || []).forEach((adm) => {
+        if (adm.user_id !== user.id) recipientIds.add(adm.user_id);
+      });
+    } else {
+      // Admin / Dept Head / Reviewer commented -> Notify the assigned employee!
+      if (currentAssignment?.employee_id && currentAssignment.employee_id !== user.id) {
+        recipientIds.add(currentAssignment.employee_id);
+      }
+    }
+
+    for (const rid of recipientIds) {
       await adminClient.from('notifications').insert({
-        user_id: recipientId,
+        user_id: rid,
         company_id: company.id,
         type: 'COMMENT_ADDED',
         title: 'New Comment on Task',

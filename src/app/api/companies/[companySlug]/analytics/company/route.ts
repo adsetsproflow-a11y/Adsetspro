@@ -39,7 +39,7 @@ export async function GET(
 
     let userRole = 'EMPLOYEE';
     if (profile?.is_super_admin) {
-      userRole = 'COMPANY_ADMIN';
+      userRole = 'SUPER_ADMIN';
     } else {
       const { data: membership } = await adminClient
         .from('company_memberships')
@@ -56,7 +56,7 @@ export async function GET(
       userRole = membership.role;
     }
 
-    // Employees cannot view company-wide analytics
+    // Regular employees cannot view company-wide analytics
     if (userRole === 'EMPLOYEE') {
       return NextResponse.json(
         { error: 'Forbidden: Company analytics are restricted to Administrators and Department Heads.' },

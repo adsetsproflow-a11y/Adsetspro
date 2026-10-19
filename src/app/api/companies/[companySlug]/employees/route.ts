@@ -45,7 +45,8 @@ export async function GET(
           email,
           avatar_url,
           phone,
-          account_status
+          account_status,
+          is_super_admin
         )
       `)
       .eq('company_id', company.id)
@@ -55,8 +56,13 @@ export async function GET(
       throw memErr;
     }
 
+    // Exclude any platform super admin from tenant employee roster
+    const activeTenantMemberships = (memberships || []).filter(
+      (m: any) => m.profile && !m.profile.is_super_admin
+    );
+
     // 4. Fetch department memberships for these users
-    const userIds = (memberships || []).map((m) => m.user_id);
+    const userIds = activeTenantMemberships.map((m) => m.user_id);
     const { data: deptMemberships } = await adminClient
       .from('department_memberships')
       .select(`
@@ -81,7 +87,7 @@ export async function GET(
       });
     });
 
-    const employees = (memberships || []).map((m: any) => {
+    const employees = activeTenantMemberships.map((m: any) => {
       const dm = deptMap.get(m.user_id);
       return {
         id: m.profile?.id || m.user_id,
@@ -108,7 +114,7 @@ export async function GET(
 
     let callerRole = 'EMPLOYEE';
     if (callerProfile?.is_super_admin) {
-      callerRole = 'COMPANY_ADMIN';
+      callerRole = 'SUPER_ADMIN';
     } else {
       const { data: callerMem } = await adminClient
         .from('company_memberships')

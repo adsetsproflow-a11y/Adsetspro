@@ -66,7 +66,7 @@ export async function GET(
       }
       userRole = membership.role;
     } else {
-      userRole = 'COMPANY_ADMIN';
+      userRole = 'SUPER_ADMIN';
     }
 
     // 4. Fetch all company departments and designations for mapping
@@ -116,7 +116,8 @@ export async function GET(
       const { data: profs } = await adminClient
         .from('profiles')
         .select('id, full_name, email')
-        .in('id', memberIds);
+        .in('id', memberIds)
+        .eq('is_super_admin', false);
       memberProfiles = profs || [];
     }
 

@@ -260,7 +260,23 @@ export async function PATCH(
     if (name !== undefined) updates.name = name.trim();
     if (description !== undefined) updates.description = description?.trim() || null;
     if (department_id !== undefined) updates.department_id = department_id || null;
-    if (manager_id !== undefined) updates.manager_id = manager_id || null;
+    if (manager_id !== undefined) {
+      if (manager_id) {
+        const { data: targetProfile } = await adminClient
+          .from('profiles')
+          .select('is_super_admin')
+          .eq('id', manager_id)
+          .single();
+
+        if (targetProfile?.is_super_admin) {
+          return NextResponse.json(
+            { error: 'Platform Super Admin cannot be designated as project manager.' },
+            { status: 400 }
+          );
+        }
+      }
+      updates.manager_id = manager_id || null;
+    }
     if (start_date !== undefined) updates.start_date = start_date ? new Date(start_date).toISOString() : null;
     if (due_date !== undefined) updates.due_date = due_date ? new Date(due_date).toISOString() : null;
     if (status !== undefined) updates.status = status;

@@ -21,6 +21,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
 
 interface EmployeeProfileData {
   currentUserId?: string;
@@ -149,12 +150,7 @@ export default function EmployeeDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="py-20 text-center text-zinc-500 flex items-center justify-center gap-2 text-xs">
-        <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
-        <span>Loading member profile...</span>
-      </div>
-    );
+    return <CenterLoader message="Loading member profile..." />;
   }
 
   if (error || !data) {

@@ -341,7 +341,20 @@ export async function PATCH(
     if (priority) updatePayload.priority = priority;
     if (start_date !== undefined) updatePayload.start_date = start_date ? new Date(start_date).toISOString() : null;
     if (due_date !== undefined) updatePayload.due_date = due_date ? new Date(due_date).toISOString() : null;
-    if (reviewer_id) updatePayload.reviewer_id = reviewer_id;
+    if (reviewer_id) {
+      const { data: revProfile } = await adminClient
+        .from('profiles')
+        .select('is_super_admin')
+        .eq('id', reviewer_id)
+        .single();
+      if (revProfile?.is_super_admin) {
+        return NextResponse.json(
+          { error: 'Platform Super Admin cannot be designated as a task reviewer.' },
+          { status: 400 }
+        );
+      }
+      updatePayload.reviewer_id = reviewer_id;
+    }
     if (department_id !== undefined) updatePayload.department_id = department_id || null;
     if (project_id !== undefined) updatePayload.project_id = project_id || null;
 

@@ -1,61 +1,48 @@
-import { adminClient } from '@/lib/supabase/admin';
 import { getDbPool } from '@/lib/db';
 
 /**
- * Ensure the default '#general' company chat room exists and enroll all active members.
+ * Ensure the default '#general' company chat room exists and enroll all active
+ * company members (excluding platform Super Admins).
  */
 export async function ensureCompanyChatRoom(companyId: string, companyName?: string) {
   try {
-    // 1. Check if company chat room already exists
-    let { data: room, error: roomError } = await adminClient
-      .from('chat_rooms')
-      .select('*')
-      .eq('company_id', companyId)
-      .eq('type', 'company')
-      .maybeSingle();
+    const pool = getDbPool();
 
-    if (roomError) {
-      console.error('Error finding company room:', roomError);
-    }
+    // 1. Check if company chat room already exists
+    let roomRes = await pool.query(
+      `SELECT id, company_id, type, name, created_at
+       FROM chat_rooms 
+       WHERE company_id = $1 AND type = 'company' 
+       LIMIT 1`,
+      [companyId]
+    );
+
+    let room = roomRes.rows[0];
 
     if (!room) {
-      const roomName = 'general';
-      const { data: newRoom, error: createError } = await adminClient
-        .from('chat_rooms')
-        .insert({
-          company_id: companyId,
-          type: 'company',
-          name: roomName,
-        })
-        .select('*')
-        .single();
-
-      if (createError) {
-        console.error('Failed to create company room:', createError);
-        return null;
-      }
-      room = newRoom;
+      const insertRes = await pool.query(
+        `INSERT INTO chat_rooms (company_id, type, name)
+         VALUES ($1, 'company', 'general')
+         RETURNING id, company_id, type, name, created_at`,
+        [companyId]
+      );
+      room = insertRes.rows[0];
     }
 
     if (!room) return null;
 
-    // 2. Fetch all active company members and enroll them
-    const { data: members } = await adminClient
-      .from('company_memberships')
-      .select('user_id')
-      .eq('company_id', companyId)
-      .eq('status', 'active');
-
-    if (members && members.length > 0) {
-      const chatMemberRows = members.map((m) => ({
-        room_id: room.id,
-        user_id: m.user_id,
-      }));
-
-      await adminClient
-        .from('chat_members')
-        .upsert(chatMemberRows, { onConflict: 'room_id,user_id', ignoreDuplicates: true });
-    }
+    // 2. Fetch all active company members (Admin, Head, Employee) excluding Super Admins
+    await pool.query(
+      `INSERT INTO chat_members (room_id, user_id)
+       SELECT $1::uuid, cm.user_id
+       FROM company_memberships cm
+       JOIN profiles p ON p.id = cm.user_id
+       WHERE cm.company_id = $2 
+         AND cm.status = 'active'
+         AND p.is_super_admin IS NOT TRUE
+       ON CONFLICT (room_id, user_id) DO NOTHING;`,
+      [room.id, companyId]
+    );
 
     return room;
   } catch (err) {
@@ -65,7 +52,8 @@ export async function ensureCompanyChatRoom(companyId: string, companyName?: str
 }
 
 /**
- * Ensure department chat room exists and enroll department members + admins.
+ * Ensure department chat room exists and enroll department members + company admin.
+ * Excludes Super Admins.
  */
 export async function ensureDepartmentChatRoom(
   departmentId: string,
@@ -73,68 +61,57 @@ export async function ensureDepartmentChatRoom(
   departmentName: string
 ) {
   try {
-    let { data: room } = await adminClient
-      .from('chat_rooms')
-      .select('*')
-      .eq('department_id', departmentId)
-      .eq('type', 'department')
-      .maybeSingle();
+    const pool = getDbPool();
+
+    let roomRes = await pool.query(
+      `SELECT id, company_id, department_id, type, name, created_at
+       FROM chat_rooms 
+       WHERE department_id = $1 AND type = 'department' 
+       LIMIT 1`,
+      [departmentId]
+    );
+
+    let room = roomRes.rows[0];
 
     if (!room) {
       const cleanName = departmentName
         .toLowerCase()
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
+        .replace(/^-|-$/g, '') || 'department';
 
-      const { data: newRoom, error: createError } = await adminClient
-        .from('chat_rooms')
-        .insert({
-          company_id: companyId,
-          department_id: departmentId,
-          type: 'department',
-          name: cleanName || 'department',
-        })
-        .select('*')
-        .single();
-
-      if (createError) {
-        console.error('Failed to create department room:', createError);
-        return null;
-      }
-      room = newRoom;
+      const insertRes = await pool.query(
+        `INSERT INTO chat_rooms (company_id, department_id, type, name)
+         VALUES ($1, $2, 'department', $3)
+         RETURNING id, company_id, department_id, type, name, created_at`,
+        [companyId, departmentId, cleanName]
+      );
+      room = insertRes.rows[0];
     }
 
     if (!room) return null;
 
-    // Fetch department members from department_memberships
-    const { data: deptMembers } = await adminClient
-      .from('department_memberships')
-      .select('user_id')
-      .eq('department_id', departmentId);
+    // Enroll department members and company admins (excluding Super Admins)
+    await pool.query(
+      `INSERT INTO chat_members (room_id, user_id)
+       SELECT DISTINCT $1::uuid, u.user_id
 
-    // Also fetch company admins
-    const { data: admins } = await adminClient
-      .from('company_memberships')
-      .select('user_id')
-      .eq('company_id', companyId)
-      .eq('role', 'COMPANY_ADMIN')
-      .eq('status', 'active');
-
-    const userIdsToEnroll = new Set<string>();
-    (deptMembers || []).forEach((m) => userIdsToEnroll.add(m.user_id));
-    (admins || []).forEach((a) => userIdsToEnroll.add(a.user_id));
-
-    if (userIdsToEnroll.size > 0) {
-      const rows = Array.from(userIdsToEnroll).map((uid) => ({
-        room_id: room.id,
-        user_id: uid,
-      }));
-
-      await adminClient
-        .from('chat_members')
-        .upsert(rows, { onConflict: 'room_id,user_id', ignoreDuplicates: true });
-    }
+       FROM (
+         SELECT dm.user_id 
+         FROM department_memberships dm 
+         WHERE dm.department_id = $2 AND dm.status = 'active'
+         UNION
+         SELECT cm.user_id 
+         FROM company_memberships cm 
+         WHERE cm.company_id = $3 
+           AND cm.role = 'COMPANY_ADMIN' 
+           AND cm.status = 'active'
+       ) u
+       JOIN profiles p ON p.id = u.user_id
+       WHERE p.is_super_admin IS NOT TRUE
+       ON CONFLICT (room_id, user_id) DO NOTHING;`,
+      [room.id, departmentId, companyId]
+    );
 
     return room;
   } catch (err) {
@@ -144,72 +121,147 @@ export async function ensureDepartmentChatRoom(
 }
 
 /**
- * Ensure task chat room exists and enroll assignee + reviewer + creator.
+ * Synchronize user's chat memberships for their company:
+ * - Company room (#general)
+ * - Department rooms
  */
-export async function ensureTaskChatRoom(
-  taskId: string,
-  companyId: string,
-  taskTitle: string,
-  assigneeId?: string | null,
-  reviewerId?: string | null,
-  createdById?: string | null
+export async function syncUserChatRooms(userId: string, companyId: string) {
+  try {
+    const pool = getDbPool();
+
+    // Check if user is Super Admin; if so, skip company chat synchronization
+    const profileRes = await pool.query(
+      `SELECT is_super_admin FROM profiles WHERE id = $1`,
+      [userId]
+    );
+    if (profileRes.rows[0]?.is_super_admin) {
+      return;
+    }
+
+    // 1. Company room (#general)
+    const companyRoom = await ensureCompanyChatRoom(companyId);
+    if (companyRoom) {
+      await pool.query(
+        `INSERT INTO chat_members (room_id, user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (room_id, user_id) DO NOTHING;`,
+        [companyRoom.id, userId]
+      );
+    }
+
+    // 2. Fetch user role
+    const memRes = await pool.query(
+      `SELECT role FROM company_memberships
+       WHERE user_id = $1 AND company_id = $2 AND status = 'active'
+       LIMIT 1;`,
+      [userId, companyId]
+    );
+    const membership = memRes.rows[0];
+    const isCompanyAdmin = membership?.role === 'COMPANY_ADMIN';
+
+    // 3. Department rooms
+    if (isCompanyAdmin) {
+      // Company Admin gets enrolled in all company department rooms
+      const deptsRes = await pool.query(
+        `SELECT id, name FROM departments WHERE company_id = $1`,
+        [companyId]
+      );
+      for (const dept of deptsRes.rows) {
+        const dRoom = await ensureDepartmentChatRoom(dept.id, companyId, dept.name);
+        if (dRoom) {
+          await pool.query(
+            `INSERT INTO chat_members (room_id, user_id)
+             VALUES ($1, $2)
+             ON CONFLICT (room_id, user_id) DO NOTHING;`,
+            [dRoom.id, userId]
+          );
+        }
+      }
+    } else {
+      // Department head or employee enrolled in their assigned departments
+      const userDeptsRes = await pool.query(
+        `SELECT d.id, d.name
+         FROM department_memberships dm
+         JOIN departments d ON d.id = dm.department_id
+         WHERE dm.user_id = $1 AND dm.status = 'active' AND d.company_id = $2`,
+        [userId, companyId]
+      );
+      for (const dept of userDeptsRes.rows) {
+        const dRoom = await ensureDepartmentChatRoom(dept.id, companyId, dept.name);
+        if (dRoom) {
+          await pool.query(
+            `INSERT INTO chat_members (room_id, user_id)
+             VALUES ($1, $2)
+             ON CONFLICT (room_id, user_id) DO NOTHING;`,
+            [dRoom.id, userId]
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error('syncUserChatRooms error:', err);
+  }
+}
+
+/**
+ * Get or create a 1-on-1 direct messaging chat room between two users in a company.
+ * Strict check: Neither user can be a Super Admin. Both must be Company Admin, Dept Head, or Employee.
+ */
+export async function getOrCreateDirectChatRoom(
+  userId1: string,
+  userId2: string,
+  companyId: string
 ) {
   try {
-    let { data: room } = await adminClient
-      .from('chat_rooms')
-      .select('*')
-      .eq('task_id', taskId)
-      .eq('type', 'task')
-      .maybeSingle();
+    const pool = getDbPool();
 
-    if (!room) {
-      const cleanName = `task-${taskTitle
-        .slice(0, 24)
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')}`;
-
-      const { data: newRoom, error: createError } = await adminClient
-        .from('chat_rooms')
-        .insert({
-          company_id: companyId,
-          task_id: taskId,
-          type: 'task',
-          name: cleanName || `task-${taskId.slice(0, 8)}`,
-          created_by: createdById || null,
-        })
-        .select('*')
-        .single();
-
-      if (createError) {
-        console.error('Failed to create task room:', createError);
-        return null;
-      }
-      room = newRoom;
+    // Verify neither user is Super Admin
+    const superAdminCheck = await pool.query(
+      `SELECT count(*) FROM profiles 
+       WHERE id IN ($1, $2) AND is_super_admin = true`,
+      [userId1, userId2]
+    );
+    if (parseInt(superAdminCheck.rows[0]?.count || '0', 10) > 0) {
+      console.warn('Direct chat with Super Admin is disallowed.');
+      return null;
     }
 
-    if (!room) return null;
+    // 1. Check if direct room already exists between these two users in this company
+    const existing = await pool.query(
+      `SELECT r.id, r.type, r.name, r.company_id, r.created_at
+       FROM chat_rooms r
+       JOIN chat_members m1 ON m1.room_id = r.id AND m1.user_id = $1
+       JOIN chat_members m2 ON m2.room_id = r.id AND m2.user_id = $2
+       WHERE r.type = 'direct' AND r.company_id = $3
+       LIMIT 1;`,
+      [userId1, userId2, companyId]
+    );
 
-    const userIds = new Set<string>();
-    if (assigneeId) userIds.add(assigneeId);
-    if (reviewerId) userIds.add(reviewerId);
-    if (createdById) userIds.add(createdById);
-
-    if (userIds.size > 0) {
-      const rows = Array.from(userIds).map((uid) => ({
-        room_id: room.id,
-        user_id: uid,
-      }));
-
-      await adminClient
-        .from('chat_members')
-        .upsert(rows, { onConflict: 'room_id,user_id', ignoreDuplicates: true });
+    if (existing.rows.length > 0) {
+      return existing.rows[0];
     }
+
+    // 2. Create new direct room
+    const insertRes = await pool.query(
+      `INSERT INTO chat_rooms (company_id, type, name, created_by)
+       VALUES ($1, 'direct', 'direct', $2)
+       RETURNING id, type, name, company_id, created_at;`,
+      [companyId, userId1]
+    );
+
+    const room = insertRes.rows[0];
+
+    // 3. Enroll both members in chat_members
+    await pool.query(
+      `INSERT INTO chat_members (room_id, user_id)
+       VALUES ($1, $2), ($1, $3)
+       ON CONFLICT (room_id, user_id) DO NOTHING;`,
+      [room.id, userId1, userId2]
+    );
 
     return room;
   } catch (err) {
-    console.error('ensureTaskChatRoom error:', err);
+    console.error('getOrCreateDirectChatRoom error:', err);
     return null;
   }
 }
@@ -219,17 +271,18 @@ export async function ensureTaskChatRoom(
  */
 export async function addMemberToDepartmentChatRoom(departmentId: string, userId: string) {
   try {
-    const { data: room } = await adminClient
-      .from('chat_rooms')
-      .select('*')
-      .eq('department_id', departmentId)
-      .eq('type', 'department')
-      .maybeSingle();
-
-    if (room) {
-      await adminClient
-        .from('chat_members')
-        .upsert({ room_id: room.id, user_id: userId }, { onConflict: 'room_id,user_id', ignoreDuplicates: true });
+    const pool = getDbPool();
+    const roomRes = await pool.query(
+      `SELECT id FROM chat_rooms WHERE department_id = $1 AND type = 'department' LIMIT 1`,
+      [departmentId]
+    );
+    if (roomRes.rows.length > 0) {
+      await pool.query(
+        `INSERT INTO chat_members (room_id, user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (room_id, user_id) DO NOTHING;`,
+        [roomRes.rows[0].id, userId]
+      );
     }
   } catch (err) {
     console.error('addMemberToDepartmentChatRoom error:', err);
@@ -237,100 +290,9 @@ export async function addMemberToDepartmentChatRoom(departmentId: string, userId
 }
 
 /**
- * Synchronize user's chat memberships for their company:
- * - Company room
- * - Department rooms
- * - Task rooms (where user is assignee, reviewer, or creator)
+ * Ensure task chat room exists. Kept for backwards compatibility.
  */
-export async function syncUserChatRooms(userId: string, companyId: string) {
-  try {
-    // 1. Company room
-    await ensureCompanyChatRoom(companyId);
-
-    // Ensure user is in company room
-    const { data: companyRoom } = await adminClient
-      .from('chat_rooms')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('type', 'company')
-      .maybeSingle();
-
-    if (companyRoom) {
-      await adminClient
-        .from('chat_members')
-        .upsert({ room_id: companyRoom.id, user_id: userId }, { onConflict: 'room_id,user_id', ignoreDuplicates: true });
-    }
-
-    // 2. Fetch user role
-    const { data: membership } = await adminClient
-      .from('company_memberships')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('company_id', companyId)
-      .maybeSingle();
-
-    const isCompanyAdmin = membership?.role === 'COMPANY_ADMIN' || (membership?.role as string) === 'SUPER_ADMIN';
-
-    // 3. Department rooms
-    if (isCompanyAdmin) {
-      // Admin gets enrolled in all company department rooms
-      const { data: allDepts } = await adminClient
-        .from('departments')
-        .select('id, name')
-        .eq('company_id', companyId);
-
-      for (const dept of allDepts || []) {
-        const dRoom = await ensureDepartmentChatRoom(dept.id, companyId, dept.name);
-        if (dRoom) {
-          await adminClient
-            .from('chat_members')
-            .upsert({ room_id: dRoom.id, user_id: userId }, { onConflict: 'room_id,user_id', ignoreDuplicates: true });
-        }
-      }
-    } else {
-      // Find user's departments from department_memberships
-      const { data: userDepts } = await adminClient
-        .from('department_memberships')
-        .select('department_id')
-        .eq('user_id', userId)
-        .eq('status', 'active');
-
-      if (userDepts && userDepts.length > 0) {
-        const deptIds = userDepts.map((d) => d.department_id);
-        const { data: depts } = await adminClient
-          .from('departments')
-          .select('id, name')
-          .in('id', deptIds)
-          .eq('company_id', companyId);
-
-        for (const dept of depts || []) {
-          const dRoom = await ensureDepartmentChatRoom(dept.id, companyId, dept.name);
-          if (dRoom) {
-            await adminClient
-              .from('chat_members')
-              .upsert({ room_id: dRoom.id, user_id: userId }, { onConflict: 'room_id,user_id', ignoreDuplicates: true });
-          }
-        }
-      }
-    }
-
-    // 4. Task rooms for tasks user is assigned to or reviewing
-    const pool = getDbPool();
-    const taskRows = await pool.query(
-      `SELECT DISTINCT t.id, t.title, t.reviewer_id, t.created_by
-       FROM public.tasks t
-       LEFT JOIN public.task_assignments ta 
-         ON ta.task_id = t.id AND ta.employee_id = $1 AND ta.is_current = true
-       WHERE t.company_id = $2
-         AND (t.reviewer_id = $1 OR t.created_by = $1 OR ta.id IS NOT NULL)
-       LIMIT 30;`,
-      [userId, companyId]
-    );
-
-    for (const t of taskRows.rows) {
-      await ensureTaskChatRoom(t.id, companyId, t.title, null, t.reviewer_id, t.created_by);
-    }
-  } catch (err) {
-    console.error('syncUserChatRooms error:', err);
-  }
+export async function ensureTaskChatRoom(...args: any[]) {
+  return null;
 }
+

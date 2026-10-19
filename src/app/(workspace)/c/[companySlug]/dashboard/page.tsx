@@ -36,6 +36,8 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
 
 interface DashboardData {
   company: {
@@ -88,8 +90,19 @@ export default function WorkspaceDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
+  const fetchDashboardData = async (force = false) => {
+    const cacheKey = `dashboard_${companySlug}`;
+    if (!force) {
+      const cached = getCachedData<DashboardData>(cacheKey);
+      if (cached) {
+        setData(cached);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const res = await fetch(`/api/companies/${companySlug}/dashboard`);
@@ -99,6 +112,7 @@ export default function WorkspaceDashboardPage() {
         throw new Error(result.error || 'Failed to load workspace dashboard data');
       }
 
+      setCachedData(cacheKey, result);
       setData(result);
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
@@ -113,6 +127,18 @@ export default function WorkspaceDashboardPage() {
       fetchDashboardData();
     }
   }, [companySlug]);
+
+  if (isLoading && !data) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <CenterLoader
+          message="Loading Workspace Dashboard..."
+          subtitle="Aggregating real-time metrics, department workloads, and operational throughput"
+          size="lg"
+        />
+      </div>
+    );
+  }
 
   const kpis = data?.kpis || {
     totalEmployees: 0,
@@ -172,7 +198,7 @@ export default function WorkspaceDashboardPage() {
           </p>
         </div>
         <button
-          onClick={fetchDashboardData}
+          onClick={() => fetchDashboardData(true)}
           disabled={isLoading}
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer w-fit"
         >
@@ -189,7 +215,7 @@ export default function WorkspaceDashboardPage() {
             <span>{error}</span>
           </div>
           <button
-            onClick={fetchDashboardData}
+            onClick={() => fetchDashboardData(true)}
             className="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold"
           >
             Retry

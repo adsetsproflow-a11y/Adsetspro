@@ -22,6 +22,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData, invalidateCache } from '@/lib/cache/clientCache';
 
 interface InvitationItem {
   id: string;
@@ -66,8 +68,8 @@ export default function InvitationsPage() {
     inviteUrl?: string;
   } | null>(null);
 
-  const fetchInvitations = async () => {
-    setIsLoading(true);
+  const fetchInvitations = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [invRes, deptRes, empRes] = await Promise.all([
         fetch(`/api/companies/${companySlug}/invitations`),
@@ -88,6 +90,13 @@ export default function InvitationsPage() {
       setInvitations(invData.invitations || []);
       setDepartments(deptData.departments || []);
       setEmployees(empData.employees || []);
+
+      const cacheKey = `invitations_${companySlug}`;
+      setCachedData(cacheKey, {
+        invitations: invData.invitations || [],
+        departments: deptData.departments || [],
+        employees: empData.employees || [],
+      }, 45 * 1000);
     } catch (err: any) {
       console.error('Failed to load invitations:', err);
     } finally {
@@ -97,7 +106,17 @@ export default function InvitationsPage() {
 
   useEffect(() => {
     if (companySlug) {
-      fetchInvitations();
+      const cacheKey = `invitations_${companySlug}`;
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        setInvitations(cached.invitations || []);
+        setDepartments(cached.departments || []);
+        setEmployees(cached.employees || []);
+        setIsLoading(false);
+        fetchInvitations(true);
+      } else {
+        fetchInvitations(false);
+      }
     }
   }, [companySlug]);
 
@@ -299,6 +318,10 @@ export default function InvitationsPage() {
     );
   }
 
+  if (isLoading && invitations.length === 0) {
+    return <CenterLoader message="Loading employee onboarding pipeline..." />;
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
@@ -318,7 +341,7 @@ export default function InvitationsPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchInvitations}
+            onClick={() => fetchInvitations(false)}
             disabled={isLoading}
             className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
             title="Refresh"

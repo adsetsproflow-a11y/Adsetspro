@@ -143,14 +143,16 @@ async function seedTestAccounts() {
         account_status = 'active';
     `, [acc.id, acc.fullName, acc.email, acc.isSuperAdmin]);
 
-    // Upsert into public.company_memberships
-    await client.query(`
-      INSERT INTO public.company_memberships (user_id, company_id, role, status)
-      VALUES ($1, $2, $3, 'active')
-      ON CONFLICT (user_id, company_id) DO UPDATE SET
-        role = EXCLUDED.role,
-        status = 'active';
-    `, [acc.id, companyId, acc.role]);
+    // Upsert into public.company_memberships (Only for regular tenant accounts, NEVER Super Admin)
+    if (!acc.isSuperAdmin && acc.role) {
+      await client.query(`
+        INSERT INTO public.company_memberships (user_id, company_id, role, status)
+        VALUES ($1, $2, $3, 'active')
+        ON CONFLICT (user_id, company_id) DO UPDATE SET
+          role = EXCLUDED.role,
+          status = 'active';
+      `, [acc.id, companyId, acc.role]);
+    }
 
     // Department membership
     if (acc.deptRole === 'head') {

@@ -24,6 +24,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
 
 interface MyTaskItem {
   id: string;
@@ -76,8 +78,8 @@ export default function MyTasksDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMyTasks = async () => {
-    setIsLoading(true);
+  const fetchMyTasks = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const qParams = new URLSearchParams();
@@ -105,6 +107,9 @@ export default function MyTasksDashboard() {
         }
       );
       setProjects(data.projects || []);
+
+      const cacheKey = `my_tasks_${companySlug}_${statusFilter}_${priorityFilter}_${projectFilter}_${startDateFilter}_${endDateFilter}_${searchQuery.trim()}`;
+      setCachedData(cacheKey, data, 45 * 1000);
     } catch (err: any) {
       console.error('Failed to load my-tasks:', err);
       setError(err.message || 'Error loading my-tasks');
@@ -115,7 +120,26 @@ export default function MyTasksDashboard() {
 
   useEffect(() => {
     if (companySlug) {
-      fetchMyTasks();
+      const cacheKey = `my_tasks_${companySlug}_${statusFilter}_${priorityFilter}_${projectFilter}_${startDateFilter}_${endDateFilter}_${searchQuery.trim()}`;
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        setTasks(cached.tasks || []);
+        setSummary(
+          cached.summary || {
+            totalAssigned: 0,
+            inProgress: 0,
+            overdue: 0,
+            submittedForReview: 0,
+            revisionRequired: 0,
+            approvedThisMonth: 0,
+          }
+        );
+        setProjects(cached.projects || []);
+        setIsLoading(false);
+        fetchMyTasks(true);
+      } else {
+        fetchMyTasks(false);
+      }
     }
   }, [companySlug, statusFilter, priorityFilter, projectFilter, startDateFilter, endDateFilter]);
 
@@ -179,6 +203,10 @@ export default function MyTasksDashboard() {
   const submittedTasks = tasks.filter((t) => t.status === 'submitted_for_review');
   const revisionTasks = tasks.filter((t) => t.status === 'revision_required');
 
+  if (isLoading && tasks.length === 0) {
+    return <CenterLoader message="Loading your deliverables..." />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header & View Toggle */}
@@ -201,7 +229,7 @@ export default function MyTasksDashboard() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchMyTasks}
+            onClick={() => fetchMyTasks(false)}
             disabled={isLoading}
             className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
             title="Refresh Deliverables"
@@ -415,12 +443,24 @@ export default function MyTasksDashboard() {
             <label className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
               Target Deadline
             </label>
-            <input
-              type="date"
-              value={endDateFilter}
-              onChange={(e) => setEndDateFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
-            />
+            <div className="relative">
+              <input
+                type="date"
+                value={endDateFilter}
+                onChange={(e) => setEndDateFilter(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 [color-scheme:dark] focus:outline-none focus:border-indigo-500 cursor-pointer"
+              />
+              {endDateFilter && (
+                <button
+                  type="button"
+                  onClick={() => setEndDateFilter('')}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-white"
+                  title="Clear deadline filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -430,20 +470,20 @@ export default function MyTasksDashboard() {
         /* LIST VIEW TABLE */
         <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[800px]">
-              <thead className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
+            <table className="w-full text-left text-xs min-w-[840px]">
+              <thead className="bg-zinc-950 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold text-[11px]">
                 <tr>
-                  <th className="px-4 py-3.5 sticky left-0 z-20 bg-zinc-950 min-w-[240px] max-w-[300px] border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.6)]">
+                  <th className="px-4 py-3.5 min-w-[240px] max-w-[320px]">
                     <div className="flex items-center gap-2">
                       <ListTodo className="w-4 h-4 text-indigo-400 shrink-0" />
                       <span className="text-white font-bold tracking-wider">Task Title & Brief</span>
                     </div>
                   </th>
-                  <th className="px-4 py-3.5">Project</th>
-                  <th className="px-4 py-3.5">Priority</th>
-                  <th className="px-4 py-3.5">Due Date (DD/MM/YYYY)</th>
-                  <th className="px-4 py-3.5">Status</th>
-                  <th className="px-4 py-3.5 text-right">Actions</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[130px]">Project</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[85px]">Priority</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[130px]">Due Date (DD/MM/YYYY)</th>
+                  <th className="px-4 py-3.5 whitespace-nowrap min-w-[130px]">Status</th>
+                  <th className="px-4 py-3.5 text-right whitespace-nowrap min-w-[100px] pr-5">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/60">
@@ -469,9 +509,9 @@ export default function MyTasksDashboard() {
                     <tr
                       key={task.id}
                       onClick={() => router.push(`/c/${companySlug}/my-tasks/${task.id}`)}
-                      className="hover:bg-zinc-800/50 transition-colors group cursor-pointer"
+                      className="hover:bg-zinc-800/40 transition-colors group cursor-pointer"
                     >
-                      <td className="px-4 py-3.5 font-semibold text-white sticky left-0 z-10 bg-zinc-900 group-hover:bg-zinc-850 border-r border-zinc-800 shadow-[4px_0_12px_rgba(0,0,0,0.5)] transition-colors min-w-[240px] max-w-[300px]">
+                      <td className="px-4 py-3.5 font-semibold text-white align-middle max-w-[320px]">
                         <div className="space-y-0.5 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="line-clamp-1 group-hover:text-indigo-400 transition-colors font-bold text-xs">
@@ -491,48 +531,61 @@ export default function MyTasksDashboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-zinc-400">
+                      <td className="px-4 py-3.5 text-zinc-400 align-middle whitespace-nowrap">
                         {task.project_name ? (
                           <span className="inline-flex items-center gap-1.5 text-zinc-300">
-                            <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
+                            <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                             <span className="truncate max-w-[140px]">{task.project_name}</span>
                           </span>
                         ) : (
                           <span className="text-zinc-600 italic">Unassigned</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                         <span
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getPriorityBadgeStyle(
+                          className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border whitespace-nowrap leading-none ${getPriorityBadgeStyle(
                             task.priority
                           )}`}
                         >
                           {task.priority}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 font-mono">
+                      <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                         {task.due_date ? (
-                          <span
-                            className={
+                          <div
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap ${
                               task.is_overdue
-                                ? 'text-red-400 font-bold flex items-center gap-1'
-                                : 'text-zinc-400'
-                            }
+                                ? 'bg-red-500/10 border border-red-500/30 text-red-400 font-semibold'
+                                : 'bg-zinc-850/80 border border-zinc-700/60 text-zinc-200 font-medium'
+                            }`}
                           >
-                            {task.is_overdue && <AlertTriangle className="w-3 h-3 text-red-400" />}
+                            {task.is_overdue ? (
+                              <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                            ) : (
+                              <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            )}
                             <span>{formatDate(task.due_date, 'short')}</span>
-                          </span>
+                            {task.is_overdue && (
+                              <span className="text-[9px] font-sans font-bold uppercase bg-red-500/20 px-1 py-0.2 rounded text-red-300">
+                                Overdue
+                              </span>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-zinc-600">—</span>
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-850/60 border border-zinc-800 text-zinc-400 text-xs italic whitespace-nowrap">
+                            <Calendar className="w-3 h-3 text-zinc-500 shrink-0" />
+                            No deadline
+                          </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                         <span
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusBadgeStyle(
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap leading-none ${getStatusBadgeStyle(
                             task.status
                           )}`}
                         >
-                          {task.status.replace(/_/g, ' ')}
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.status === 'in_progress' ? 'bg-sky-400 animate-pulse' : 'bg-current'}`} />
+                          <span>{task.status.replace(/_/g, ' ')}</span>
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-right">

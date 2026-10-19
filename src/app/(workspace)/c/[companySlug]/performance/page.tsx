@@ -25,6 +25,8 @@ import {
 } from 'recharts';
 import { formatDate } from '@/lib/utils/dateFormat';
 import { createClient } from '@/lib/supabase/client';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
 
 interface EmployeePerformanceData {
   employee: {
@@ -87,8 +89,8 @@ export default function WorkspaceMyPerformancePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMyPerformance = async () => {
-    setIsLoading(true);
+  const fetchMyPerformance = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const {
@@ -107,6 +109,8 @@ export default function WorkspaceMyPerformancePage() {
       }
 
       setData(resData);
+      const cacheKey = `my_performance_${companySlug}`;
+      setCachedData(cacheKey, resData, 60 * 1000);
     } catch (err: any) {
       setError(err.message || 'Error loading performance');
     } finally {
@@ -116,9 +120,21 @@ export default function WorkspaceMyPerformancePage() {
 
   useEffect(() => {
     if (companySlug) {
-      fetchMyPerformance();
+      const cacheKey = `my_performance_${companySlug}`;
+      const cached = getCachedData<EmployeePerformanceData>(cacheKey);
+      if (cached) {
+        setData(cached);
+        setIsLoading(false);
+        fetchMyPerformance(true);
+      } else {
+        fetchMyPerformance(false);
+      }
     }
   }, [companySlug]);
+
+  if (isLoading && !data) {
+    return <CenterLoader message="Analyzing your performance scorecard..." />;
+  }
 
   if (error) {
     return (
@@ -127,7 +143,7 @@ export default function WorkspaceMyPerformancePage() {
           {error}
         </div>
         <button
-          onClick={fetchMyPerformance}
+          onClick={() => fetchMyPerformance(false)}
           className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300"
         >
           Retry
@@ -158,7 +174,7 @@ export default function WorkspaceMyPerformancePage() {
         </div>
 
         <button
-          onClick={fetchMyPerformance}
+          onClick={() => fetchMyPerformance(false)}
           className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer self-start sm:self-auto"
           title="Refresh"
         >

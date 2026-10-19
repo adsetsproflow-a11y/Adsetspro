@@ -20,6 +20,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData, invalidateCache } from '@/lib/cache/clientCache';
 
 interface ProjectCardData {
   id: string;
@@ -69,18 +71,33 @@ export default function ProjectsPage() {
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('medium');
 
-  const fetchProjectsAndOptions = async () => {
-    setIsLoading(true);
+  const fetchProjectsAndOptions = async (force = false) => {
+    const qParams = new URLSearchParams();
+    if (statusFilter !== 'all') qParams.set('status', statusFilter);
+    if (priorityFilter !== 'all') qParams.set('priority', priorityFilter);
+    if (departmentFilter !== 'all') qParams.set('department_id', departmentFilter);
+    if (startDateFilter) qParams.set('startDate', startDateFilter);
+    if (endDateFilter) qParams.set('endDate', endDateFilter);
+    if (searchQuery.trim()) qParams.set('search', searchQuery.trim());
+
+    const cacheKey = `projects_${companySlug}_${qParams.toString()}`;
+
+    if (!force) {
+      const cached = getCachedData<any>(cacheKey);
+      if (cached) {
+        setProjects(cached.projects || []);
+        setDepartments(cached.departments || []);
+        setEmployees(cached.employees || []);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     setError(null);
     try {
-      const qParams = new URLSearchParams();
-      if (statusFilter !== 'all') qParams.set('status', statusFilter);
-      if (priorityFilter !== 'all') qParams.set('priority', priorityFilter);
-      if (departmentFilter !== 'all') qParams.set('department_id', departmentFilter);
-      if (startDateFilter) qParams.set('startDate', startDateFilter);
-      if (endDateFilter) qParams.set('endDate', endDateFilter);
-      if (searchQuery.trim()) qParams.set('search', searchQuery.trim());
-
       const [projRes, deptRes, empRes] = await Promise.all([
         fetch(`/api/companies/${companySlug}/projects?${qParams.toString()}`),
         fetch(`/api/companies/${companySlug}/departments`),
@@ -93,9 +110,19 @@ export default function ProjectsPage() {
 
       if (!projRes.ok) throw new Error(projData.error || 'Failed to load projects');
 
-      setProjects(projData.projects || []);
-      setDepartments(deptData.departments || []);
-      setEmployees(empData.employees || []);
+      const loadedProjects = projData.projects || [];
+      const loadedDepts = deptData.departments || [];
+      const loadedEmps = empData.employees || [];
+
+      setProjects(loadedProjects);
+      setDepartments(loadedDepts);
+      setEmployees(loadedEmps);
+
+      setCachedData(cacheKey, {
+        projects: loadedProjects,
+        departments: loadedDepts,
+        employees: loadedEmps,
+      });
     } catch (err: any) {
       console.error('Failed to load projects:', err);
       setError(err.message || 'Error loading projects');
@@ -179,6 +206,18 @@ export default function ProjectsPage() {
     }
   };
 
+  if (isLoading && projects.length === 0) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <CenterLoader
+          message="Loading Project Portfolios..."
+          subtitle="Fetching strategic initiatives, progress milestones, and task deliverables"
+          size="lg"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -198,7 +237,7 @@ export default function ProjectsPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchProjectsAndOptions}
+            onClick={() => fetchProjectsAndOptions(true)}
             disabled={isLoading}
             className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
             title="Refresh"

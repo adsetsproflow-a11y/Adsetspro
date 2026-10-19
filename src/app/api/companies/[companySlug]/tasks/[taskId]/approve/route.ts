@@ -143,9 +143,11 @@ export async function POST(
       });
     }
 
-    // 9. Notify assignee
-    if (assignment?.employee_id) {
-      await adminClient.from('notifications').insert({
+    // 9. Notify assignee and Department Head
+    const approveNotifs: any[] = [];
+
+    if (assignment?.employee_id && assignment.employee_id !== user.id) {
+      approveNotifs.push({
         user_id: assignment.employee_id,
         company_id: company.id,
         type: 'TASK_APPROVED',
@@ -153,6 +155,28 @@ export async function POST(
         body: `Your submission for task "${task.title}" has been approved by ${profile?.full_name || 'the reviewer'}.`,
         payload: { task_id: taskId },
       });
+    }
+
+    if (task.department_id) {
+      const { data: dept } = await adminClient
+        .from('departments')
+        .select('head_user_id')
+        .eq('id', task.department_id)
+        .single();
+      if (dept?.head_user_id && dept.head_user_id !== user.id && dept.head_user_id !== assignment?.employee_id) {
+        approveNotifs.push({
+          user_id: dept.head_user_id,
+          company_id: company.id,
+          type: 'TASK_APPROVED',
+          title: 'Department Task Approved',
+          body: `Task "${task.title}" was approved by ${profile?.full_name || 'Admin'}.`,
+          payload: { task_id: taskId },
+        });
+      }
+    }
+
+    if (approveNotifs.length > 0) {
+      await adminClient.from('notifications').insert(approveNotifs);
     }
 
     // 10. Audit log

@@ -36,6 +36,8 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+import CenterLoader from '@/components/common/CenterLoader';
+import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
 
 interface AnalyticsSummary {
   totalEmployees: number;
@@ -108,8 +110,8 @@ export default function WorkspaceAnalyticsDashboard() {
   const [selectedRange, setSelectedRange] = useState('30d');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
-  const fetchAnalytics = async () => {
-    setIsLoading(true);
+  const fetchAnalytics = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const q = new URLSearchParams();
       if (selectedDept !== 'all') q.set('departmentId', selectedDept);
@@ -130,6 +132,9 @@ export default function WorkspaceAnalyticsDashboard() {
         setSummary(data.summary);
         setCharts(data.charts);
         setDepartments(data.departments || []);
+
+        const cacheKey = `analytics_${companySlug}_${selectedDept}_${selectedRange}_${selectedStatus}`;
+        setCachedData(cacheKey, data, 60 * 1000);
       }
     } catch (err) {
       console.error('Failed to load analytics:', err);
@@ -140,7 +145,17 @@ export default function WorkspaceAnalyticsDashboard() {
 
   useEffect(() => {
     if (companySlug) {
-      fetchAnalytics();
+      const cacheKey = `analytics_${companySlug}_${selectedDept}_${selectedRange}_${selectedStatus}`;
+      const cached = getCachedData<any>(cacheKey);
+      if (cached && cached.success) {
+        setSummary(cached.summary);
+        setCharts(cached.charts);
+        setDepartments(cached.departments || []);
+        setIsLoading(false);
+        fetchAnalytics(true);
+      } else {
+        fetchAnalytics(false);
+      }
     }
   }, [companySlug, selectedDept, selectedRange, selectedStatus]);
 
@@ -166,6 +181,10 @@ export default function WorkspaceAnalyticsDashboard() {
         </Link>
       </div>
     );
+  }
+
+  if (isLoading && summary.totalTasks === 0 && summary.totalEmployees === 0) {
+    return <CenterLoader message="Computing real-time company analytics..." />;
   }
 
   return (
@@ -260,7 +279,7 @@ export default function WorkspaceAnalyticsDashboard() {
           </div>
 
           <button
-            onClick={fetchAnalytics}
+            onClick={() => fetchAnalytics(false)}
             className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
             title="Refresh Data"
           >
