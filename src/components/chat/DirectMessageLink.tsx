@@ -30,7 +30,7 @@ export default function DirectMessageLink({
   const [isLoading, setIsLoading] = useState(false);
 
   const formatRole = (role?: string) => {
-    if (role === 'COMPANY_ADMIN') return 'Company Admin';
+    if (role === 'COMPANY_ADMIN') return 'Admin';
     if (role === 'DEPARTMENT_HEAD') return 'Dept Head';
     if (role === 'EMPLOYEE') return 'Employee';
     return role || 'Member';

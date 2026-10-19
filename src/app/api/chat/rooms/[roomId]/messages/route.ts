@@ -225,7 +225,10 @@ export async function POST(
     // 5. Dispatch notifications to other room members (excluding sender and super admins)
     try {
       const roomRes = await pool.query(
-        `SELECT type, name, company_id FROM chat_rooms WHERE id = $1`,
+        `SELECT r.type, r.name, r.company_id, c.slug as company_slug 
+         FROM chat_rooms r
+         LEFT JOIN companies c ON c.id = r.company_id
+         WHERE r.id = $1`,
         [roomId]
       );
       const room = roomRes.rows[0];
@@ -263,6 +266,7 @@ export async function POST(
                   room_id: roomId,
                   message_id: message.id,
                   sender_id: user.id,
+                  company_slug: room.company_slug || '',
                 }),
               ]
             );

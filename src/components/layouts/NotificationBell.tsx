@@ -44,7 +44,12 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [toast, setToast] = useState<{ title: string; body: string } | null>(null);
+  const [toast, setToast] = useState<{
+    title: string;
+    body: string;
+    roomId?: string;
+    companySlug?: string;
+  } | null>(null);
 
   const fetchLatestNotifications = async () => {
     setIsLoading(true);
@@ -109,10 +114,15 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
               setNotifications((prev) => [newNotif, ...prev.slice(0, 9)]);
 
               // Trigger Realtime In-App Toast
-              setToast({ title: newNotif.title, body: newNotif.body });
+              setToast({
+                title: newNotif.title,
+                body: newNotif.body,
+                roomId: newNotif.payload?.room_id,
+                companySlug: newNotif.payload?.company_slug || companySlug,
+              });
               setTimeout(() => {
                 if (isMounted) setToast(null);
-              }, 4500);
+              }, 5000);
             }
           );
 
@@ -124,12 +134,12 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
 
     setupRealtime();
 
-    // Polling fallback to keep notifications updated
+    // Fast Polling fallback to keep notifications updated in near realtime (4s)
     const interval = setInterval(() => {
       if (isMounted) {
         fetchLatestNotifications();
       }
-    }, 30000);
+    }, 4000);
 
     return () => {
       isMounted = false;
@@ -404,7 +414,18 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
 
       {/* REALTIME TOAST ALERT POPUP */}
       {toast && (
-        <div className="fixed bottom-5 right-5 z-50 max-w-sm rounded-2xl bg-zinc-950 border border-indigo-500/40 p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-5 duration-200">
+        <div
+          onClick={() => {
+            if (toast.roomId) {
+              const targetSlug = toast.companySlug || companySlug || 'default';
+              router.push(`/c/${targetSlug}/chat/${toast.roomId}`);
+            }
+            setToast(null);
+          }}
+          className={`fixed bottom-5 right-5 z-50 max-w-sm rounded-2xl bg-zinc-950 border border-indigo-500/40 p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-5 duration-200 transition-colors ${
+            toast.roomId ? 'cursor-pointer hover:border-indigo-400' : ''
+          }`}
+        >
           <div className="flex items-start gap-3">
             <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 shrink-0">
               <Sparkles className="w-4 h-4" />
@@ -414,9 +435,17 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
               <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
                 {toast.body}
               </p>
+              {toast.roomId && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 hover:underline pt-0.5">
+                  Open Chat &rarr;
+                </span>
+              )}
             </div>
             <button
-              onClick={() => setToast(null)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setToast(null);
+              }}
               className="text-zinc-500 hover:text-white p-1"
             >
               <X className="w-3.5 h-3.5" />

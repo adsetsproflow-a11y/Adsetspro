@@ -459,30 +459,33 @@ export default function ChatRoom({
   return (
     <div className="flex flex-col h-full bg-zinc-950/80 border border-zinc-800/80 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
       {/* ROOM HEADER */}
-      <div className="px-6 py-4 border-b border-zinc-800/80 bg-zinc-900/50 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="px-4 sm:px-6 py-3.5 border-b border-zinc-800/80 bg-zinc-900/50 flex items-center justify-between shrink-0 gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {/* Back Button (Visible to all: Company Admin, Dept Head, Employee) */}
           <Link
             href={`/c/${companySlug}/chat`}
-            className="md:hidden p-2 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white"
+            className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850 text-zinc-300 hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-all shadow-sm cursor-pointer shrink-0 group"
+            title="Back to All Discussions"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white transition-colors" />
+            <span className="font-semibold">Back</span>
           </Link>
 
-          <div className="p-2.5 rounded-2xl bg-zinc-900 border border-zinc-800 shrink-0">
+          <div className="p-2 sm:p-2.5 rounded-2xl bg-zinc-900 border border-zinc-800 shrink-0">
             {getRoomIcon(roomType)}
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-white tracking-tight truncate max-w-[160px] sm:max-w-md">
                 {displayRoomTitle}
               </h2>
               {roomType === 'direct' ? (
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                <span className="whitespace-nowrap inline-flex items-center text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
                   {formatRoleBadge(directOtherUser?.role)}
                 </span>
               ) : (
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <span className="whitespace-nowrap inline-flex items-center text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
                   {roomType === 'company' ? 'Company Channel' : 'Department Channel'}
                 </span>
               )}
@@ -501,10 +504,10 @@ export default function ChatRoom({
         </div>
 
         {/* Room Header Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium shadow-sm shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{isConnected ? 'Realtime Connected' : 'Syncing...'}</span>
+            <span className="hidden sm:inline">Live Chat</span>
           </div>
 
           {/* Clear Chat Button (Company Admin or Direct Message Participants) */}
@@ -730,8 +733,13 @@ export default function ChatRoom({
             type="submit"
             disabled={(!inputText.trim() && !selectedFile) || isSending}
             className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold transition-all disabled:opacity-40 cursor-pointer shadow-lg shadow-indigo-600/20"
+            title="Send message"
           >
-            <Send className={`w-4 h-4 ${isSending ? 'animate-pulse' : ''}`} />
+            {isSending ? (
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </button>
         </div>
       </form>
@@ -807,7 +815,10 @@ export default function ChatRoom({
 
             <div className="max-h-72 overflow-y-auto space-y-2">
               {isLoadingMembers ? (
-                <div className="py-8 text-center text-xs text-zinc-500">Loading members...</div>
+                <div className="py-8 text-center text-xs text-zinc-400 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+                  <span>Loading channel members...</span>
+                </div>
               ) : members.length === 0 ? (
                 <div className="py-8 text-center text-xs text-zinc-500">No members found.</div>
               ) : (

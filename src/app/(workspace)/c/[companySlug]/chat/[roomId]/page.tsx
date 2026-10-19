@@ -261,10 +261,11 @@ export default async function ChatRoomPage({ params }: ChatRoomPageProps) {
             </div>
             <Link
               href={`/c/${companySlug}/chat`}
-              className="text-[10px] text-zinc-400 hover:text-white transition-colors"
-              title="View all discussions"
+              className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850 text-[11px] font-semibold text-zinc-300 hover:text-white inline-flex items-center gap-1 transition-all shadow-sm"
+              title="Return to Chat Hub / Discussions"
             >
-              Overview
+              <ArrowLeft className="w-3 h-3 text-zinc-400" />
+              <span>All Chats</span>
             </Link>
           </div>
 
