@@ -25,6 +25,7 @@ import {
 import FileList, { TaskAttachmentItem } from '@/components/tasks/FileList';
 import { formatDate } from '@/lib/utils/dateFormat';
 import CenterLoader from '@/components/common/CenterLoader';
+import { notifyTaskLifecycleChange } from '@/lib/events/lifecycleEvents';
 
 interface TaskDetail {
   id: string;
@@ -166,6 +167,7 @@ export default function ReviewDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to approve task');
 
+      notifyTaskLifecycleChange(companySlug);
       setIsApproveModalOpen(false);
       router.push(`/c/${companySlug}/review`);
     } catch (err: any) {
@@ -199,6 +201,7 @@ export default function ReviewDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to request revision');
 
+      notifyTaskLifecycleChange(companySlug);
       setIsRevisionModalOpen(false);
       setRevisionFeedback('');
       router.push(`/c/${companySlug}/review`);

@@ -30,6 +30,7 @@ import {
 import { formatDate } from '@/lib/utils/dateFormat';
 import CenterLoader from '@/components/common/CenterLoader';
 import { getCachedData, setCachedData, invalidateCache } from '@/lib/cache/clientCache';
+import { notifyTaskLifecycleChange } from '@/lib/events/lifecycleEvents';
 
 interface TaskItem {
   id: string;
@@ -139,6 +140,7 @@ export default function WorkspaceTasksPage() {
       setTasks((prev) => prev.filter((t) => !selectedTaskIds.includes(t.id)));
       setTotalTasks((prev) => Math.max(0, prev - selectedTaskIds.length));
       setSelectedTaskIds([]);
+      notifyTaskLifecycleChange(companySlug);
     } catch (err: any) {
       alert(err.message || 'Error deleting selected tasks');
     } finally {
@@ -161,6 +163,7 @@ export default function WorkspaceTasksPage() {
       setTotalTasks(0);
       setIsClearAllModalOpen(false);
       setDeleteConfirmationText('');
+      notifyTaskLifecycleChange(companySlug);
       fetchTasks();
     } catch (err: any) {
       alert(err.message || 'Error clearing tasks');
@@ -335,7 +338,7 @@ export default function WorkspaceTasksPage() {
       setIsModalOpen(false);
 
       invalidateCache('tasks_' + companySlug);
-      invalidateCache('dashboard_' + companySlug);
+      notifyTaskLifecycleChange(companySlug);
       fetchTasks(true);
     } catch (err: any) {
       console.error('Error creating task:', err);

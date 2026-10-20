@@ -37,24 +37,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Fetch company
-    const { data: company } = await adminClient
-      .from('companies')
-      .select('id, name')
-      .eq('slug', companySlug)
-      .single();
+    // 2 & 3. Fetch company and user profile in parallel
+    const [companyRes, profileRes] = await Promise.all([
+      adminClient.from('companies').select('id, name').eq('slug', companySlug).single(),
+      adminClient.from('profiles').select('is_super_admin').eq('id', user.id).single(),
+    ]);
 
+    const company = companyRes.data;
     if (!company) {
       return NextResponse.json({ error: 'Company workspace not found' }, { status: 404 });
     }
 
-    // 3. Verify user membership
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('is_super_admin')
-      .eq('id', user.id)
-      .single();
-
+    const profile = profileRes.data;
     let userRole = 'EMPLOYEE';
     if (!profile?.is_super_admin) {
       const { data: membership } = await adminClient
@@ -128,57 +122,51 @@ export async function GET(
 
     // 5. Fetch current assignees for these tasks
     let taskAssigneeMap = new Map<string, { employee_id: string; full_name: string; avatar_url: string | null }>();
-    if (taskIds.length > 0) {
-      const { data: assignments } = await adminClient
-        .from('task_assignments')
-        .select('task_id, employee_id')
-        .in('task_id', taskIds)
-        .eq('is_current', true);
-
-      const empIds = Array.from(new Set((assignments || []).map((a) => a.employee_id)));
-      if (empIds.length > 0) {
-        const { data: empProfiles } = await adminClient
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .in('id', empIds);
-
-        const empMap = new Map<string, { full_name: string; avatar_url: string | null }>();
-        (empProfiles || []).forEach((p) => empMap.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url }));
-
-        (assignments || []).forEach((a) => {
-          const emp = empMap.get(a.employee_id);
-          if (emp) {
-            taskAssigneeMap.set(a.task_id, {
-              employee_id: a.employee_id,
-              full_name: emp.full_name,
-              avatar_url: emp.avatar_url,
-            });
-          }
-        });
-      }
-    }
-
-    // 6. Fetch departments and projects maps
     const deptIds = Array.from(new Set(tasks.map((t) => t.department_id).filter(Boolean))) as string[];
     const projIds = Array.from(new Set(tasks.map((t) => t.project_id).filter(Boolean))) as string[];
 
-    let deptMap = new Map<string, string>();
-    if (deptIds.length > 0) {
-      const { data: depts } = await adminClient
-        .from('departments')
-        .select('id, name')
-        .in('id', deptIds);
-      (depts || []).forEach((d) => deptMap.set(d.id, d.name));
+    // 5 & 6. Parallel Batch Fetch: Assignments, Departments, and Projects
+    const [assignmentsRes, deptsRes, projsRes] = await Promise.all([
+      taskIds.length > 0
+        ? adminClient.from('task_assignments').select('task_id, employee_id').in('task_id', taskIds).eq('is_current', true)
+        : Promise.resolve({ data: [] }),
+      deptIds.length > 0
+        ? adminClient.from('departments').select('id, name').in('id', deptIds)
+        : Promise.resolve({ data: [] }),
+      projIds.length > 0
+        ? adminClient.from('projects').select('id, name').in('id', projIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const assignments = assignmentsRes.data || [];
+    const empIds = Array.from(new Set(assignments.map((a: any) => a.employee_id)));
+
+    if (empIds.length > 0) {
+      const { data: empProfiles } = await adminClient
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', empIds);
+
+      const empMap = new Map<string, { full_name: string; avatar_url: string | null }>();
+      (empProfiles || []).forEach((p: any) => empMap.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url }));
+
+      assignments.forEach((a: any) => {
+        const emp = empMap.get(a.employee_id);
+        if (emp) {
+          taskAssigneeMap.set(a.task_id, {
+            employee_id: a.employee_id,
+            full_name: emp.full_name,
+            avatar_url: emp.avatar_url,
+          });
+        }
+      });
     }
 
+    let deptMap = new Map<string, string>();
+    (deptsRes.data || []).forEach((d: any) => deptMap.set(d.id, d.name));
+
     let projMap = new Map<string, string>();
-    if (projIds.length > 0) {
-      const { data: projs } = await adminClient
-        .from('projects')
-        .select('id, name')
-        .in('id', projIds);
-      (projs || []).forEach((p) => projMap.set(p.id, p.name));
-    }
+    (projsRes.data || []).forEach((p: any) => projMap.set(p.id, p.name));
 
     // 7. Format task response
     let formattedTasks = tasks.map((t) => {

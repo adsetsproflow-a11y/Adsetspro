@@ -78,16 +78,31 @@ export default async function WorkspaceLayout({
     redirect('/login');
   }
 
-  // 2. Fetch user profile
+  // 2. Fetch user profile with resilient fallback
   const pool = getDbPool();
-  const profRes = await pool.query(
-    `SELECT id, full_name, email, is_super_admin FROM public.profiles WHERE id = $1 LIMIT 1;`,
-    [user.id]
+  let profRes = await pool.query(
+    `SELECT id, full_name, email, is_super_admin 
+     FROM public.profiles 
+     WHERE id = $1 OR (LOWER(email) = LOWER($2) AND $2 != '') 
+     LIMIT 1;`,
+    [user.id, user.email || '']
   );
-  const profile = profRes.rows[0];
+  let profile = profRes.rows[0];
 
   if (!profile) {
-    redirect('/login');
+    const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member';
+    try {
+      const insRes = await pool.query(
+        `INSERT INTO public.profiles (id, full_name, email, is_super_admin)
+         VALUES ($1, $2, $3, false)
+         ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email
+         RETURNING id, full_name, email, is_super_admin;`,
+        [user.id, name, user.email || '']
+      );
+      profile = insRes.rows[0];
+    } catch {
+      profile = { id: user.id, full_name: name, email: user.email, is_super_admin: false };
+    }
   }
 
   // 3. Fetch company

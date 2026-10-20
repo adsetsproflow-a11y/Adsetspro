@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { getDbPool } from '@/lib/db';
 
 export async function GET(
   request: Request,
@@ -19,15 +20,33 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Fetch user profile
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('id, full_name, email, is_super_admin')
-      .eq('id', user.id)
-      .single();
+    // 2. Fetch user profile with resilient fallback
+    const pool = getDbPool();
+    let profile: any = null;
+    const profRes = await pool.query(
+      `SELECT id, full_name, email, is_super_admin 
+       FROM public.profiles 
+       WHERE id = $1 OR (LOWER(email) = LOWER($2) AND $2 != '') 
+       LIMIT 1;`,
+      [user.id, user.email || '']
+    );
 
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 401 });
+    if (profRes.rows.length > 0) {
+      profile = profRes.rows[0];
+    } else {
+      const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member';
+      try {
+        const insertRes = await pool.query(
+          `INSERT INTO public.profiles (id, full_name, email, is_super_admin)
+           VALUES ($1, $2, $3, false)
+           ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email
+           RETURNING id, full_name, email, is_super_admin;`,
+          [user.id, name, user.email || '']
+        );
+        profile = insertRes.rows[0];
+      } catch {
+        profile = { id: user.id, full_name: name, email: user.email, is_super_admin: false };
+      }
     }
 
     // 3. Fetch company
@@ -42,14 +61,18 @@ export async function GET(
     }
 
     // 4. Validate membership & approval status
-    if (!profile.is_super_admin) {
-      const { data: membership } = await adminClient
-        .from('company_memberships')
-        .select('role, status')
-        .eq('company_id', company.id)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
+    let userRole = 'EMPLOYEE';
+    if (profile?.is_super_admin) {
+      userRole = 'SUPER_ADMIN';
+    } else {
+      const effectiveUserId = profile?.id || user.id;
+      const memRes = await pool.query(
+        `SELECT role, status FROM public.company_memberships 
+         WHERE company_id = $1 AND (user_id = $2 OR user_id = $3) AND status = 'active' 
+         LIMIT 1;`,
+        [company.id, user.id, effectiveUserId]
+      );
+      const membership = memRes.rows[0];
 
       if (!membership) {
         return NextResponse.json(
@@ -64,9 +87,22 @@ export async function GET(
           { status: 403 }
         );
       }
+
+      userRole = membership.role;
     }
 
-    // 5. Gather raw metrics concurrently
+    // If department head, fetch their headed departments
+    let headDeptIds: string[] = [];
+    if (userRole === 'DEPARTMENT_HEAD') {
+      const { data: headDepts } = await adminClient
+        .from('departments')
+        .select('id')
+        .eq('company_id', company.id)
+        .eq('head_user_id', user.id);
+      headDeptIds = (headDepts || []).map((d) => d.id);
+    }
+
+    // 5. Gather raw metrics & employee workload aggregation concurrently
     const [
       { count: employeeCount },
       { count: departmentCount },
@@ -75,6 +111,7 @@ export async function GET(
       { data: tasks },
       { data: taskAssignments },
       { data: recentAuditLogs },
+      empWorkloadRes,
     ] = await Promise.all([
       adminClient
         .from('company_memberships')
@@ -120,6 +157,29 @@ export async function GET(
         .eq('company_id', company.id)
         .order('created_at', { ascending: false })
         .limit(8),
+      pool.query(`
+        SELECT 
+          cm.user_id as employee_id,
+          COALESCE(p.full_name, p.email) as full_name,
+          p.avatar_url,
+          p.email,
+          dm.department_id,
+          COALESCE(d.name, 'General') as department_name,
+          t.id as task_id,
+          t.title as task_title,
+          t.priority as task_priority,
+          t.project_id as task_project_id,
+          t.status as task_status,
+          t.due_date as task_due_date
+        FROM public.company_memberships cm
+        JOIN public.profiles p ON p.id = cm.user_id
+        LEFT JOIN public.department_memberships dm ON dm.user_id = cm.user_id AND dm.status = 'active'
+        LEFT JOIN public.departments d ON d.id = dm.department_id
+        LEFT JOIN public.task_assignments ta ON ta.employee_id = cm.user_id AND ta.is_current = true
+        LEFT JOIN public.tasks t ON t.id = ta.task_id AND t.company_id = cm.company_id
+        WHERE cm.company_id = $1 AND cm.status = 'active'
+        ORDER BY p.full_name ASC;
+      `, [company.id]),
     ]);
 
     const allTasks = tasks || [];
@@ -260,6 +320,102 @@ export async function GET(
       count,
     }));
 
+    // Employee Workload Lifecycle Distribution
+    const empMap = new Map<string, any>();
+    for (const row of (empWorkloadRes?.rows || [])) {
+      // If DEPARTMENT_HEAD, restrict to members in their departments + self
+      if (userRole === 'DEPARTMENT_HEAD' && headDeptIds.length > 0) {
+        if (row.employee_id !== user.id && !headDeptIds.includes(row.department_id)) {
+          continue;
+        }
+      }
+      // If regular EMPLOYEE, only show their own lifecycle
+      if (userRole === 'EMPLOYEE' && row.employee_id !== user.id) {
+        continue;
+      }
+
+      if (!empMap.has(row.employee_id)) {
+        empMap.set(row.employee_id, {
+          employee_id: row.employee_id,
+          name: row.full_name || row.email,
+          email: row.email,
+          avatar_url: row.avatar_url,
+          department_id: row.department_id,
+          department: row.department_name,
+          completed: 0,
+          in_progress: 0,
+          under_review: 0,
+          revision_required: 0,
+          assigned: 0,
+          blocked: 0,
+          overdue: 0,
+          total: 0,
+          active_tasks: 0,
+          completion_rate: 0,
+          load_status: 'available',
+          tasks: [],
+        });
+      }
+
+      if (row.task_id) {
+        const emp = empMap.get(row.employee_id);
+        emp.total++;
+        const status = row.task_status;
+        const isOverdue = Boolean(
+          row.task_due_date &&
+          row.task_due_date < todayIso &&
+          status !== 'approved' &&
+          status !== 'cancelled'
+        );
+
+        if (isOverdue) {
+          emp.overdue++;
+        }
+
+        if (status === 'approved') {
+          emp.completed++;
+        } else if (status === 'in_progress') {
+          emp.in_progress++;
+        } else if (status === 'submitted_for_review') {
+          emp.under_review++;
+        } else if (status === 'revision_required') {
+          emp.revision_required++;
+        } else if (status === 'assigned' || status === 'pending') {
+          emp.assigned++;
+        } else if (status === 'blocked') {
+          emp.blocked++;
+        }
+
+        // Keep task details for click-to-inspect drawer
+        emp.tasks.push({
+          id: row.task_id,
+          title: row.task_title || 'Untitled Task',
+          priority: row.task_priority || 'medium',
+          status: status,
+          due_date: row.task_due_date,
+          is_overdue: isOverdue,
+          project_id: row.task_project_id,
+        });
+      }
+    }
+
+    // Post-process capacity health and completion rate
+    for (const emp of empMap.values()) {
+      emp.active_tasks = emp.assigned + emp.in_progress + emp.under_review + emp.revision_required + emp.blocked;
+      emp.completion_rate = emp.total > 0 ? Math.round((emp.completed / emp.total) * 100) : 0;
+      if (emp.overdue > 0) {
+        emp.load_status = 'overdue';
+      } else if (emp.active_tasks >= 8) {
+        emp.load_status = 'overloaded';
+      } else if (emp.active_tasks >= 3) {
+        emp.load_status = 'balanced';
+      } else {
+        emp.load_status = 'available';
+      }
+    }
+
+    const employeeWorkload = Array.from(empMap.values());
+
     // Tasks Due Soon (Top 5 active tasks sorted by due_date ascending)
     const tasksDueSoon = allTasks
       .filter((t) => t.due_date && t.status !== 'approved' && t.status !== 'cancelled')
@@ -292,6 +448,7 @@ export async function GET(
         name: company.name,
         slug: company.slug,
       },
+      userRole,
       kpis: {
         totalEmployees: employeeCount || 0,
         totalDepartments: departmentCount || 0,
@@ -307,7 +464,21 @@ export async function GET(
         departmentWorkload,
         weeklyCompletionTrend: weeklyTrend,
         priorityDistribution,
+        employeeWorkload,
+        taskLifecycle: {
+          assigned: statusCounts.assigned,
+          in_progress: statusCounts.in_progress,
+          submitted_for_review: statusCounts.submitted_for_review,
+          revision_required: statusCounts.revision_required,
+          approved: statusCounts.approved,
+          blocked: statusCounts.blocked,
+          overdue: overdueTasks,
+          total: allTasks.length,
+          activeTotal: statusCounts.assigned + statusCounts.in_progress + statusCounts.submitted_for_review + statusCounts.revision_required + statusCounts.blocked,
+          completionRate: allTasks.length > 0 ? Math.round((statusCounts.approved / allTasks.length) * 100) : 0,
+        },
       },
+      departments: (departments || []).map((d) => ({ id: d.id, name: d.name })),
       tables: {
         recentActivities,
         tasksDueSoon,

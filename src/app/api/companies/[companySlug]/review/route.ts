@@ -22,24 +22,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Fetch company
-    const { data: company } = await adminClient
-      .from('companies')
-      .select('id, name')
-      .eq('slug', companySlug)
-      .single();
+    // 2 & 3. Fetch company and user profile in parallel
+    const [companyRes, profileRes] = await Promise.all([
+      adminClient.from('companies').select('id, name').eq('slug', companySlug).single(),
+      adminClient.from('profiles').select('is_super_admin').eq('id', user.id).single(),
+    ]);
 
+    const company = companyRes.data;
     if (!company) {
       return NextResponse.json({ error: 'Company workspace not found' }, { status: 404 });
     }
 
-    // 3. Verify user membership and role (Only COMPANY_ADMIN and DEPARTMENT_HEAD)
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('is_super_admin')
-      .eq('id', user.id)
-      .single();
-
+    const profile = profileRes.data;
     let userRole = 'EMPLOYEE';
     if (!profile?.is_super_admin) {
       const { data: membership } = await adminClient
@@ -115,96 +109,93 @@ export async function GET(
 
     const tasks = rawTasks || [];
     const taskIds = tasks.map((t) => t.id);
+    const deptIds = Array.from(new Set(tasks.map((t) => t.department_id).filter(Boolean))) as string[];
+    const projIds = Array.from(new Set(tasks.map((t) => t.project_id).filter(Boolean))) as string[];
 
-    // 5. Fetch current assignees for these tasks
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    // 5. Parallel Batch Queries for Maximum Concurrency Throughput
+    const [
+      assignmentsRes,
+      subActivitiesRes,
+      deptsRes,
+      projsRes,
+      attachmentsRes,
+      reviewedTodayRes,
+      allDepartmentsRes,
+    ] = await Promise.all([
+      taskIds.length > 0
+        ? adminClient.from('task_assignments').select('task_id, employee_id').in('task_id', taskIds).eq('is_current', true)
+        : Promise.resolve({ data: [] }),
+      taskIds.length > 0
+        ? adminClient.from('task_activities').select('task_id, created_at, details').in('task_id', taskIds).eq('action', 'STATUS_CHANGED').order('created_at', { ascending: false })
+        : Promise.resolve({ data: [] }),
+      deptIds.length > 0
+        ? adminClient.from('departments').select('id, name').in('id', deptIds)
+        : Promise.resolve({ data: [] }),
+      projIds.length > 0
+        ? adminClient.from('projects').select('id, name').in('id', projIds)
+        : Promise.resolve({ data: [] }),
+      taskIds.length > 0
+        ? adminClient.from('task_attachments').select('task_id').in('task_id', taskIds)
+        : Promise.resolve({ data: [] }),
+      adminClient.from('task_activities').select('id', { count: 'exact', head: true }).in('action', ['TASK_APPROVED', 'REVISION_REQUESTED']).gte('created_at', startOfToday.toISOString()),
+      adminClient.from('departments').select('id, name').eq('company_id', company.id).order('name'),
+    ]);
+
+    const assignments = assignmentsRes.data || [];
+    const empIds = Array.from(new Set(assignments.map((a: any) => a.employee_id)));
+
+    // Fetch assignee profiles
     let taskAssigneeMap = new Map<string, { employee_id: string; full_name: string; avatar_url: string | null; email: string | null }>();
-    if (taskIds.length > 0) {
-      const { data: assignments } = await adminClient
-        .from('task_assignments')
-        .select('task_id, employee_id')
-        .in('task_id', taskIds)
-        .eq('is_current', true);
+    if (empIds.length > 0) {
+      const { data: empProfiles } = await adminClient
+        .from('profiles')
+        .select('id, full_name, avatar_url, email')
+        .in('id', empIds);
 
-      const empIds = Array.from(new Set((assignments || []).map((a) => a.employee_id)));
-      if (empIds.length > 0) {
-        const { data: empProfiles } = await adminClient
-          .from('profiles')
-          .select('id, full_name, avatar_url, email')
-          .in('id', empIds);
+      const empMap = new Map<string, any>();
+      (empProfiles || []).forEach((p: any) => empMap.set(p.id, p));
 
-        const empMap = new Map<string, any>();
-        (empProfiles || []).forEach((p) => empMap.set(p.id, p));
-
-        (assignments || []).forEach((a) => {
-          const emp = empMap.get(a.employee_id);
-          if (emp) {
-            taskAssigneeMap.set(a.task_id, {
-              employee_id: a.employee_id,
-              full_name: emp.full_name,
-              avatar_url: emp.avatar_url,
-              email: emp.email,
-            });
-          }
-        });
-      }
-    }
-
-    // 6. Fetch submission timestamp from task_activities
-    let submissionDateMap = new Map<string, string>();
-    if (taskIds.length > 0) {
-      const { data: subActivities } = await adminClient
-        .from('task_activities')
-        .select('task_id, created_at, details')
-        .in('task_id', taskIds)
-        .eq('action', 'STATUS_CHANGED')
-        .order('created_at', { ascending: false });
-
-      (subActivities || []).forEach((act: any) => {
-        if (act.details?.to_status === 'submitted_for_review' && !submissionDateMap.has(act.task_id)) {
-          submissionDateMap.set(act.task_id, act.created_at);
+      assignments.forEach((a: any) => {
+        const emp = empMap.get(a.employee_id);
+        if (emp) {
+          taskAssigneeMap.set(a.task_id, {
+            employee_id: a.employee_id,
+            full_name: emp.full_name,
+            avatar_url: emp.avatar_url,
+            email: emp.email,
+          });
         }
       });
     }
 
-    // 7. Fetch department names and project names
-    const deptIds = Array.from(new Set(tasks.map((t) => t.department_id).filter(Boolean))) as string[];
-    const projIds = Array.from(new Set(tasks.map((t) => t.project_id).filter(Boolean))) as string[];
+    // Process submission timestamps
+    let submissionDateMap = new Map<string, string>();
+    (subActivitiesRes.data || []).forEach((act: any) => {
+      if (act.details?.to_status === 'submitted_for_review' && !submissionDateMap.has(act.task_id)) {
+        submissionDateMap.set(act.task_id, act.created_at);
+      }
+    });
 
+    // Maps for departments and projects
     let deptMap = new Map<string, string>();
-    if (deptIds.length > 0) {
-      const { data: depts } = await adminClient
-        .from('departments')
-        .select('id, name')
-        .in('id', deptIds);
-      (depts || []).forEach((d) => deptMap.set(d.id, d.name));
-    }
+    (deptsRes.data || []).forEach((d: any) => deptMap.set(d.id, d.name));
 
     let projMap = new Map<string, string>();
-    if (projIds.length > 0) {
-      const { data: projs } = await adminClient
-        .from('projects')
-        .select('id, name')
-        .in('id', projIds);
-      (projs || []).forEach((p) => projMap.set(p.id, p.name));
-    }
+    (projsRes.data || []).forEach((p: any) => projMap.set(p.id, p.name));
 
-    // 8. Fetch attachment count for each task
+    // Attachment counts
     let attachmentCountMap = new Map<string, number>();
-    if (taskIds.length > 0) {
-      const { data: attachments } = await adminClient
-        .from('task_attachments')
-        .select('task_id')
-        .in('task_id', taskIds);
-
-      (attachments || []).forEach((att) => {
-        attachmentCountMap.set(att.task_id, (attachmentCountMap.get(att.task_id) || 0) + 1);
-      });
-    }
+    (attachmentsRes.data || []).forEach((att: any) => {
+      attachmentCountMap.set(att.task_id, (attachmentCountMap.get(att.task_id) || 0) + 1);
+    });
 
     const now = new Date();
 
-    // 9. Format tasks and mark overdue
-    let formattedTasks = tasks.map((t) => {
+    // Format tasks and mark overdue
+    let formattedTasks = tasks.map((t: any) => {
       const assignee = taskAssigneeMap.get(t.id);
       const submittedAt = submissionDateMap.get(t.id) || t.updated_at || t.created_at;
       const isOverdue = t.due_date ? new Date(t.due_date) < now : false;
@@ -231,42 +222,18 @@ export async function GET(
       };
     });
 
-    // 10. Sort by: OVERDUE FIRST, then by submitted_at (oldest submission first)
+    // Sort by: OVERDUE FIRST, then by submitted_at
     formattedTasks.sort((a, b) => {
       if (a.is_overdue && !b.is_overdue) return -1;
       if (!a.is_overdue && b.is_overdue) return 1;
-
-      // Oldest submission first to ensure fast review cycle
       const dateA = new Date(a.submitted_at).getTime();
       const dateB = new Date(b.submitted_at).getTime();
       return dateA - dateB;
     });
 
-    // 11. Calculate Header Stats:
-    // - Total awaiting review
     const totalAwaitingReview = formattedTasks.length;
-
-    // - Overdue submissions (submitted but past due date)
     const overdueSubmissions = formattedTasks.filter((t) => t.is_overdue).length;
-
-    // - Reviewed today
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const { count: reviewedTodayCount } = await adminClient
-      .from('task_activities')
-      .select('id', { count: 'exact', head: true })
-      .in('action', ['TASK_APPROVED', 'REVISION_REQUESTED'])
-      .gte('created_at', startOfToday.toISOString());
-
-    const reviewedToday = reviewedTodayCount || 0;
-
-    // Fetch departments for filter
-    const { data: allDepartments } = await adminClient
-      .from('departments')
-      .select('id, name')
-      .eq('company_id', company.id)
-      .order('name');
+    const reviewedToday = reviewedTodayRes.count || 0;
 
     return NextResponse.json({
       success: true,
@@ -276,7 +243,7 @@ export async function GET(
         overdueSubmissions,
         reviewedToday,
       },
-      departments: allDepartments || [],
+      departments: allDepartmentsRes.data || [],
       userRole,
     });
   } catch (error: any) {
