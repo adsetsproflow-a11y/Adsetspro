@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -57,6 +57,75 @@ export default function WorkspaceShell({
   const supabase = createClient();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Dynamic branding state with real-time sync across all team members
+  const [currentLogo, setCurrentLogo] = useState<string | null>(companyLogo || null);
+  const [currentName, setCurrentName] = useState<string>(companyName);
+
+  useEffect(() => {
+    setCurrentLogo(companyLogo || null);
+  }, [companyLogo]);
+
+  useEffect(() => {
+    setCurrentName(companyName);
+  }, [companyName]);
+
+  useEffect(() => {
+    // 1. Same-window custom event (e.g. from Company Settings save)
+    const handleCustomBrandUpdate = (e: any) => {
+      if (e.detail?.companySlug === companySlug) {
+        setCurrentLogo(e.detail.logoUrl !== undefined ? e.detail.logoUrl : null);
+        if (e.detail.companyName) setCurrentName(e.detail.companyName);
+      }
+    };
+    window.addEventListener('company-brand-updated', handleCustomBrandUpdate);
+
+    // 2. Cross-tab localStorage sync (e.g. admin in Tab 1 -> employee/head in Tab 2 updates instantly)
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (e.key === 'company_brand_sync' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed.companySlug === companySlug) {
+            setCurrentLogo(parsed.logoUrl !== undefined ? parsed.logoUrl : null);
+            if (parsed.companyName) setCurrentName(parsed.companyName);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageUpdate);
+
+    // 3. Supabase Realtime subscription (for remote browsers, separate devices, and database updates)
+    const brandChannel = supabase
+      .channel(`company_brand_${companySlug}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'companies',
+          filter: `slug=eq.${companySlug}`,
+        },
+        (payload: any) => {
+          if (payload.new) {
+            setCurrentLogo(payload.new.logo_url || null);
+            if (payload.new.name) setCurrentName(payload.new.name);
+          }
+        }
+      )
+      .on('broadcast', { event: 'brand_updated' }, (payload: any) => {
+        if (payload.payload?.companySlug === companySlug) {
+          setCurrentLogo(payload.payload.logoUrl !== undefined ? payload.payload.logoUrl : null);
+          if (payload.payload.companyName) setCurrentName(payload.payload.companyName);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('company-brand-updated', handleCustomBrandUpdate);
+      window.removeEventListener('storage', handleStorageUpdate);
+      supabase.removeChannel(brandChannel);
+    };
+  }, [companySlug, supabase]);
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -83,7 +152,6 @@ export default function WorkspaceShell({
           badge: unreadNotifications > 0 ? unreadNotifications : null,
         },
         { label: 'My Performance', href: `${base}/performance`, icon: Award },
-        { label: 'Settings', href: `${base}/settings`, icon: Settings },
       ];
     }
 
@@ -129,10 +197,10 @@ export default function WorkspaceShell({
       {/* Mobile Top Header */}
       <header className="md:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-zinc-800">
         <div className="flex items-center gap-3">
-          {companyLogo ? (
+          {currentLogo ? (
             <img
-              src={companyLogo}
-              alt={companyName}
+              src={currentLogo}
+              alt={currentName}
               className="w-8 h-8 rounded-lg object-cover border border-zinc-700/50 shrink-0"
             />
           ) : (
@@ -141,7 +209,7 @@ export default function WorkspaceShell({
             </div>
           )}
           <div>
-            <h2 className="font-bold text-xs text-white truncate max-w-[150px]">{companyName}</h2>
+            <h2 className="font-bold text-xs text-white truncate max-w-[150px]">{currentName}</h2>
             <span
               className={`text-[9px] uppercase tracking-wider font-mono px-1.5 py-0.2 rounded-full border ${getRoleBadgeStyle(
                 userRole
@@ -174,10 +242,10 @@ export default function WorkspaceShell({
           {/* Company Brand Header */}
           <div className="px-2 space-y-2">
             <div className="flex items-center gap-3">
-              {companyLogo ? (
+              {currentLogo ? (
                 <img
-                  src={companyLogo}
-                  alt={companyName}
+                  src={currentLogo}
+                  alt={currentName}
                   className="w-10 h-10 rounded-xl object-cover shadow-lg border border-zinc-700/60 shrink-0"
                 />
               ) : (
@@ -187,7 +255,7 @@ export default function WorkspaceShell({
               )}
               <div className="min-w-0">
                 <h2 className="font-bold text-sm tracking-tight text-white truncate">
-                  {companyName}
+                  {currentName}
                 </h2>
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <span

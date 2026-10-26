@@ -416,11 +416,11 @@ export async function GET(
 
     const employeeWorkload = Array.from(empMap.values());
 
-    // Tasks Due Soon (Top 5 active tasks sorted by due_date ascending)
+    // Tasks Due Soon (Top 8 active tasks sorted by due_date ascending)
     const tasksDueSoon = allTasks
       .filter((t) => t.due_date && t.status !== 'approved' && t.status !== 'cancelled')
       .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
-      .slice(0, 5)
+      .slice(0, 8)
       .map((t) => ({
         id: t.id,
         title: t.title,

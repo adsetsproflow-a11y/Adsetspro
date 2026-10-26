@@ -11,7 +11,6 @@ import {
   ArrowUpRight,
   TrendingUp,
   RefreshCw,
-  Activity,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -25,7 +24,6 @@ export default function SuperAdminDashboardPage() {
     totalUsers: 0,
   });
   const [recentCompanies, setRecentCompanies] = useState<any[]>([]);
-  const [recentAuditEvents, setRecentAuditEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDashboardData = async () => {
@@ -37,7 +35,6 @@ export default function SuperAdminDashboardPage() {
       if (data.success) {
         setStats(data.stats);
         setRecentCompanies(data.recentCompanies || []);
-        setRecentAuditEvents(data.recentAuditEvents || []);
       }
     } catch (err) {
       console.error('Error fetching admin dashboard data:', err);
@@ -123,109 +120,75 @@ export default function SuperAdminDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Companies Section */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
+      {/* Recent Companies Section (Full Width) */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
             <h2 className="text-lg font-bold text-white">Recent Company Registrations</h2>
-            <Link
-              href="/super-admin/companies"
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
-            >
-              View all companies →
-            </Link>
+            <p className="text-xs text-zinc-400 mt-0.5">Newly onboarded enterprise tenants across the platform</p>
           </div>
-
-          <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-zinc-950/70 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="py-3.5 px-4">Company</th>
-                    <th className="py-3.5 px-4">Slug</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4">Registered Date</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/60">
-                  {recentCompanies.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-zinc-500">
-                        No registered organizations found.
-                      </td>
-                    </tr>
-                  ) : (
-                    recentCompanies.map((c) => (
-                      <tr key={c.id} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-zinc-200">{c.name}</td>
-                        <td className="py-3 px-4 font-mono text-zinc-400">{c.slug}</td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                              c.status === 'approved'
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                : c.status === 'pending'
-                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                                : 'bg-red-500/10 text-red-400 border border-red-500/30'
-                            }`}
-                          >
-                            {c.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-zinc-400">
-                          {new Date(c.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <Link
-                            href="/super-admin/companies"
-                            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
-                          >
-                            Manage
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Link
+            href="/super-admin/companies"
+            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold inline-flex items-center gap-1.5"
+          >
+            <span>View all companies</span>
+            <span>→</span>
+          </Link>
         </div>
 
-        {/* Recent Audit Events List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Activity className="w-4 h-4 text-red-400" />
-              <span>Recent Decision Trail</span>
-            </h2>
-            <Link
-              href="/super-admin/audit-logs"
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
-            >
-              All Logs →
-            </Link>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-3">
-            {recentAuditEvents.length === 0 ? (
-              <p className="text-xs text-zinc-500 py-6 text-center">No recent audit actions recorded.</p>
-            ) : (
-              recentAuditEvents.map((evt) => (
-                <div key={evt.id} className="pb-3 border-b border-zinc-800/60 last:border-0 last:pb-0 space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono font-bold text-zinc-200">{evt.action}</span>
-                    <span className="text-[10px] text-zinc-500">
-                      {new Date(evt.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 truncate">
-                    Target: {evt.target_type} ({evt.target_id || 'system'})
-                  </p>
-                </div>
-              ))
-            )}
+        <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[650px]">
+              <thead className="bg-zinc-950/70 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th className="py-3.5 px-4">Company</th>
+                  <th className="py-3.5 px-4">Slug</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Registered Date</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/60">
+                {recentCompanies.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-zinc-500">
+                      No registered organizations found.
+                    </td>
+                  </tr>
+                ) : (
+                  recentCompanies.map((c) => (
+                    <tr key={c.id} className="hover:bg-zinc-800/30 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-zinc-200">{c.name}</td>
+                      <td className="py-3 px-4 font-mono text-zinc-400">/c/{c.slug}</td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            c.status === 'approved'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : c.status === 'pending'
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                              : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-zinc-400">
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <Link
+                          href="/super-admin/companies"
+                          className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+                        >
+                          Manage
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

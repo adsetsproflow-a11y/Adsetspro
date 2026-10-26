@@ -69,6 +69,9 @@ export default function WorkspaceSettingsPage() {
       if (settingsRes.status === 403 || desigRes.status === 403) {
         setIsForbidden(true);
         setIsLoading(false);
+        const cacheKey = `settings_${companySlug}`;
+        setCachedData(cacheKey, null, 0);
+        router.replace(`/c/${companySlug}/my-tasks`);
         return;
       }
 
@@ -101,6 +104,23 @@ export default function WorkspaceSettingsPage() {
   };
 
   useEffect(() => {
+    // Immediate role check from saaa_session cookie if available
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/(?:^|;\s*)saaa_session=([^;]+)/);
+      if (match && match[1]) {
+        try {
+          const decoded = atob(decodeURIComponent(match[1]));
+          const parsed = JSON.parse(decoded);
+          if (parsed?.role === 'EMPLOYEE') {
+            setIsForbidden(true);
+            setIsLoading(false);
+            router.replace(`/c/${companySlug}/my-tasks`);
+            return;
+          }
+        } catch {}
+      }
+    }
+
     if (companySlug) {
       const cacheKey = `settings_${companySlug}`;
       const cached = getCachedData<any>(cacheKey);
@@ -117,7 +137,7 @@ export default function WorkspaceSettingsPage() {
         fetchSettingsAndDesignations(false);
       }
     }
-  }, [companySlug]);
+  }, [companySlug, router]);
 
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +158,36 @@ export default function WorkspaceSettingsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update workspace name');
 
+      // Update client cache
+      const cacheKey = `settings_${companySlug}`;
+      setCachedData(cacheKey, {
+        company: data.company,
+        designations: designations || [],
+      }, 60 * 1000);
+
+      // Instant sync: broadcast to same window and across all open tabs
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('company-brand-updated', {
+            detail: {
+              companySlug,
+              companyName: data.company.name,
+              logoUrl: data.company.logo_url || null,
+            },
+          })
+        );
+
+        localStorage.setItem(
+          'company_brand_sync',
+          JSON.stringify({
+            companySlug,
+            companyName: data.company.name,
+            logoUrl: data.company.logo_url || null,
+            timestamp: Date.now(),
+          })
+        );
+      }
+
       setFeedback({ type: 'success', message: 'Workspace logo and profile updated successfully.' });
       router.refresh();
       setTimeout(() => setFeedback(null), 3000);
@@ -146,6 +196,13 @@ export default function WorkspaceSettingsPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setFeedback({ type: 'success', message: 'Logo marked for removal. Click "Save Changes" to apply.' });
   };
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,11 +299,11 @@ export default function WorkspaceSettingsPage() {
           Company Settings and Designation management are strictly restricted to Workspace Administrators.
         </p>
         <Link
-          href={`/c/${companySlug}`}
+          href={`/c/${companySlug}/my-tasks`}
           className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-semibold text-zinc-200 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Workspace</span>
+          <span>Go to My Tasks</span>
         </Link>
       </div>
     );
@@ -377,15 +434,26 @@ export default function WorkspaceSettingsPage() {
                     onChange={handleLogoSelect}
                     className="hidden"
                   />
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      <span>Upload Logo</span>
+                      <span>{logoPreview ? 'Change Logo' : 'Upload Logo'}</span>
                     </button>
+                    {logoPreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Remove current logo and restore default icon"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove Logo</span>
+                      </button>
+                    )}
                     {logoFile && (
                       <span className="text-[11px] text-emerald-400 font-mono">
                         {logoFile.name} ({(logoFile.size / 1024).toFixed(0)} KB)

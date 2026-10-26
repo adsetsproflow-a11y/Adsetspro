@@ -1490,110 +1490,149 @@ export default function WorkspaceDashboardPage() {
         </div>
       </div>
 
-      {/* ROW 5: Tables (Recent Activity Feed & Tasks Due Soon) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity Feed */}
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Activity className="w-4 h-4 text-indigo-400" />
-              <span>Recent Activity Feed</span>
-            </h2>
-            <span className="text-[11px] text-zinc-500 font-mono">Live Audit Trail</span>
+      {/* SECTION: Tasks Due Soon (Full Width & Responsive Table) */}
+      <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-white tracking-wide">Tasks Due Soon</h2>
+                {data?.tables.tasksDueSoon && data.tables.tasksDueSoon.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-[10px] font-bold text-purple-300">
+                    {data.tables.tasksDueSoon.length} Active
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Upcoming deadlines requiring immediate team focus and deliverable submission.
+              </p>
+            </div>
           </div>
-
-          <div className="divide-y divide-zinc-800/60 max-h-96 overflow-y-auto pr-1">
-            {!data?.tables.recentActivities || data.tables.recentActivities.length === 0 ? (
-              <p className="text-xs text-zinc-500 py-10 text-center">No recent activities recorded yet.</p>
-            ) : (
-              data.tables.recentActivities.map((act) => (
-                <div key={act.id} className="py-3 first:pt-0 last:pb-0 space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-zinc-200">{act.actor_name}</span>
-                    <span className="text-[10px] text-zinc-500 font-mono">
-                      {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-indigo-400">
-                      {act.action}
-                    </span>
-                    <span className="text-xs text-zinc-400 capitalize">on {act.target_type}</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <Link
+            href={`/c/${companySlug}/tasks`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/70 hover:bg-zinc-800 border border-zinc-700/60 hover:border-zinc-600 text-xs text-zinc-200 hover:text-white font-semibold transition-all self-start sm:self-auto shadow-sm"
+          >
+            <span>All Tasks</span>
+            <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+          </Link>
         </div>
 
-        {/* Tasks Due Soon */}
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-purple-400" />
-              <span>Tasks Due Soon</span>
-            </h2>
-            <Link
-              href={`/c/${companySlug}/tasks`}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
-            >
-              All Tasks →
-            </Link>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="text-zinc-500 uppercase tracking-wider font-semibold border-b border-zinc-800/80">
+        <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-950/40">
+          <table className="w-full text-left text-xs min-w-[760px] border-collapse">
+            <thead className="text-[11px] text-zinc-400 uppercase tracking-wider font-semibold bg-zinc-900/60 border-b border-zinc-800/80">
+              <tr>
+                <th className="py-3 px-4 font-semibold">Task</th>
+                <th className="py-3 px-4 font-semibold">Department</th>
+                <th className="py-3 px-4 font-semibold">Assignee</th>
+                <th className="py-3 px-4 font-semibold">Priority</th>
+                <th className="py-3 px-4 font-semibold">Status</th>
+                <th className="py-3 px-4 font-semibold text-right">Deadline</th>
+                <th className="py-3 px-4 font-semibold text-center w-16">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+              {!data?.tables.tasksDueSoon || data.tables.tasksDueSoon.length === 0 ? (
                 <tr>
-                  <th className="pb-2.5">Task</th>
-                  <th className="pb-2.5">Priority</th>
-                  <th className="pb-2.5">Status</th>
-                  <th className="pb-2.5 text-right">Deadline</th>
+                  <td colSpan={7} className="py-12 text-center text-zinc-500 space-y-2">
+                    <CheckCircle2 className="w-8 h-8 text-zinc-600 mx-auto stroke-1" />
+                    <p className="text-xs text-zinc-400 font-medium">All caught up! No upcoming deadlines.</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/60">
-                {!data?.tables.tasksDueSoon || data.tables.tasksDueSoon.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-8 text-center text-zinc-500">
-                      No upcoming task deadlines.
-                    </td>
-                  </tr>
-                ) : (
-                  data.tables.tasksDueSoon.map((task) => (
-                    <tr key={task.id} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="py-3 font-semibold text-zinc-200">
-                        <div className="truncate max-w-[180px]">{task.title}</div>
-                        <div className="text-[10px] text-zinc-500">
-                          {task.department_name} • {task.assignee_name}
+              ) : (
+                data.tables.tasksDueSoon.map((task) => {
+                  const dueDateObj = task.due_date ? new Date(task.due_date) : null;
+                  const isOverdue = dueDateObj ? dueDateObj.getTime() < Date.now() : false;
+
+                  return (
+                    <tr
+                      key={task.id}
+                      className="hover:bg-zinc-800/30 transition-colors group"
+                    >
+                      {/* Task Title */}
+                      <td className="py-3.5 px-4 font-semibold text-zinc-100 max-w-[260px]">
+                        <Link
+                          href={`/c/${companySlug}/tasks/${task.id}`}
+                          className="hover:text-indigo-400 transition-colors line-clamp-1 block"
+                          title={task.title}
+                        >
+                          {task.title}
+                        </Link>
+                      </td>
+
+                      {/* Department */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-800/80 text-zinc-300 border border-zinc-700/50 text-[11px]">
+                          {task.department_name || 'General'}
+                        </span>
+                      </td>
+
+                      {/* Assignee */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-600/40 to-cyan-500/40 border border-indigo-500/30 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                            {(task.assignee_name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-xs text-zinc-300 max-w-[140px] truncate">
+                            {task.assignee_name || 'Unassigned'}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-3">
+
+                      {/* Priority */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
-                          className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getPriorityBadgeStyle(
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getPriorityBadgeStyle(
                             task.priority
                           )}`}
                         >
                           {task.priority}
                         </span>
                       </td>
-                      <td className="py-3">
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
-                          className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusBadgeStyle(
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusBadgeStyle(
                             task.status
                           )}`}
                         >
                           {task.status.replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td className="py-3 text-right text-zinc-400 font-mono text-[11px]">
-                        {formatDate(task.due_date, 'short')}
+
+                      {/* Deadline */}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap font-mono text-[11px]">
+                        {isOverdue ? (
+                          <span className="inline-flex items-center gap-1 text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                            <Clock className="w-3 h-3 shrink-0" />
+                            {formatDate(task.due_date, 'short')} (Overdue)
+                          </span>
+                        ) : (
+                          <span className="text-zinc-300">
+                            {formatDate(task.due_date, 'short')}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <Link
+                          href={`/c/${companySlug}/tasks/${task.id}`}
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors inline-flex items-center justify-center"
+                          title="Open Task"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

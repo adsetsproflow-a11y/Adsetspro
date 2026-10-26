@@ -20,6 +20,7 @@ import {
   Calendar,
   Shield,
   Layers,
+  Trash2,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -40,6 +41,8 @@ export default function SuperAdminCompaniesPage() {
   const [rejectingCompany, setRejectingCompany] = useState<any | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectError, setRejectError] = useState<string | null>(null);
+  const [deletingCompany, setDeletingCompany] = useState<any | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchCompanies = async () => {
     setIsLoading(true);
@@ -109,6 +112,30 @@ export default function SuperAdminCompaniesPage() {
       }
     } catch (err: any) {
       setRejectError(err.message || 'Network error.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingCompany) return;
+    setActionLoadingId(deletingCompany.id);
+    setDeleteError(null);
+
+    try {
+      const res = await fetch(`/api/super-admin/companies/${deletingCompany.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setDeletingCompany(null);
+        fetchCompanies();
+      } else {
+        setDeleteError(data.error || 'Failed to delete company.');
+      }
+    } catch (err: any) {
+      setDeleteError(err.message || 'Network error.');
     } finally {
       setActionLoadingId(null);
     }
@@ -313,13 +340,27 @@ export default function SuperAdminCompaniesPage() {
                           )}
 
                           {c.status === 'suspended' && (
-                            <button
-                              disabled={isActionLoading}
-                              onClick={() => executeAction(c.id, 'reactivate')}
-                              className="px-2.5 py-1 rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 font-semibold text-[11px] transition-colors disabled:opacity-50 cursor-pointer"
-                            >
-                              Reactivate
-                            </button>
+                            <>
+                              <button
+                                disabled={isActionLoading}
+                                onClick={() => executeAction(c.id, 'reactivate')}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 font-semibold text-[11px] transition-colors disabled:opacity-50 cursor-pointer"
+                              >
+                                Reactivate
+                              </button>
+                              <button
+                                disabled={isActionLoading}
+                                onClick={() => {
+                                  setDeletingCompany(c);
+                                  setDeleteError(null);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 border border-rose-500/30 font-semibold text-[11px] transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
+                                title="Permanently delete suspended organization"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Delete</span>
+                              </button>
+                            </>
                           )}
 
                           <button
@@ -440,6 +481,78 @@ export default function SuperAdminCompaniesPage() {
                   <>
                     <XCircle className="w-3.5 h-3.5" />
                     <span>Confirm Rejection</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingCompany && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-zinc-950 border border-rose-500/30 rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center font-bold">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Permanently Delete Company</h3>
+                  <p className="text-[11px] text-zinc-400">Irreversible tenant purge</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDeletingCompany(null)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs space-y-1.5">
+              <p className="font-bold text-rose-400 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Warning: Destructive Action</span>
+              </p>
+              <p className="text-zinc-300 leading-relaxed text-[11px]">
+                You are about to completely delete <strong className="text-white">{deletingCompany.name}</strong> (<span className="font-mono text-zinc-400">/c/{deletingCompany.slug}</span>).
+              </p>
+              <p className="text-zinc-400 leading-relaxed text-[11px]">
+                All associated employee memberships, departments, designations, projects, tasks, comments, deliverables, and chat rooms will be permanently deleted.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingCompany(null)}
+                className="px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={actionLoadingId === deletingCompany.id}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-rose-600/30 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {actionLoadingId === deletingCompany.id ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting Records...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
                   </>
                 )}
               </button>
