@@ -18,8 +18,8 @@ function ForbiddenScreen({
   companyName?: string;
 }) {
   return (
-    <div className="min-h-screen bg-[#070b14] text-zinc-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-md p-8 rounded-3xl bg-zinc-950/80 border border-zinc-800 shadow-2xl text-center space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#070b14] text-slate-900 dark:text-zinc-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-md p-8 rounded-3xl bg-white dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 shadow-2xl text-center space-y-6">
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 mx-auto flex items-center justify-center">
           <ShieldAlert className="w-8 h-8" />
         </div>

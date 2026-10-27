@@ -19,7 +19,7 @@ export default function CenterLoader({
   const isSmall = size === 'sm';
 
   const containerClasses = fullScreen
-    ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070b14]/90 backdrop-blur-md transition-all duration-300'
+    ? 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50/90 dark:bg-[#070b14]/90 backdrop-blur-md transition-all duration-300'
     : 'min-h-[380px] w-full flex flex-col items-center justify-center p-8 transition-all duration-300';
 
   return (
@@ -43,8 +43,8 @@ export default function CenterLoader({
               isLarge ? 'w-20 h-20' : isSmall ? 'w-12 h-12' : 'w-16 h-16'
             }`}
           >
-            {/* Inner Dark Mask */}
-            <div className="w-full h-full bg-[#070b14] rounded-full flex items-center justify-center p-2.5">
+            {/* Inner Mask */}
+            <div className="w-full h-full bg-white dark:bg-[#070b14] rounded-full flex items-center justify-center p-2.5 shadow-sm">
               {/* Brand Logo Emblem SVG */}
               <svg
                 viewBox="0 0 40 40"
@@ -82,7 +82,7 @@ export default function CenterLoader({
 
         {/* Loading Message */}
         <h3
-          className={`font-bold tracking-tight text-white mb-1.5 flex items-center justify-center gap-1.5 ${
+          className={`font-bold tracking-tight text-slate-900 dark:text-white mb-1.5 flex items-center justify-center gap-1.5 ${
             isLarge ? 'text-lg' : isSmall ? 'text-xs' : 'text-sm'
           }`}
         >

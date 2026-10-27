@@ -12,6 +12,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
+import ThemeToggle from '@/components/common/ThemeToggle';
+
 export default function SuperAdminSettingsPage() {
   const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
   const [requireManualApproval, setRequireManualApproval] = useState(true);
@@ -45,6 +47,9 @@ export default function SuperAdminSettingsPage() {
           <span>Platform configuration updated successfully.</span>
         </div>
       )}
+
+      {/* Theme & Visual Appearance */}
+      <ThemeToggle variant="expanded" />
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Onboarding Policies */}

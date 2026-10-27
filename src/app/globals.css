@@ -2,24 +2,298 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ==========================================================================
+   THEME DESIGN TOKENS & DYNAMIC COLOR SYSTEM
+   Light mode is the DEFAULT theme across all portals and roles.
+   ========================================================================== */
+
 :root {
+  color-scheme: light;
+
+  /* Semantic System Tokens */
   --background: #f8fafc;
   --foreground: #0f172a;
   --card: #ffffff;
   --card-foreground: #0f172a;
   --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
   --muted: #64748b;
+  --muted-foreground: #64748b;
+
+  /* Accent Tokens (Default: Indigo Flow) */
   --accent: #4f46e5;
+  --accent-foreground: #ffffff;
+  --accent-hover: #4338ca;
+  --accent-light: #eef2ff;
+
+  /* Tailwind Zinc Color Mapping for Default Light Mode */
+  --color-zinc-950: #f8fafc;       /* shell / app backdrop */
+  --color-zinc-900: #ffffff;       /* cards / modals / surfaces */
+  --color-zinc-800: #e2e8f0;       /* borders / dividers */
+  --color-zinc-700: #cbd5e1;       /* border hover / input borders */
+  --color-zinc-600: #94a3b8;       /* placeholders */
+  --color-zinc-500: #64748b;       /* secondary text */
+  --color-zinc-400: #475569;       /* body text */
+  --color-zinc-300: #334155;       /* dark body text */
+  --color-zinc-200: #1e293b;       /* headings */
+  --color-zinc-100: #0f172a;       /* bold headings / titles */
+  --color-zinc-50: #fafafa;        /* very light surfaces */
 }
 
 .dark {
-  --background: #090d16;
-  --foreground: #f1f5f9;
+  color-scheme: dark;
+
+  /* Semantic System Tokens */
+  --background: #070b14;
+  --foreground: #f8fafc;
   --card: #0f172a;
   --card-foreground: #f8fafc;
   --border: #1e293b;
+  --border-subtle: #181f30;
   --muted: #94a3b8;
+  --muted-foreground: #94a3b8;
+
+  /* Accent Tokens */
   --accent: #6366f1;
+  --accent-foreground: #ffffff;
+  --accent-hover: #4f46e5;
+  --accent-light: rgba(99, 102, 241, 0.15);
+
+  /* Tailwind Zinc Color Mapping for Dark Mode */
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #9f9fa9;
+  --color-zinc-500: #71717b;
+  --color-zinc-600: #52525c;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+}
+
+/* Accent Color Variations across the entire site */
+html[data-accent="emerald"],
+:root[data-accent="emerald"],
+[data-accent="emerald"] {
+  --accent: #059669;
+  --accent-hover: #047857;
+  --accent-light: #ecfdf5;
+  --color-indigo-600: #059669;
+  --color-indigo-500: #10b981;
+  --color-indigo-400: #34d399;
+}
+html.dark[data-accent="emerald"],
+:root.dark[data-accent="emerald"],
+.dark[data-accent="emerald"] {
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-light: rgba(16, 185, 129, 0.15);
+  --color-indigo-600: #059669;
+  --color-indigo-500: #10b981;
+  --color-indigo-400: #34d399;
+}
+
+html[data-accent="violet"],
+:root[data-accent="violet"],
+[data-accent="violet"] {
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-light: #f5f3ff;
+  --color-indigo-600: #7c3aed;
+  --color-indigo-500: #8b5cf6;
+  --color-indigo-400: #a78bfa;
+}
+html.dark[data-accent="violet"],
+:root.dark[data-accent="violet"],
+.dark[data-accent="violet"] {
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-light: rgba(139, 92, 246, 0.15);
+  --color-indigo-600: #7c3aed;
+  --color-indigo-500: #8b5cf6;
+  --color-indigo-400: #a78bfa;
+}
+
+html[data-accent="rose"],
+:root[data-accent="rose"],
+[data-accent="rose"] {
+  --accent: #e11d48;
+  --accent-hover: #be123c;
+  --accent-light: #fff1f2;
+  --color-indigo-600: #e11d48;
+  --color-indigo-500: #f43f5e;
+  --color-indigo-400: #fb7185;
+}
+html.dark[data-accent="rose"],
+:root.dark[data-accent="rose"],
+.dark[data-accent="rose"] {
+  --accent: #f43f5e;
+  --accent-hover: #e11d48;
+  --accent-light: rgba(244, 63, 94, 0.15);
+  --color-indigo-600: #e11d48;
+  --color-indigo-500: #f43f5e;
+  --color-indigo-400: #fb7185;
+}
+
+html[data-accent="amber"],
+:root[data-accent="amber"],
+[data-accent="amber"] {
+  --accent: #d97706;
+  --accent-hover: #b45309;
+  --accent-light: #fffbeb;
+  --color-indigo-600: #d97706;
+  --color-indigo-500: #f59e0b;
+  --color-indigo-400: #fbbf24;
+}
+html.dark[data-accent="amber"],
+:root.dark[data-accent="amber"],
+.dark[data-accent="amber"] {
+  --accent: #f59e0b;
+  --accent-hover: #d97706;
+  --accent-light: rgba(245, 158, 11, 0.15);
+  --color-indigo-600: #d97706;
+  --color-indigo-500: #f59e0b;
+  --color-indigo-400: #fbbf24;
+}
+
+html[data-accent="cyan"],
+:root[data-accent="cyan"],
+[data-accent="cyan"] {
+  --accent: #0891b2;
+  --accent-hover: #0e7490;
+  --accent-light: #ecfeff;
+  --color-indigo-600: #0891b2;
+  --color-indigo-500: #06b6d4;
+  --color-indigo-400: #22d3ee;
+}
+html.dark[data-accent="cyan"],
+:root.dark[data-accent="cyan"],
+.dark[data-accent="cyan"] {
+  --accent: #06b6d4;
+  --accent-hover: #0891b2;
+  --accent-light: rgba(6, 182, 212, 0.15);
+  --color-indigo-600: #0891b2;
+  --color-indigo-500: #06b6d4;
+  --color-indigo-400: #22d3ee;
+}
+
+/* Direct element overrides for instant visual fidelity across themes */
+html[data-accent="emerald"] .bg-indigo-600 { background-color: #059669 !important; }
+html[data-accent="emerald"] .text-indigo-400 { color: #10b981 !important; }
+html[data-accent="emerald"] .text-indigo-600 { color: #059669 !important; }
+html[data-accent="emerald"] .border-indigo-500 { border-color: #10b981 !important; }
+
+html[data-accent="violet"] .bg-indigo-600 { background-color: #7c3aed !important; }
+html[data-accent="violet"] .text-indigo-400 { color: #8b5cf6 !important; }
+html[data-accent="violet"] .text-indigo-600 { color: #7c3aed !important; }
+html[data-accent="violet"] .border-indigo-500 { border-color: #8b5cf6 !important; }
+
+html[data-accent="rose"] .bg-indigo-600 { background-color: #e11d48 !important; }
+html[data-accent="rose"] .text-indigo-400 { color: #f43f5e !important; }
+html[data-accent="rose"] .text-indigo-600 { color: #e11d48 !important; }
+html[data-accent="rose"] .border-indigo-500 { border-color: #f43f5e !important; }
+
+html[data-accent="amber"] .bg-indigo-600 { background-color: #d97706 !important; }
+html[data-accent="amber"] .text-indigo-400 { color: #f59e0b !important; }
+html[data-accent="amber"] .text-indigo-600 { color: #d97706 !important; }
+html[data-accent="amber"] .border-indigo-500 { border-color: #f59e0b !important; }
+
+html[data-accent="cyan"] .bg-indigo-600 { background-color: #0891b2 !important; }
+html[data-accent="cyan"] .text-indigo-400 { color: #06b6d4 !important; }
+html[data-accent="cyan"] .text-indigo-600 { color: #0891b2 !important; }
+html[data-accent="cyan"] .border-indigo-500 { border-color: #06b6d4 !important; }
+
+
+/* In Light Mode: Remap arbitrary dark background classes */
+html:not(.dark) .bg-\[\#070b14\] {
+  background-color: var(--background) !important;
+}
+html:not(.dark) .bg-\[\#070b14\]\/90 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+}
+html:not(.dark) .bg-\[\#090d16\] {
+  background-color: var(--background) !important;
+}
+
+/* In Light Mode: High-contrast text & surface safety */
+html:not(.dark) .text-zinc-900 {
+  color: #0f172a !important;
+}
+html:not(.dark) .text-zinc-800 {
+  color: #1e293b !important;
+}
+html:not(.dark) .text-zinc-700 {
+  color: #334155 !important;
+}
+html:not(.dark) .text-zinc-600 {
+  color: #475569 !important;
+}
+html:not(.dark) .bg-zinc-100 {
+  background-color: #f1f5f9 !important;
+}
+html:not(.dark) .bg-zinc-50 {
+  background-color: #f8fafc !important;
+}
+html:not(.dark) :not([class*="dark:"]) > .text-indigo-400,
+html:not(.dark) span.text-indigo-400,
+html:not(.dark) p.text-indigo-400 {
+  color: var(--accent) !important;
+}
+
+/* In Light Mode: Add soft elevation shadows to cards and containers */
+html:not(.dark) .bg-zinc-900:not(button):not(input):not(select):not(textarea):not(code):not([class*="badge"]) {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* In Light Mode: Headings, titles, text fields that have text-white */
+html:not(.dark) :is(
+  h1, h2, h3, h4, h5, h6,
+  th,
+  p:not([class*="bg-indigo"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-cyan"]):not([class*="bg-red"]):not([class*="bg-blue"]):not([class*="bg-purple"]):not([class*="bg-gradient"]):not([class*="bg-black"]):not([class*="badge"]),
+  span.text-white:not([class*="bg-"]):not([class*="badge"]):not([class*="rounded-full"]):not([class*="text-indigo-400"]):not([class*="text-emerald-400"]),
+  div.text-white:not([class*="bg-"]):not([class*="rounded-full"]):not([class*="bg-gradient"]):not([class*="shadow-"]),
+  input.text-white,
+  textarea.text-white,
+  select.text-white
+) {
+  color: #0f172a !important;
+}
+
+/* In Light Mode: Ensure secondary hover text switches cleanly */
+html:not(.dark) .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+html:not(.dark) .hover\:bg-zinc-800:hover {
+  background-color: #f1f5f9 !important;
+}
+html:not(.dark) .hover\:bg-zinc-900:hover {
+  background-color: #f8fafc !important;
+}
+html:not(.dark) .hover\:bg-zinc-900\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* In Light Mode: Form inputs and controls */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]),
+html:not(.dark) textarea,
+html:not(.dark) select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* In Light Mode: Dropdown menus & popovers */
+html:not(.dark) [role="dialog"],
+html:not(.dark) [role="menu"] {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 }
 
 body {
@@ -44,6 +318,13 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
 }
 
 /* Urgent alarm pulsing animation */
@@ -85,4 +366,3 @@ body {
     transform: translateX(200%);
   }
 }
-

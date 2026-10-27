@@ -30,6 +30,7 @@ import { createClient } from '@/lib/supabase/client';
 import { UserRole } from '@/types/app.types';
 import NotificationBell from '@/components/layouts/NotificationBell';
 import GlobalSearch from '@/components/layouts/GlobalSearch';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 interface WorkspaceShellProps {
   children: React.ReactNode;
@@ -195,7 +196,7 @@ export default function WorkspaceShell({
   return (
     <div className="min-h-screen bg-[#070b14] text-zinc-100 flex flex-col md:flex-row font-sans">
       {/* Mobile Top Header */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-zinc-800">
+      <header className="md:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-zinc-800 relative z-50">
         <div className="flex items-center gap-3">
           {currentLogo ? (
             <img
@@ -221,6 +222,7 @@ export default function WorkspaceShell({
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <GlobalSearch companySlug={companySlug} />
           <NotificationBell companySlug={companySlug} />
           <button
@@ -359,7 +361,7 @@ export default function WorkspaceShell({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Desktop Top Header Bar */}
-        <header className="hidden md:flex items-center justify-between px-8 py-3.5 bg-zinc-950/70 border-b border-zinc-800/80 backdrop-blur-md sticky top-0 z-30">
+        <header className="hidden md:flex items-center justify-between px-8 py-3.5 bg-zinc-950/70 border-b border-zinc-800/80 backdrop-blur-md sticky top-0 z-50">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-500">Workspace</span>
             <span className="text-xs text-zinc-600">/</span>
@@ -368,6 +370,7 @@ export default function WorkspaceShell({
 
           <div className="flex items-center gap-3">
             <GlobalSearch companySlug={companySlug} />
+            <ThemeToggle />
             <NotificationBell companySlug={companySlug} />
           </div>
         </header>

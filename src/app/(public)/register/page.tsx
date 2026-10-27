@@ -219,7 +219,22 @@ export default function RegisterCompanyPage() {
                   className="w-4 h-4 rounded bg-zinc-950 border-zinc-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 />
                 <label htmlFor="terms" className="text-xs text-zinc-400 cursor-pointer">
-                  I agree to the Enterprise Service Agreement & Data Privacy Policy
+                  I agree to the{' '}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2"
+                  >
+                    Enterprise Terms of Service
+                  </Link>{' '}
+                  &amp;{' '}
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2"
+                  >
+                    Data Privacy Policy
+                  </Link>
                 </label>
               </div>
 

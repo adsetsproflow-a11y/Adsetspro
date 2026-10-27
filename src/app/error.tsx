@@ -15,8 +15,8 @@ export default function GlobalErrorBoundary({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#070b14] flex items-center justify-center p-6 text-zinc-100">
-      <div className="w-full max-w-md p-8 rounded-3xl bg-zinc-950/80 border border-zinc-800 shadow-2xl text-center space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#070b14] flex items-center justify-center p-6 text-slate-900 dark:text-zinc-100">
+      <div className="w-full max-w-md p-8 rounded-3xl bg-white dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 shadow-2xl text-center space-y-6">
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mx-auto flex items-center justify-center">
           <AlertTriangle className="w-8 h-8" />
         </div>

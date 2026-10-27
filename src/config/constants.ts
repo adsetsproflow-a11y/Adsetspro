@@ -59,7 +59,7 @@ export const STORAGE_BUCKETS = {
 } as const;
 
 export const APP_CONFIG = {
-  NAME: 'SAAA Platform',
+  NAME: 'Adsetspro Platform',
   DESCRIPTION: 'Multi-Tenant Enterprise Workflow & Project Management Suite',
   DEFAULT_PAGE_SIZE: 20,
   MAX_FILE_SIZE_MB: 50,

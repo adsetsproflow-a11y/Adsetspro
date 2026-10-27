@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 export default function SuperAdminLayout({
   children,
@@ -90,7 +91,7 @@ export default function SuperAdminLayout({
   return (
     <div className="min-h-screen bg-[#070b14] text-zinc-100 flex flex-col md:flex-row font-sans">
       {/* Mobile Top Header */}
-      <header className="md:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-zinc-800">
+      <header className="md:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-zinc-800 relative z-50">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-600 to-red-600 flex items-center justify-center text-white">
             <Layers className="w-4 h-4" />
@@ -102,12 +103,15 @@ export default function SuperAdminLayout({
             </span>
           </div>
         </div>
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300"
-        >
-          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </header>
 
       {/* Sidebar (Desktop and Mobile Drawer) */}
@@ -201,7 +205,22 @@ export default function SuperAdminLayout({
       </aside>
 
       {/* Main content viewport */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">{children}</main>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Desktop Top Header Bar */}
+        <header className="hidden md:flex items-center justify-between px-8 py-3.5 bg-zinc-950/70 border-b border-zinc-800/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-zinc-500">Platform Control</span>
+            <span className="text-xs text-zinc-600">/</span>
+            <span className="text-xs font-bold text-zinc-200 tracking-wide">Super Administrator</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">{children}</main>
+      </div>
     </div>
   );
 }

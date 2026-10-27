@@ -22,10 +22,12 @@ import {
   ShieldCheck,
   Layers,
   ArrowLeft,
+  Palette,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 import CenterLoader from '@/components/common/CenterLoader';
 import { getCachedData, setCachedData } from '@/lib/cache/clientCache';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 interface DesignationItem {
   id: string;
@@ -40,7 +42,7 @@ export default function WorkspaceSettingsPage() {
   const params = useParams();
   const companySlug = params.companySlug as string;
 
-  const [activeTab, setActiveTab] = useState<'general' | 'designations' | 'permissions' | 'security'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'designations' | 'permissions' | 'security'>('general');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -343,6 +345,17 @@ export default function WorkspaceSettingsPage() {
           <span>General</span>
         </button>
         <button
+          onClick={() => setActiveTab('appearance')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'appearance'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+          }`}
+        >
+          <Palette className="w-4 h-4" />
+          <span>Appearance & Color</span>
+        </button>
+        <button
           onClick={() => setActiveTab('designations')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             activeTab === 'designations'
@@ -515,6 +528,13 @@ export default function WorkspaceSettingsPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* TAB 2: APPEARANCE & THEME SETTINGS */}
+      {activeTab === 'appearance' && (
+        <div className="space-y-6">
+          <ThemeToggle variant="expanded" />
         </div>
       )}
 
