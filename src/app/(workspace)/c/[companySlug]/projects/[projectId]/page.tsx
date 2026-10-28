@@ -257,8 +257,8 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Project Meta grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs pt-2 border-t border-zinc-800/60">
-          <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-2 border-t border-zinc-800/60">
+          <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
             <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
               Department
             </span>
@@ -267,7 +267,7 @@ export default function ProjectDetailPage() {
             </span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+          <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
             <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
               Project Manager
             </span>
@@ -276,20 +276,22 @@ export default function ProjectDetailPage() {
             </span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
-            <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-              Start Date (DD/MM/YYYY)
-            </span>
-            <span className="font-mono text-zinc-300 block">
+          <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <span>Start Date</span>
+              <span className="text-[9px] font-mono text-zinc-600 font-normal">DD/MM/YYYY</span>
+            </div>
+            <span className="font-mono text-xs text-zinc-300 block">
               {project.start_date ? formatDate(project.start_date, 'short') : 'Immediate'}
             </span>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
-            <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-              Target Deadline (DD/MM/YYYY)
-            </span>
-            <span className="font-mono text-zinc-300 block">
+          <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <span>Target Deadline</span>
+              <span className="text-[9px] font-mono text-zinc-600 font-normal">DD/MM/YYYY</span>
+            </div>
+            <span className="font-mono text-xs text-zinc-300 block">
               {project.due_date ? formatDate(project.due_date, 'short') : 'Open-ended'}
             </span>
           </div>

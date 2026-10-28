@@ -8,6 +8,10 @@ export async function GET(
 ) {
   try {
     const { companySlug, taskId } = await params;
+    if (!companySlug || companySlug === 'undefined' || companySlug.startsWith('[')) {
+      return NextResponse.json({ error: 'Invalid company slug' }, { status: 400 });
+    }
+    const cleanSlug = decodeURIComponent(companySlug).toLowerCase().trim();
     const supabase = await createClient();
 
     // 1. Authenticate user
@@ -23,7 +27,7 @@ export async function GET(
     const { data: company } = await adminClient
       .from('companies')
       .select('id')
-      .eq('slug', companySlug)
+      .eq('slug', cleanSlug)
       .single();
 
     if (!company) {
@@ -96,6 +100,10 @@ export async function POST(
 ) {
   try {
     const { companySlug, taskId } = await params;
+    if (!companySlug || companySlug === 'undefined' || companySlug.startsWith('[')) {
+      return NextResponse.json({ error: 'Invalid company slug' }, { status: 400 });
+    }
+    const cleanSlug = decodeURIComponent(companySlug).toLowerCase().trim();
     const body = await request.json();
     const { content, is_review_comment } = body;
 
@@ -118,7 +126,7 @@ export async function POST(
     const { data: company } = await adminClient
       .from('companies')
       .select('id')
-      .eq('slug', companySlug)
+      .eq('slug', cleanSlug)
       .single();
 
     if (!company) {

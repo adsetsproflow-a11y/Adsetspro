@@ -27,10 +27,10 @@ export function getDbPool(): Pool {
       connectionString,
       ssl: { rejectUnauthorized: false },
       // High-concurrency throughput settings:
-      max: 25, // Up to 25 concurrent connections per Node process
-      connectionTimeoutMillis: 5000, // Fail-fast: throw after 5s in queue instead of hanging forever
-      idleTimeoutMillis: 10000, // Close idle connections after 10s to release database resources
-      query_timeout: 15000, // Client-side timeout for runaway queries
+      max: 20, // Stable connection limit for Supabase
+      connectionTimeoutMillis: 20000, // 20s timeout to tolerate cloud network latency & handshake
+      idleTimeoutMillis: 30000, // Keep connections warm for 30s to reuse SSL handshakes
+      query_timeout: 25000, // Client-side timeout for runaway queries
       keepAlive: true,
       keepAliveInitialDelayMillis: 10000,
     };
@@ -47,3 +47,24 @@ export function getDbPool(): Pool {
 
   return globalThis.__saasPgPool;
 }
+
+export async function queryDb(text: string, params?: any[]) {
+  const pool = getDbPool();
+  try {
+    return await pool.query(text, params);
+  } catch (err: any) {
+    const isConnErr =
+      err?.message?.includes('timeout') ||
+      err?.message?.includes('Connection terminated') ||
+      err?.code === 'ECONNRESET' ||
+      err?.code === '57P01';
+
+    if (isConnErr) {
+      console.warn('[pg.Pool] Retrying failed query after transient connection issue:', err?.message);
+      await new Promise((r) => setTimeout(r, 250));
+      return await pool.query(text, params);
+    }
+    throw err;
+  }
+}
+

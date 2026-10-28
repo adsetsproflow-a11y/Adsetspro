@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getDbPool } from '@/lib/db';
+import { queryDb } from '@/lib/db';
+import { adminClient } from '@/lib/supabase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -12,22 +13,30 @@ export async function POST(request: Request) {
 
     const cleanEmail = String(email).toLowerCase().trim();
 
-    const pool = getDbPool();
-
     // 1. Check user profile in database
-    const profRes = await pool.query(
-      `SELECT id, full_name, email, is_super_admin, account_status
-       FROM public.profiles
-       WHERE LOWER(email) = LOWER($1)
-       LIMIT 1;`,
-      [cleanEmail]
-    );
-
-    if (profRes.rows.length === 0) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    let profile: any = null;
+    try {
+      const profRes = await queryDb(
+        `SELECT id, full_name, email, is_super_admin, account_status
+         FROM public.profiles
+         WHERE LOWER(email) = LOWER($1)
+         LIMIT 1;`,
+        [cleanEmail]
+      );
+      profile = profRes.rows[0];
+    } catch (dbErr: any) {
+      console.warn('[Login] DB query fallback for profile:', dbErr?.message);
+      const { data: adminProf } = await adminClient
+        .from('profiles')
+        .select('id, full_name, email, is_super_admin, account_status')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
+      profile = adminProf;
     }
 
-    const profile = profRes.rows[0];
+    if (!profile) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
 
     if (profile.account_status !== 'active') {
       return NextResponse.json({ error: 'Your account has been deactivated. Please contact administrator.' }, { status: 403 });
@@ -38,13 +47,17 @@ export async function POST(request: Request) {
     let passwordMatches = validPasswords.includes(password);
 
     if (!passwordMatches) {
-      const authUserRes = await pool.query(
-        `SELECT (encrypted_password = extensions.crypt($2, encrypted_password)) as matches
-         FROM auth.users
-         WHERE id = $1 AND encrypted_password IS NOT NULL;`,
-        [profile.id, password]
-      );
-      passwordMatches = Boolean(authUserRes.rows[0]?.matches);
+      try {
+        const authUserRes = await queryDb(
+          `SELECT (encrypted_password = extensions.crypt($2, encrypted_password)) as matches
+           FROM auth.users
+           WHERE id = $1 AND encrypted_password IS NOT NULL;`,
+          [profile.id, password]
+        );
+        passwordMatches = Boolean(authUserRes.rows[0]?.matches);
+      } catch (authErr: any) {
+        console.warn('[Login] DB password crypt check error:', authErr?.message);
+      }
     }
 
     if (!passwordMatches) {
@@ -52,16 +65,37 @@ export async function POST(request: Request) {
     }
 
     // 3. Fetch company membership
-    const memberRes = await pool.query(
-      `SELECT cm.company_id, cm.role, c.slug as company_slug, c.status as company_status
-       FROM public.company_memberships cm
-       JOIN public.companies c ON c.id = cm.company_id
-       WHERE cm.user_id = $1 AND cm.status = 'active'
-       LIMIT 1;`,
-      [profile.id]
-    );
+    let membership: any = null;
+    try {
+      const memberRes = await queryDb(
+        `SELECT cm.company_id, cm.role, c.slug as company_slug, c.status as company_status
+         FROM public.company_memberships cm
+         JOIN public.companies c ON c.id = cm.company_id
+         WHERE cm.user_id = $1 AND cm.status = 'active'
+         LIMIT 1;`,
+        [profile.id]
+      );
+      membership = memberRes.rows[0];
+    } catch (memErr: any) {
+      console.warn('[Login] DB query fallback for membership:', memErr?.message);
+      const { data: adminMem } = await adminClient
+        .from('company_memberships')
+        .select('company_id, role, companies(slug, status)')
+        .eq('user_id', profile.id)
+        .eq('status', 'active')
+        .maybeSingle();
 
-    const membership = memberRes.rows[0];
+      if (adminMem) {
+        const c = Array.isArray(adminMem.companies) ? adminMem.companies[0] : adminMem.companies;
+        membership = {
+          company_id: adminMem.company_id,
+          role: adminMem.role,
+          company_slug: c?.slug || 'p8-test-org',
+          company_status: c?.status || 'approved',
+        };
+      }
+    }
+
     const companySlug = membership?.company_slug || 'p8-test-org';
     const companyStatus = membership?.company_status || 'approved';
 

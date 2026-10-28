@@ -43,7 +43,11 @@ export default function LoginPage() {
       if (data.is_super_admin) {
         router.push('/super-admin/dashboard');
       } else if (data.companySlug) {
-        router.push(`/c/${data.companySlug}/dashboard`);
+        if (data.user?.role === 'EMPLOYEE') {
+          router.push(`/c/${data.companySlug}/my-tasks`);
+        } else {
+          router.push(`/c/${data.companySlug}/dashboard`);
+        }
       } else {
         router.push('/');
       }

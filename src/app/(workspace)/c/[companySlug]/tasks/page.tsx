@@ -26,6 +26,9 @@ import {
   Trash2,
   LayoutGrid,
   Table,
+  Sparkles,
+  RotateCcw,
+  Loader2,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 import CenterLoader from '@/components/common/CenterLoader';
@@ -183,6 +186,102 @@ export default function WorkspaceTasksPage() {
   const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
 
+  // AI Description Enhancer State
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [previousDescription, setPreviousDescription] = useState<string | null>(null);
+  const [previousTitle, setPreviousTitle] = useState<string | null>(null);
+  const [aiNotice, setAiNotice] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
+
+  const handleEnhanceDescription = async () => {
+    if (!title.trim() && !description.trim()) {
+      setAiNotice({
+        text: 'Please enter a Task Title or draft notes first so Gemini can enhance it.',
+        type: 'info',
+      });
+      return;
+    }
+
+    setIsEnhancing(true);
+    setAiNotice(null);
+
+    try {
+      const selectedDept = departments.find((d) => d.id === departmentId)?.name;
+      const res = await fetch('/api/ai/enhance-task-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          currentDescription: description.trim(),
+          department: selectedDept || undefined,
+          priority,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to enhance description with Gemini');
+      }
+
+      if (data.enhancedDescription) {
+        setPreviousDescription(description);
+        setDescription(data.enhancedDescription);
+
+        // Auto-apply suggested title if title was empty or generic
+        if (data.suggestedTitle && (!title.trim() || title.trim().toLowerCase() === 'new task')) {
+          setPreviousTitle(title);
+          setTitle(data.suggestedTitle);
+        }
+
+        if (data.apiKeyIssue) {
+          setAiNotice({
+            text: `Template generated. (Gemini reported: "${data.notice}". Please create a key in a new project at aistudio.google.com for live AI)`,
+            type: 'info',
+          });
+        } else if (data.apiKeyMissing) {
+          setAiNotice({
+            text: 'Structured specification generated! (Add GEMINI_API_KEY in .env for live Gemini Flash generation)',
+            type: 'info',
+          });
+        } else if (data.isRateLimited) {
+          setAiNotice({
+            text: 'Template outline applied (Gemini Free Tier daily quota limit of 20 requests reached).',
+            type: 'info',
+          });
+        } else if (data.provider === 'template-fallback') {
+          setAiNotice({
+            text: 'Template outline generated (Gemini AI was temporarily unavailable).',
+            type: 'info',
+          });
+        } else {
+          setAiNotice({
+            text: '✨ Task description & title enhanced with Gemini Flash AI!',
+            type: 'success',
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error('Enhance error:', err);
+      setAiNotice({
+        text: err.message || 'Error communicating with Gemini AI',
+        type: 'error',
+      });
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
+  const handleUndoDescription = () => {
+    if (previousDescription !== null) {
+      setDescription(previousDescription);
+      setPreviousDescription(null);
+    }
+    if (previousTitle !== null) {
+      setTitle(previousTitle);
+      setPreviousTitle(null);
+    }
+    setAiNotice(null);
+  };
+
   const fetchTasks = async (force = false) => {
     const qParams = new URLSearchParams();
     if (statusFilter !== 'all') qParams.set('status', statusFilter);
@@ -328,6 +427,9 @@ export default function WorkspaceTasksPage() {
       // Reset form
       setTitle('');
       setDescription('');
+      setPreviousDescription(null);
+      setPreviousTitle(null);
+      setAiNotice(null);
       setDepartmentId('');
       setProjectId('');
       setAssigneeId('');
@@ -933,6 +1035,7 @@ export default function WorkspaceTasksPage() {
                             <div className="flex items-center gap-2">
                               <Link
                                 href={`/c/${companySlug}/tasks/${task.id}`}
+                                prefetch={false}
                                 onClick={(e) => e.stopPropagation()}
                                 className="font-bold text-white group-hover:text-indigo-400 transition-colors truncate block text-xs hover:underline"
                                 title={task.title}
@@ -1149,6 +1252,7 @@ export default function WorkspaceTasksPage() {
                       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <Link
                           href={`/c/${companySlug}/tasks/${task.id}`}
+                          prefetch={false}
                           className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
                           title="View deliverable"
                         >
@@ -1248,17 +1352,69 @@ export default function WorkspaceTasksPage() {
               </div>
 
               {/* Description */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-zinc-300">
-                  Description <span className="text-red-400">*</span>
-                </label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Description <span className="text-red-400">*</span>
+                  </label>
+
+                  <div className="flex items-center gap-1.5">
+                    {previousDescription !== null && (
+                      <button
+                        type="button"
+                        onClick={handleUndoDescription}
+                        className="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Revert back to your previous draft"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Undo</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleEnhanceDescription}
+                      disabled={isEnhancing}
+                      className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 hover:from-indigo-500/30 hover:via-purple-500/30 hover:to-pink-500/30 border border-indigo-500/40 hover:border-indigo-400/60 text-indigo-300 hover:text-white text-[11px] font-semibold inline-flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                      title="Use Gemini AI to elaborate this into a structured specification"
+                    >
+                      {isEnhancing ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />
+                          <span>Gemini Flash elaborating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3 text-indigo-400" />
+                          <span>✨ Enhance with Gemini AI</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {aiNotice && (
+                  <div
+                    className={`p-2 rounded-lg text-[11px] flex items-center gap-1.5 ${
+                      aiNotice.type === 'success'
+                        ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                        : aiNotice.type === 'error'
+                        ? 'bg-red-500/10 border border-red-500/20 text-red-400'
+                        : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-300'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span>{aiNotice.text}</span>
+                  </div>
+                )}
+
                 <textarea
-                  rows={3}
+                  rows={6}
                   required
-                  placeholder="Detailed specifications, references, and acceptance criteria..."
+                  placeholder="Provide specifications, scope, and acceptance criteria... (Tip: Enter brief notes or title and click 'Enhance with Gemini AI' to generate a full spec)"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors resize-y min-h-[130px] leading-relaxed font-mono"
                 />
               </div>
 

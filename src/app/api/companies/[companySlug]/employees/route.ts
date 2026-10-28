@@ -8,6 +8,10 @@ export async function GET(
 ) {
   try {
     const { companySlug } = await params;
+    if (!companySlug || companySlug === 'undefined' || companySlug.startsWith('[')) {
+      return NextResponse.json({ error: 'Invalid company slug' }, { status: 400 });
+    }
+    const cleanSlug = decodeURIComponent(companySlug).toLowerCase().trim();
     const supabase = await createClient();
 
     // 1. Authenticate caller
@@ -22,8 +26,8 @@ export async function GET(
     // 2. Fetch company
     const { data: company } = await adminClient
       .from('companies')
-      .select('id, name')
-      .eq('slug', companySlug)
+      .select('id, name, member_limit')
+      .eq('slug', cleanSlug)
       .single();
 
     if (!company) {
@@ -126,11 +130,31 @@ export async function GET(
       if (callerMem) callerRole = callerMem.role;
     }
 
+    // Fetch pending invitations count for seat calculations
+    const { count: pendingCount } = await adminClient
+      .from('invitations')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .eq('status', 'pending');
+
+    const memberLimit = Number(company.member_limit) || 5;
+    const activeCount = employees.length;
+    const pendingTotal = pendingCount || 0;
+    const usedSeats = activeCount + pendingTotal;
+
     return NextResponse.json({
       success: true,
       employees,
       currentUserId: user.id,
       currentUserRole: callerRole,
+      quota: {
+        memberLimit,
+        activeMembersCount: activeCount,
+        pendingInvitesCount: pendingTotal,
+        usedSeats,
+        availableSeats: Math.max(0, memberLimit - usedSeats),
+        isLimitReached: usedSeats >= memberLimit,
+      },
     });
   } catch (error: any) {
     console.error('Fetch employees error:', error);

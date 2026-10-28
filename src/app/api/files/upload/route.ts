@@ -2,25 +2,20 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { adminClient } from '@/lib/supabase/admin';
 
-// Allowed MIME types and extensions
-const ALLOWED_EXTENSIONS = new Set(['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg', 'gif', 'zip']);
+// Allowed MIME types and extensions (small images, webp, docs, pdf)
+const ALLOWED_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'webp', 'png', 'jpg', 'jpeg']);
 
 const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/msword',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'image/png',
   'image/jpeg',
-  'image/gif',
-  'application/zip',
-  'application/x-zip-compressed',
-  'application/x-compressed',
-  'application/octet-stream', // Fallback for zip / office files
+  'image/webp',
+  'application/octet-stream', // Fallback for document binary files
 ]);
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (lightweight storage)
 
 export async function POST(request: Request) {
   try {
@@ -81,10 +76,10 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4. Validate file size (<= 50MB)
+    // 4. Validate file size (<= 5MB)
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'File size exceeds maximum allowed limit of 50MB.' },
+        { error: 'File size exceeds maximum allowed limit of 5MB.' },
         { status: 400 }
       );
     }
@@ -95,7 +90,7 @@ export async function POST(request: Request) {
 
     if (!ALLOWED_EXTENSIONS.has(ext)) {
       return NextResponse.json(
-        { error: `File type .${ext} is not allowed. Only PDF, DOCX, XLSX, PNG, JPG, GIF, and ZIP are permitted.` },
+        { error: `File type .${ext} is not allowed. Only small images (WEBP, PNG, JPG) and documents (PDF, DOC, DOCX) are permitted.` },
         { status: 400 }
       );
     }

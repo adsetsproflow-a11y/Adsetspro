@@ -5,7 +5,7 @@ import { ShieldAlert, ArrowLeft, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { adminClient } from '@/lib/supabase/admin';
 import { UserRole } from '@/types/app.types';
-import { getDbPool } from '@/lib/db';
+import { getDbPool, queryDb } from '@/lib/db';
 import WorkspaceShell from './WorkspaceShell';
 
 function ForbiddenScreen({
@@ -79,20 +79,30 @@ export default async function WorkspaceLayout({
   }
 
   // 2. Fetch user profile with resilient fallback
-  const pool = getDbPool();
-  let profRes = await pool.query(
-    `SELECT id, full_name, email, is_super_admin 
-     FROM public.profiles 
-     WHERE id = $1 OR (LOWER(email) = LOWER($2) AND $2 != '') 
-     LIMIT 1;`,
-    [user.id, user.email || '']
-  );
-  let profile = profRes.rows[0];
+  let profile: any = null;
+  try {
+    const profRes = await queryDb(
+      `SELECT id, full_name, email, is_super_admin 
+       FROM public.profiles 
+       WHERE id = $1 OR (LOWER(email) = LOWER($2) AND $2 != '') 
+       LIMIT 1;`,
+      [user.id, user.email || '']
+    );
+    profile = profRes.rows[0];
+  } catch (dbErr: any) {
+    console.warn('[WorkspaceLayout] DB query fallback for profile:', dbErr?.message);
+    const { data: adminProf } = await adminClient
+      .from('profiles')
+      .select('id, full_name, email, is_super_admin')
+      .eq('id', user.id)
+      .maybeSingle();
+    profile = adminProf;
+  }
 
   if (!profile) {
     const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member';
     try {
-      const insRes = await pool.query(
+      const insRes = await queryDb(
         `INSERT INTO public.profiles (id, full_name, email, is_super_admin)
          VALUES ($1, $2, $3, false)
          ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email
@@ -106,11 +116,22 @@ export default async function WorkspaceLayout({
   }
 
   // 3. Fetch company
-  const compRes = await pool.query(
-    `SELECT id, name, slug, status, logo_url FROM public.companies WHERE slug = $1 LIMIT 1;`,
-    [companySlug]
-  );
-  const company = compRes.rows[0];
+  let company: any = null;
+  try {
+    const compRes = await queryDb(
+      `SELECT id, name, slug, status, logo_url FROM public.companies WHERE slug = $1 LIMIT 1;`,
+      [companySlug]
+    );
+    company = compRes.rows[0];
+  } catch (cErr: any) {
+    console.warn('[WorkspaceLayout] DB query fallback for company:', cErr?.message);
+    const { data: adminComp } = await adminClient
+      .from('companies')
+      .select('id, name, slug, status, logo_url')
+      .eq('slug', companySlug)
+      .maybeSingle();
+    company = adminComp;
+  }
 
   if (!company) {
     return (
@@ -137,11 +158,24 @@ export default async function WorkspaceLayout({
   if (profile.is_super_admin) {
     role = 'SUPER_ADMIN';
   } else {
-    const memRes = await pool.query(
-      `SELECT role, status FROM public.company_memberships WHERE user_id = $1 AND company_id = $2 AND status = 'active' LIMIT 1;`,
-      [user.id, company.id]
-    );
-    const membership = memRes.rows[0];
+    let membership: any = null;
+    try {
+      const memRes = await queryDb(
+        `SELECT role, status FROM public.company_memberships WHERE user_id = $1 AND company_id = $2 AND status = 'active' LIMIT 1;`,
+        [user.id, company.id]
+      );
+      membership = memRes.rows[0];
+    } catch (mErr: any) {
+      console.warn('[WorkspaceLayout] DB query fallback for membership:', mErr?.message);
+      const { data: adminMem } = await adminClient
+        .from('company_memberships')
+        .select('role, status')
+        .eq('user_id', user.id)
+        .eq('company_id', company.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      membership = adminMem;
+    }
 
     if (!membership) {
       return (
@@ -157,11 +191,16 @@ export default async function WorkspaceLayout({
   }
 
   // 6. Fetch unread notifications count
-  const notifRes = await pool.query(
-    `SELECT COUNT(*)::int as count FROM public.notifications WHERE user_id = $1 AND read_at IS NULL;`,
-    [user.id]
-  );
-  const unreadCount = notifRes.rows[0]?.count || 0;
+  let unreadCount = 0;
+  try {
+    const notifRes = await queryDb(
+      `SELECT COUNT(*)::int as count FROM public.notifications WHERE user_id = $1 AND read_at IS NULL;`,
+      [user.id]
+    );
+    unreadCount = notifRes.rows[0]?.count || 0;
+  } catch {
+    unreadCount = 0;
+  }
 
   return (
     <WorkspaceShell

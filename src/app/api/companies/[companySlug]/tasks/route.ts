@@ -10,6 +10,10 @@ export async function GET(
 ) {
   try {
     const { companySlug } = await params;
+    if (!companySlug || companySlug === 'undefined' || companySlug.startsWith('[')) {
+      return NextResponse.json({ error: 'Invalid company slug' }, { status: 400 });
+    }
+    const cleanSlug = decodeURIComponent(companySlug).toLowerCase().trim();
     const url = new URL(request.url);
 
     // Query parameters
@@ -39,7 +43,7 @@ export async function GET(
 
     // 2 & 3. Fetch company and user profile in parallel
     const [companyRes, profileRes] = await Promise.all([
-      adminClient.from('companies').select('id, name').eq('slug', companySlug).single(),
+      adminClient.from('companies').select('id, name').eq('slug', cleanSlug).single(),
       adminClient.from('profiles').select('is_super_admin').eq('id', user.id).single(),
     ]);
 

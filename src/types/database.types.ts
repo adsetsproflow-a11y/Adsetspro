@@ -76,6 +76,8 @@ export interface Database {
           approved_at: string | null;
           rejected_at: string | null;
           reject_reason: string | null;
+          logo_url?: string | null;
+          member_limit: number;
           created_at: string;
           updated_at: string;
         };
@@ -89,6 +91,8 @@ export interface Database {
           approved_at?: string | null;
           rejected_at?: string | null;
           reject_reason?: string | null;
+          logo_url?: string | null;
+          member_limit?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -102,6 +106,8 @@ export interface Database {
           approved_at?: string | null;
           rejected_at?: string | null;
           reject_reason?: string | null;
+          logo_url?: string | null;
+          member_limit?: number;
           created_at?: string;
           updated_at?: string;
         };

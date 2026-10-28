@@ -47,6 +47,14 @@ export default function EmployeesPage() {
   const companySlug = params.companySlug as string;
 
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
+  const [quota, setQuota] = useState<{
+    memberLimit: number;
+    activeMembersCount: number;
+    pendingInvitesCount: number;
+    usedSeats: number;
+    availableSeats: number;
+    isLimitReached: boolean;
+  } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>('EMPLOYEE');
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,6 +77,7 @@ export default function EmployeesPage() {
         if (cached.currentUserId) setCurrentUserId(cached.currentUserId);
         if (cached.currentUserRole) setCurrentUserRole(cached.currentUserRole);
         if (cached.departments) setDepartments(cached.departments);
+        if (cached.quota) setQuota(cached.quota);
         setIsLoading(false);
       } else {
         setIsLoading(true);
@@ -90,12 +99,14 @@ export default function EmployeesPage() {
       if (data.currentUserId) setCurrentUserId(data.currentUserId);
       if (data.currentUserRole) setCurrentUserRole(data.currentUserRole);
       setDepartments(depts);
+      if (data.quota) setQuota(data.quota);
 
       setCachedData(cacheKey, {
         employees: emps,
         currentUserId: data.currentUserId,
         currentUserRole: data.currentUserRole,
         departments: depts,
+        quota: data.quota || null,
       });
     } catch (err: any) {
       console.error('Failed to load employees:', err);
@@ -273,15 +284,66 @@ export default function EmployeesPage() {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-          <Link
-            href={`/c/${companySlug}/invitations`}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs inline-flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Invite Employee</span>
-          </Link>
+          {(currentUserRole === 'COMPANY_ADMIN' || currentUserRole === 'SUPER_ADMIN') && (
+            <Link
+              href={`/c/${companySlug}/invitations`}
+              className={`px-4 py-2.5 rounded-xl font-semibold text-xs inline-flex items-center gap-2 shadow-lg transition-all ${
+                quota?.isLimitReached
+                  ? 'bg-amber-600/25 hover:bg-amber-600/35 text-amber-300 border border-amber-500/30'
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20'
+              }`}
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Invite Employee {quota?.isLimitReached ? '(Seats Full)' : ''}</span>
+            </Link>
+          )}
         </div>
       </div>
+
+      {/* Seat Allocation Card for Admins */}
+      {quota && (currentUserRole === 'COMPANY_ADMIN' || currentUserRole === 'SUPER_ADMIN') && (
+        <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                Member Capacity: {quota.usedSeats} / {quota.memberLimit} Seats Used
+              </span>
+              {quota.isLimitReached ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  Capacity Reached (Full)
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  {quota.availableSeats} {quota.availableSeats === 1 ? 'seat' : 'seats'} available
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-zinc-400">
+              {quota.activeMembersCount} active organization members • {quota.pendingInvitesCount} pending onboarding invitations
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="w-48 bg-zinc-950 rounded-full h-2.5 overflow-hidden border border-zinc-800">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  quota.isLimitReached
+                    ? 'bg-amber-500'
+                    : quota.usedSeats / quota.memberLimit > 0.7
+                    ? 'bg-indigo-500'
+                    : 'bg-emerald-500'
+                }`}
+                style={{ width: `${Math.min(100, (quota.usedSeats / quota.memberLimit) * 100)}%` }}
+              />
+            </div>
+            {quota.isLimitReached && (
+              <span className="text-[11px] text-amber-300 font-medium">
+                Ask Super Admin to grant +5 seats pack
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Action feedback toast / banner */}
       {actionMessage && (

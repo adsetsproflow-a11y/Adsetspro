@@ -62,7 +62,7 @@ export const APP_CONFIG = {
   NAME: 'Adsetspro Platform',
   DESCRIPTION: 'Multi-Tenant Enterprise Workflow & Project Management Suite',
   DEFAULT_PAGE_SIZE: 20,
-  MAX_FILE_SIZE_MB: 50,
+  MAX_FILE_SIZE_MB: 5,
   INVITATION_EXPIRY_DAYS: 7,
   SIGNED_URL_EXPIRY_SECONDS: 60,
 } as const;

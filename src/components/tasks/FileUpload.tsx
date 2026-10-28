@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import FileList, { TaskAttachmentItem } from './FileList';
 
-const ALLOWED_EXTENSIONS = ['pdf', 'docx', 'xlsx', 'png', 'jpg', 'jpeg', 'gif', 'zip'];
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'webp', 'png', 'jpg', 'jpeg'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (lightweight storage)
 
 interface FileUploadProps {
   taskId: string;
@@ -47,15 +47,15 @@ export default function FileUpload({
   };
 
   const validateFile = (file: File): string | null => {
-    // 1. Size check (<= 50MB)
+    // 1. Size check (<= 5MB)
     if (file.size > MAX_FILE_SIZE) {
-      return `File size (${formatFileSize(file.size)}) exceeds the maximum allowed limit of 50MB.`;
+      return `File size (${formatFileSize(file.size)}) exceeds the maximum allowed limit of 5MB.`;
     }
 
     // 2. Extension check
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
-      return `File type .${ext || 'unknown'} is not allowed. Only PDF, DOCX, XLSX, PNG, JPG, GIF, and ZIP are permitted.`;
+      return `File type .${ext || 'unknown'} is not allowed. Only small images (WEBP, PNG, JPG) and documents (PDF, DOC, DOCX) are permitted.`;
     }
 
     return null;
@@ -168,7 +168,7 @@ export default function FileUpload({
               Deliverable & Attachment Upload
             </h3>
           </div>
-          <span className="text-[10px] font-mono text-zinc-500">Max 50MB (Private & Encrypted)</span>
+          <span className="text-[10px] font-mono text-zinc-500">Max 5MB (Private & Encrypted)</span>
         </div>
 
         {/* Hidden Input */}
@@ -176,7 +176,7 @@ export default function FileUpload({
           type="file"
           ref={fileInputRef}
           onChange={handleFileSelect}
-          accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.gif,.zip"
+          accept=".pdf,.doc,.docx,.webp,.png,.jpg,.jpeg"
           className="hidden"
         />
 
@@ -194,7 +194,7 @@ export default function FileUpload({
                 Click to browse or drag & drop deliverable file
               </p>
               <p className="text-[11px] text-zinc-500">
-                Permitted: PDF, DOCX, XLSX, PNG, JPG, GIF, ZIP (Up to 50MB)
+                Permitted: Small Images (WEBP, PNG, JPG) • Docs (PDF, DOC, DOCX) - Up to 5MB
               </p>
             </div>
           </div>

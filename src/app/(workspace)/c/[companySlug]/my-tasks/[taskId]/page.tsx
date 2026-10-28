@@ -160,6 +160,18 @@ export default function EmployeeTaskDetailPage() {
   };
 
   const handleFileSelect = (file: File) => {
+    const MAX_DELIVERABLE_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_DELIVERABLE_SIZE) {
+      alert(`File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds the maximum allowed limit of 5MB.`);
+      return;
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    const allowed = ['pdf', 'doc', 'docx', 'webp', 'png', 'jpg', 'jpeg'];
+    if (!ext || !allowed.includes(ext)) {
+      alert(`File type .${ext} is not allowed. Only small images (WEBP, PNG, JPG) and documents (PDF, DOC, DOCX) are permitted.`);
+      return;
+    }
+
     setSelectedFile(file);
     if (!submissionFileName.trim()) {
       setSubmissionFileName(file.name);
@@ -949,38 +961,60 @@ export default function EmployeeTaskDetailPage() {
               </span>
             </div>
 
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
-                <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                  Start Date (DD/MM/YYYY)
-                </span>
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                  <span className="text-xs font-mono text-zinc-200 font-medium">
+            {/* Dates: Fully responsive across all devices and sidebar widths */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5">
+              <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5 transition-all">
+                <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <span>Start Date</span>
+                  <span className="text-[9px] font-mono text-zinc-600 font-normal">DD/MM/YYYY</span>
+                </div>
+                <div className="flex items-center gap-2 pt-0.5">
+                  <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shrink-0">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-mono text-zinc-200 font-medium whitespace-nowrap truncate">
                     {task.start_date ? formatDate(task.start_date, 'short') : 'Not specified'}
                   </span>
                 </div>
               </div>
 
               <div
-                className={`p-3.5 rounded-2xl border space-y-1.5 ${
+                className={`p-3.5 rounded-2xl border space-y-1.5 transition-all ${
                   isOverdue
                     ? 'bg-red-500/10 border-red-500/30'
                     : 'bg-zinc-950/60 border-zinc-800/80'
                 }`}
               >
-                <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                  Deadline (DD/MM/YYYY)
-                </span>
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  {isOverdue ? (
-                    <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                  ) : (
-                    <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                  )}
+                <div
+                  className={`flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider ${
+                    isOverdue ? 'text-red-400' : 'text-zinc-500'
+                  }`}
+                >
+                  <span>Deadline</span>
                   <span
-                    className={`text-xs font-mono font-medium ${
+                    className={`text-[9px] font-mono font-normal ${
+                      isOverdue ? 'text-red-400/80' : 'text-zinc-600'
+                    }`}
+                  >
+                    DD/MM/YYYY
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 pt-0.5">
+                  <div
+                    className={`p-1.5 rounded-lg shrink-0 ${
+                      isOverdue
+                        ? 'bg-red-500/20 border border-red-500/30 text-red-400'
+                        : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400'
+                    }`}
+                  >
+                    {isOverdue ? (
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                    ) : (
+                      <Calendar className="w-3.5 h-3.5" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs font-mono font-medium whitespace-nowrap truncate ${
                       isOverdue ? 'text-red-400 font-bold' : 'text-zinc-200'
                     }`}
                   >
@@ -1052,14 +1086,14 @@ export default function EmployeeTaskDetailPage() {
                         <Upload className="w-3.5 h-3.5 text-amber-400" />
                         <span>Upload Deliverable File or Image</span>
                       </span>
-                      <span className="text-[10px] text-zinc-500">Max 50MB</span>
+                      <span className="text-[10px] text-zinc-500">Max 5MB</span>
                     </label>
 
                     {/* Hidden Native File Input */}
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="image/*,.pdf,.docx,.xlsx,.zip"
+                      accept=".pdf,.doc,.docx,.webp,.png,.jpg,.jpeg"
                       onChange={handleFileInputChange}
                       className="hidden"
                     />
@@ -1105,7 +1139,7 @@ export default function EmployeeTaskDetailPage() {
                                 <span className="text-amber-400 underline underline-offset-2">Click to browse</span> or drag & drop image/file
                               </p>
                               <p className="text-[10px] text-zinc-500">
-                                Images (PNG, JPG, WEBP, GIF, SVG) • Docs (PDF, ZIP, DOCX)
+                                Small Images (WEBP, PNG, JPG) • Docs (PDF, DOC, DOCX) - Max 5MB
                               </p>
                             </>
                           )}

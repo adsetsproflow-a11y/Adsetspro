@@ -38,6 +38,15 @@ interface InvitationItem {
   inviter?: { id: string; full_name: string } | null;
 }
 
+interface QuotaInfo {
+  memberLimit: number;
+  activeMembersCount: number;
+  pendingInvitesCount: number;
+  usedSeats: number;
+  availableSeats: number;
+  isLimitReached: boolean;
+}
+
 export default function InvitationsPage() {
   const params = useParams();
   const companySlug = params.companySlug as string;
@@ -45,6 +54,7 @@ export default function InvitationsPage() {
   const [invitations, setInvitations] = useState<InvitationItem[]>([]);
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,12 +100,14 @@ export default function InvitationsPage() {
       setInvitations(invData.invitations || []);
       setDepartments(deptData.departments || []);
       setEmployees(empData.employees || []);
+      if (invData.quota) setQuota(invData.quota);
 
       const cacheKey = `invitations_${companySlug}`;
       setCachedData(cacheKey, {
         invitations: invData.invitations || [],
         departments: deptData.departments || [],
         employees: empData.employees || [],
+        quota: invData.quota || null,
       }, 45 * 1000);
     } catch (err: any) {
       console.error('Failed to load invitations:', err);
@@ -112,6 +124,7 @@ export default function InvitationsPage() {
         setInvitations(cached.invitations || []);
         setDepartments(cached.departments || []);
         setEmployees(cached.employees || []);
+        if (cached.quota) setQuota(cached.quota);
         setIsLoading(false);
         fetchInvitations(true);
       } else {
@@ -142,6 +155,10 @@ export default function InvitationsPage() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create invitation');
+
+      if (data.quota) {
+        setQuota(data.quota);
+      }
 
       setFeedback({
         type: 'success',
@@ -368,13 +385,62 @@ export default function InvitationsPage() {
               setIsModalOpen(true);
               setFeedback(null);
             }}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs inline-flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+            className={`px-4 py-2.5 rounded-xl font-semibold text-xs inline-flex items-center gap-2 shadow-lg transition-all cursor-pointer ${
+              quota?.isLimitReached
+                ? 'bg-amber-600/25 hover:bg-amber-600/35 text-amber-300 border border-amber-500/30'
+                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20'
+            }`}
           >
             <UserPlus className="w-4 h-4" />
-            <span>Invite Employee</span>
+            <span>Invite Employee {quota?.isLimitReached ? '(Seats Full)' : ''}</span>
           </button>
         </div>
       </div>
+
+      {/* Seat Allocation Card */}
+      {quota && (
+        <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white uppercase tracking-wider">
+                Member Capacity: {quota.usedSeats} / {quota.memberLimit} Seats Used
+              </span>
+              {quota.isLimitReached ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  Capacity Reached (Full)
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  {quota.availableSeats} {quota.availableSeats === 1 ? 'seat' : 'seats'} available
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-zinc-400">
+              Includes {quota.activeMembersCount} active organization members and {quota.pendingInvitesCount} pending onboarding invitations.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="w-48 bg-zinc-950 rounded-full h-2.5 overflow-hidden border border-zinc-800">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  quota.isLimitReached
+                    ? 'bg-amber-500'
+                    : quota.usedSeats / quota.memberLimit > 0.7
+                    ? 'bg-indigo-500'
+                    : 'bg-emerald-500'
+                }`}
+                style={{ width: `${Math.min(100, (quota.usedSeats / quota.memberLimit) * 100)}%` }}
+              />
+            </div>
+            {quota.isLimitReached && (
+              <span className="text-[11px] text-amber-300 font-medium">
+                Need more seats? Ask Super Admin to add +5 seats pack.
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Feedback Banner */}
       {feedback && (
@@ -571,6 +637,20 @@ export default function InvitationsPage() {
               </button>
             </div>
 
+            {quota?.isLimitReached && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">
+                    Organization Seat Capacity Reached ({quota.usedSeats}/{quota.memberLimit})
+                  </p>
+                  <p className="text-[11px] text-amber-200/80 leading-relaxed">
+                    All {quota.memberLimit} organization seats are currently allocated ({quota.activeMembersCount} active members, {quota.pendingInvitesCount} pending invites). To invite more employees, please contact the Platform Super Admin to grant an additional +5 seat pack to your organization.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleCreateInvitation} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -580,10 +660,11 @@ export default function InvitationsPage() {
                   <input
                     type="text"
                     required
+                    disabled={quota?.isLimitReached}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Sarah Connor"
-                    className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                   />
                 </div>
 
@@ -594,10 +675,11 @@ export default function InvitationsPage() {
                   <input
                     type="email"
                     required
+                    disabled={quota?.isLimitReached}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="sarah@company.com"
-                    className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -606,9 +688,10 @@ export default function InvitationsPage() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-300">Target Department</label>
                   <select
+                    disabled={quota?.isLimitReached}
                     value={departmentId}
                     onChange={(e) => setDepartmentId(e.target.value)}
-                    className="w-full py-2.5 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full py-2.5 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                   >
                     <option value="">-- Unassigned / General --</option>
                     {departments.map((d) => (
@@ -622,9 +705,10 @@ export default function InvitationsPage() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-300">Access Role</label>
                   <select
+                    disabled={quota?.isLimitReached}
                     value={role}
                     onChange={(e) => setRole(e.target.value as any)}
-                    className="w-full py-2.5 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full py-2.5 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                   >
                     <option value="EMPLOYEE">Employee</option>
                     <option value="DEPARTMENT_HEAD">Department Head</option>
@@ -635,9 +719,10 @@ export default function InvitationsPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-300">Reporting Manager</label>
                 <select
+                  disabled={quota?.isLimitReached}
                   value={reportingTo}
                   onChange={(e) => setReportingTo(e.target.value)}
-                  className="w-full py-2.5 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full py-2.5 px-3 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                 >
                   <option value="">-- No Direct Manager --</option>
                   {employees.map((emp) => (
@@ -658,10 +743,10 @@ export default function InvitationsPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || quota?.isLimitReached}
                   className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs disabled:opacity-50 cursor-pointer"
                 >
-                  {isSubmitting ? 'Generating...' : 'Send Invitation'}
+                  {isSubmitting ? 'Generating...' : quota?.isLimitReached ? 'Seats Full (Contact Super Admin)' : 'Send Invitation'}
                 </button>
               </div>
             </form>

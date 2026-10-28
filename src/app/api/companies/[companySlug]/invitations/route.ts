@@ -24,7 +24,7 @@ export async function GET(
     // 2. Fetch company
     const { data: company } = await adminClient
       .from('companies')
-      .select('id')
+      .select('id, name, member_limit')
       .eq('slug', companySlug)
       .single();
 
@@ -32,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    // Verify caller is COMPANY_ADMIN or SUPER_ADMIN
+    // Option A: Only Company Admin or Super Admin has authority to manage invitations
     const { data: profile } = await adminClient
       .from('profiles')
       .select('is_super_admin')
@@ -48,48 +48,74 @@ export async function GET(
         .eq('status', 'active')
         .maybeSingle();
 
-      if (!membership || (membership.role !== 'COMPANY_ADMIN' && membership.role !== 'DEPARTMENT_HEAD')) {
+      if (!membership || membership.role !== 'COMPANY_ADMIN') {
         return NextResponse.json(
-          { error: 'Forbidden: Insufficient permissions to view organization invitations.' },
+          { error: 'Forbidden: Organization Administrator access required to manage employee invitations.' },
           { status: 403 }
         );
       }
     }
 
-    // 3. Fetch invitations
-    const { data: invitations, error: invErr } = await adminClient
-      .from('invitations')
-      .select(`
-        id,
-        email,
-        full_name,
-        role,
-        status,
-        expires_at,
-        created_at,
-        department:departments!department_id(
-          id,
-          name
-        ),
-        designation:designations!designation_id(
-          id,
-          name
-        ),
-        inviter:profiles!invited_by(
-          id,
-          full_name
-        )
-      `)
-      .eq('company_id', company.id)
-      .order('created_at', { ascending: false });
+    const pool = getDbPool();
 
-    if (invErr) {
-      throw invErr;
+    // 3. Fetch invitations and seat quota
+    const [invitationsRes, memCountRes, invCountRes] = await Promise.all([
+      adminClient
+        .from('invitations')
+        .select(`
+          id,
+          email,
+          full_name,
+          role,
+          status,
+          expires_at,
+          created_at,
+          department:departments!department_id(
+            id,
+            name
+          ),
+          designation:designations!designation_id(
+            id,
+            name
+          ),
+          inviter:profiles!invited_by(
+            id,
+            full_name
+          )
+        `)
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false }),
+      pool.query(
+        `SELECT COUNT(*)::int as count FROM public.company_memberships WHERE company_id = $1 AND status = 'active';`,
+        [company.id]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int as count FROM public.invitations WHERE company_id = $1 AND status = 'pending' AND expires_at > NOW();`,
+        [company.id]
+      ),
+    ]);
+
+    if (invitationsRes.error) {
+      throw invitationsRes.error;
     }
+
+    const activeMembersCount = memCountRes.rows[0]?.count || 0;
+    const pendingInvitesCount = invCountRes.rows[0]?.count || 0;
+    const memberLimit = Number(company.member_limit) || 5;
+    const usedSeats = activeMembersCount + pendingInvitesCount;
+    const availableSeats = Math.max(0, memberLimit - usedSeats);
 
     return NextResponse.json({
       success: true,
-      invitations: invitations || [],
+      invitations: invitationsRes.data || [],
+      quota: {
+        memberLimit,
+        activeMembersCount,
+        pendingInvitesCount,
+        usedSeats,
+        availableSeats,
+        isLimitReached: usedSeats >= memberLimit,
+      },
     });
   } catch (error: any) {
     console.error('Fetch invitations error:', error);
@@ -133,7 +159,7 @@ export async function POST(
     // 2. Fetch company
     const { data: company } = await adminClient
       .from('companies')
-      .select('id, name')
+      .select('id, name, member_limit')
       .eq('slug', companySlug)
       .single();
 
@@ -141,7 +167,7 @@ export async function POST(
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    // 3. Check caller permissions (COMPANY_ADMIN, SUPER_ADMIN, or DEPARTMENT_HEAD)
+    // 3. Check caller permissions: Option A strictly requires COMPANY_ADMIN or SUPER_ADMIN
     const { data: profile } = await adminClient
       .from('profiles')
       .select('is_super_admin')
@@ -157,15 +183,50 @@ export async function POST(
         .eq('status', 'active')
         .maybeSingle();
 
-      if (!membership || (membership.role !== 'COMPANY_ADMIN' && membership.role !== 'DEPARTMENT_HEAD')) {
+      if (!membership || membership.role !== 'COMPANY_ADMIN') {
         return NextResponse.json(
-          { error: 'Forbidden: Insufficient permissions to issue employee onboarding invitations.' },
+          { error: 'Forbidden: Only Organization Administrators can invite new employees.' },
           { status: 403 }
         );
       }
     }
 
-    // 4. Check if email is already a member of this company
+    // 4. Check seat quota: active members + pending invitations
+    const pool = getDbPool();
+    const [memCountRes, invCountRes] = await Promise.all([
+      pool.query(
+        `SELECT COUNT(*)::int as count FROM public.company_memberships WHERE company_id = $1 AND status = 'active';`,
+        [company.id]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int as count FROM public.invitations WHERE company_id = $1 AND status = 'pending' AND expires_at > NOW();`,
+        [company.id]
+      ),
+    ]);
+
+    const activeMembersCount = memCountRes.rows[0]?.count || 0;
+    const pendingInvitesCount = invCountRes.rows[0]?.count || 0;
+    const memberLimit = Number(company.member_limit) || 5;
+    const usedSeats = activeMembersCount + pendingInvitesCount;
+
+    if (usedSeats >= memberLimit) {
+      return NextResponse.json(
+        {
+          error: `Seat capacity limit reached (${usedSeats}/${memberLimit} seats occupied: ${activeMembersCount} active members, ${pendingInvitesCount} pending invites). To invite more team members, request your Platform Super Admin to add +5 seat packs to your organization.`,
+          quota: {
+            memberLimit,
+            activeMembersCount,
+            pendingInvitesCount,
+            usedSeats,
+            availableSeats: 0,
+            isLimitReached: true,
+          },
+        },
+        { status: 403 }
+      );
+    }
+
+    // 5. Check if email is already a member of this company
     const { data: existingProfile } = await adminClient
       .from('profiles')
       .select('id, is_super_admin')
@@ -195,12 +256,12 @@ export async function POST(
       }
     }
 
-    // 5. Generate secure random token and SHA-256 hash
+    // 6. Generate secure random token and SHA-256 hash
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
 
-    // 6. Insert into invitations table
+    // 7. Insert into invitations table
     const { data: invitation, error: invErr } = await adminClient
       .from('invitations')
       .insert({
@@ -223,7 +284,7 @@ export async function POST(
       throw invErr;
     }
 
-    // 7. Write audit log
+    // 8. Write audit log
     await adminClient.from('audit_logs').insert({
       actor_id: user.id,
       company_id: company.id,
@@ -234,6 +295,8 @@ export async function POST(
         invited_email: cleanEmail,
         role: assignedRole,
         department_id: department_id || null,
+        seats_used: usedSeats + 1,
+        seat_limit: memberLimit,
       },
     });
 
@@ -247,7 +310,14 @@ export async function POST(
       success: true,
       invitation,
       inviteUrl,
-      message: `Invitation generated successfully for ${cleanEmail}. Link valid for 7 days.`,
+      message: `Invitation generated successfully for ${cleanEmail}. Link valid for 7 days. (${usedSeats + 1}/${memberLimit} seats used)`,
+      quota: {
+        memberLimit,
+        activeMembersCount,
+        pendingInvitesCount: pendingInvitesCount + 1,
+        usedSeats: usedSeats + 1,
+        availableSeats: Math.max(0, memberLimit - (usedSeats + 1)),
+      },
     });
   } catch (error: any) {
     console.error('Create invitation error:', error);
@@ -286,7 +356,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    // 3. Verify admin / dept head permissions
+    // 3. Option A: Only Super Admin or Company Admin can clear invitations
     const { data: profile } = await adminClient
       .from('profiles')
       .select('is_super_admin')
@@ -302,7 +372,7 @@ export async function DELETE(
         .eq('status', 'active')
         .maybeSingle();
 
-      if (!membership || (membership.role !== 'COMPANY_ADMIN' && membership.role !== 'DEPARTMENT_HEAD')) {
+      if (!membership || membership.role !== 'COMPANY_ADMIN') {
         return NextResponse.json(
           { error: 'Forbidden: Insufficient privileges to clear invitations.' },
           { status: 403 }
@@ -331,7 +401,7 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       count: deletedCount,
-      message: `Successfully cleared all ${deletedCount} invitation records.`,
+      message: `Successfully cleared all ${deletedCount} invitation records. Released ${deletedCount} reserved seats.`,
     });
   } catch (error: any) {
     console.error('Clear invitations error:', error);
@@ -341,4 +411,3 @@ export async function DELETE(
     );
   }
 }
-

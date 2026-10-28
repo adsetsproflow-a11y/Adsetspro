@@ -85,6 +85,32 @@ export default function SuperAdminCompaniesPage() {
     }
   };
 
+  const handleAddSeats = async (companyId: string, companyName: string, increment = 5) => {
+    if (!window.confirm(`Allocate +${increment} seats to organization "${companyName}"?`)) return;
+    setActionLoadingId(companyId);
+    try {
+      const res = await fetch(`/api/super-admin/companies/${companyId}/add-seats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ increment }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to allocate seats');
+      alert(data.message || `Successfully allocated +${increment} seats.`);
+      await fetchCompanies();
+      if (selectedCompanyDetails && selectedCompanyDetails.id === companyId) {
+        setSelectedCompanyDetails((prev: any) => ({
+          ...prev,
+          member_limit: data.newLimit,
+        }));
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error allocating seats');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const handleConfirmReject = async () => {
     if (!rejectingCompany) return;
     if (!rejectReason.trim()) {
@@ -229,6 +255,7 @@ export default function SuperAdminCompaniesPage() {
                 <th className="py-3.5 px-4">Workspace Slug</th>
                 <th className="py-3.5 px-4">Admin Email</th>
                 <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-4">Seat Quota</th>
                 <th className="py-3.5 px-4">Created Date</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
@@ -236,7 +263,7 @@ export default function SuperAdminCompaniesPage() {
             <tbody className="divide-y divide-zinc-800/60">
               {paginatedCompanies.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-zinc-500">
+                  <td colSpan={7} className="py-12 text-center text-zinc-500">
                     No companies found matching the criteria.
                   </td>
                 </tr>
@@ -297,6 +324,48 @@ export default function SuperAdminCompaniesPage() {
                         </span>
                       </td>
 
+                      {/* Seat Quota */}
+                      <td className="py-3.5 px-4">
+                        {(() => {
+                          const active = Number(c.member_count || 0);
+                          const pending = Number(c.pending_count || 0);
+                          const used = active + pending;
+                          const cap = Number(c.member_limit || 5);
+                          const isFull = used >= cap;
+                          const pct = Math.min(100, Math.round((used / cap) * 100));
+
+                          return (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`font-semibold font-mono text-[11px] ${
+                                    isFull ? 'text-amber-400' : 'text-zinc-200'
+                                  }`}
+                                >
+                                  {used} / {cap} Seats
+                                </span>
+                                {isFull && (
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                    FULL
+                                  </span>
+                                )}
+                              </div>
+                              <div className="w-24 bg-zinc-950 rounded-full h-1.5 overflow-hidden border border-zinc-800">
+                                <div
+                                  className={`h-full transition-all duration-300 ${
+                                    isFull ? 'bg-amber-500' : 'bg-indigo-500'
+                                  }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="text-[9px] text-zinc-500 block">
+                                {active} active • {pending} pending
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </td>
+
                       {/* Created date */}
                       <td className="py-3.5 px-4 text-zinc-400">
                         {new Date(c.created_at).toLocaleDateString()}
@@ -305,6 +374,17 @@ export default function SuperAdminCompaniesPage() {
                       {/* Action buttons */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="inline-flex items-center gap-1.5">
+                          {c.status === 'approved' && (
+                            <button
+                              disabled={isActionLoading}
+                              onClick={() => handleAddSeats(c.id, c.name, 5)}
+                              className="px-2 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-semibold text-[11px] transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1 shadow-sm"
+                              title="Allocate +5 Seats Add-on Pack"
+                            >
+                              <span>+5 Seats</span>
+                            </button>
+                          )}
+
                           {c.status !== 'approved' && (
                             <button
                               disabled={isActionLoading}
@@ -652,6 +732,42 @@ export default function SuperAdminCompaniesPage() {
                   <span className="text-red-400 block">
                     {new Date(selectedCompanyDetails.rejected_at).toLocaleString()}
                   </span>
+                </div>
+              )}
+            </div>
+
+            {/* Seat Capacity Card */}
+            <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                  Member Seat Allocation & Quota
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-black font-mono text-white">
+                    {Number(selectedCompanyDetails.member_count || 0) + Number(selectedCompanyDetails.pending_count || 0)} / {selectedCompanyDetails.member_limit || 5} Seats
+                  </span>
+                  <span className="text-xs text-zinc-400">
+                    ({selectedCompanyDetails.member_count || 0} active, {selectedCompanyDetails.pending_count || 0} pending)
+                  </span>
+                </div>
+              </div>
+
+              {selectedCompanyDetails.status === 'approved' && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    disabled={actionLoadingId === selectedCompanyDetails.id}
+                    onClick={() => handleAddSeats(selectedCompanyDetails.id, selectedCompanyDetails.name, 5)}
+                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 cursor-pointer"
+                  >
+                    +5 Seats Pack
+                  </button>
+                  <button
+                    disabled={actionLoadingId === selectedCompanyDetails.id}
+                    onClick={() => handleAddSeats(selectedCompanyDetails.id, selectedCompanyDetails.name, 10)}
+                    className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    +10 Seats
+                  </button>
                 </div>
               )}
             </div>

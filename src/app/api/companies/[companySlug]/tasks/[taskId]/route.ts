@@ -8,6 +8,13 @@ export async function GET(
 ) {
   try {
     const { companySlug, taskId } = await params;
+    if (!companySlug || companySlug === 'undefined' || companySlug.startsWith('[')) {
+      return NextResponse.json({ error: 'Invalid company slug' }, { status: 400 });
+    }
+    if (!taskId || taskId === 'undefined' || taskId.startsWith('[')) {
+      return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
+    }
+    const cleanSlug = decodeURIComponent(companySlug).toLowerCase().trim();
     const supabase = await createClient();
 
     // 1. Authenticate user
@@ -21,7 +28,7 @@ export async function GET(
 
     // 2 & 3. Fetch company and user profile in parallel
     const [companyRes, profileRes] = await Promise.all([
-      adminClient.from('companies').select('id, name').eq('slug', companySlug).single(),
+      adminClient.from('companies').select('id, name').eq('slug', cleanSlug).single(),
       adminClient.from('profiles').select('is_super_admin').eq('id', user.id).single(),
     ]);
 
@@ -230,6 +237,10 @@ export async function PATCH(
 ) {
   try {
     const { companySlug, taskId } = await params;
+    if (!companySlug || companySlug === 'undefined' || companySlug.startsWith('[')) {
+      return NextResponse.json({ error: 'Invalid company slug' }, { status: 400 });
+    }
+    const cleanSlug = decodeURIComponent(companySlug).toLowerCase().trim();
     const body = await request.json();
     const {
       title,
@@ -254,7 +265,7 @@ export async function PATCH(
     const { data: company } = await adminClient
       .from('companies')
       .select('id')
-      .eq('slug', companySlug)
+      .eq('slug', cleanSlug)
       .single();
 
     if (!company) {
@@ -357,6 +368,10 @@ export async function DELETE(
 ) {
   try {
     const { companySlug, taskId } = await params;
+    if (!companySlug || companySlug === 'undefined' || companySlug.startsWith('[')) {
+      return NextResponse.json({ error: 'Invalid company slug' }, { status: 400 });
+    }
+    const cleanSlug = decodeURIComponent(companySlug).toLowerCase().trim();
     const supabase = await createClient();
 
     // 1. Authenticate user
@@ -372,7 +387,7 @@ export async function DELETE(
     const { data: company } = await adminClient
       .from('companies')
       .select('id, name')
-      .eq('slug', companySlug)
+      .eq('slug', cleanSlug)
       .single();
 
     if (!company) {

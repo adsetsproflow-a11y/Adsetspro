@@ -28,7 +28,8 @@ export async function POST(request: Request) {
           'id', c.id,
           'name', c.name,
           'slug', c.slug,
-          'status', c.status
+          'status', c.status,
+          'member_limit', COALESCE(c.member_limit, 5)
         ) as companies
       FROM public.invitations i
       JOIN public.companies c ON c.id = i.company_id
@@ -70,6 +71,21 @@ export async function POST(request: Request) {
     if (!company || company.status !== 'approved') {
       return NextResponse.json(
         { error: 'The organization associated with this invite is currently inactive or pending approval.' },
+        { status: 403 }
+      );
+    }
+
+    // Secondary safety check: Active member seat limit
+    const memCountRes = await pool.query(
+      `SELECT COUNT(*)::int as count FROM public.company_memberships WHERE company_id = $1 AND status = 'active';`,
+      [company.id]
+    );
+    const activeCount = memCountRes.rows[0]?.count || 0;
+    const seatLimit = Number(company.member_limit) || 5;
+
+    if (activeCount >= seatLimit) {
+      return NextResponse.json(
+        { error: `This organization has reached its maximum seat capacity (${activeCount}/${seatLimit}). Please contact the organization administrator to upgrade the seat tier.` },
         { status: 403 }
       );
     }

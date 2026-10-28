@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Activity,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
   X,
   ShieldCheck,
@@ -84,8 +85,22 @@ interface ActivityItem {
 export default function SingleTaskDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const companySlug = params.companySlug as string;
-  const taskId = params.taskId as string;
+
+  const rawCompanySlug = params?.companySlug;
+  const companySlug = typeof rawCompanySlug === 'string'
+    ? rawCompanySlug
+    : Array.isArray(rawCompanySlug)
+    ? rawCompanySlug[0]
+    : '';
+
+  const rawTaskId = params?.taskId;
+  const taskId = typeof rawTaskId === 'string'
+    ? rawTaskId
+    : Array.isArray(rawTaskId)
+    ? rawTaskId[0]
+    : '';
+
+  const cleanSlug = companySlug ? decodeURIComponent(companySlug).toLowerCase().trim() : '';
 
   const [task, setTask] = useState<TaskData | null>(null);
   const [comments, setComments] = useState<CommentItem[]>([]);
@@ -123,14 +138,20 @@ export default function SingleTaskDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteTask = async () => {
+    if (!cleanSlug || !taskId) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/companies/${companySlug}/tasks/${taskId}`, {
+      const res = await fetch(`/api/companies/${cleanSlug}/tasks/${taskId}`, {
         method: 'DELETE',
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to delete task');
-      router.push(`/c/${companySlug}/tasks`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Failed to delete task');
+        setIsDeleting(false);
+        setIsDeleteModalOpen(false);
+        return;
+      }
+      router.push(`/c/${cleanSlug}/tasks`);
     } catch (err: any) {
       setError(err.message || 'Error deleting task');
       setIsDeleting(false);
@@ -142,20 +163,36 @@ export default function SingleTaskDetailPage() {
   const [newComment, setNewComment] = useState('');
 
   const fetchTaskDetails = async () => {
+    if (
+      !cleanSlug ||
+      cleanSlug === 'undefined' ||
+      cleanSlug.startsWith('[') ||
+      !taskId ||
+      taskId === 'undefined' ||
+      taskId.startsWith('[')
+    ) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
       const [taskRes, commentRes, empRes] = await Promise.all([
-        fetch(`/api/companies/${companySlug}/tasks/${taskId}`),
-        fetch(`/api/companies/${companySlug}/tasks/${taskId}/comments`),
-        fetch(`/api/companies/${companySlug}/employees`),
+        fetch(`/api/companies/${cleanSlug}/tasks/${taskId}`),
+        fetch(`/api/companies/${cleanSlug}/tasks/${taskId}/comments`),
+        fetch(`/api/companies/${cleanSlug}/employees`),
       ]);
 
-      const taskData = await taskRes.json();
-      const commentData = await commentRes.json();
-      const empData = await empRes.json();
+      const taskData = await taskRes.json().catch(() => ({}));
+      const commentData = await commentRes.json().catch(() => ({}));
+      const empData = await empRes.json().catch(() => ({}));
 
-      if (!taskRes.ok) throw new Error(taskData.error || 'Failed to load task details');
+      if (!taskRes.ok) {
+        setError(taskData.error || 'Failed to load task details');
+        setIsLoading(false);
+        return;
+      }
 
       setTask(taskData.task);
       setPermissions(taskData.userPermissions || {});
@@ -177,7 +214,7 @@ export default function SingleTaskDetailPage() {
         setEditReviewerId(taskData.task.reviewer?.id || '');
       }
     } catch (err: any) {
-      console.error('Error loading task:', err);
+      console.warn('Error loading task:', err);
       setError(err.message || 'Error loading task');
     } finally {
       setIsLoading(false);
@@ -185,10 +222,17 @@ export default function SingleTaskDetailPage() {
   };
 
   useEffect(() => {
-    if (companySlug && taskId) {
+    if (
+      cleanSlug &&
+      cleanSlug !== 'undefined' &&
+      !cleanSlug.startsWith('[') &&
+      taskId &&
+      taskId !== 'undefined' &&
+      !taskId.startsWith('[')
+    ) {
       fetchTaskDetails();
     }
-  }, [companySlug, taskId]);
+  }, [cleanSlug, taskId]);
 
   // Status transitions
   const handleStatusChange = async (targetStatus: string, note?: string) => {
@@ -439,6 +483,12 @@ export default function SingleTaskDetailPage() {
       </div>
     );
   }
+
+  const isOverdue =
+    task.due_date &&
+    new Date(task.due_date) < new Date() &&
+    task.status !== 'approved' &&
+    task.status !== 'cancelled';
 
   return (
     <div className="space-y-6">
@@ -790,27 +840,63 @@ export default function SingleTaskDetailPage() {
               )}
             </div>
 
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
-                <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                  Start Date (DD/MM/YYYY)
-                </span>
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                  <span className="text-xs font-mono text-zinc-200 font-medium">
+            {/* Dates: Fully responsive across all devices and sidebar widths */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2.5">
+              <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5 transition-all">
+                <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <span>Start Date</span>
+                  <span className="text-[9px] font-mono text-zinc-600 font-normal">DD/MM/YYYY</span>
+                </div>
+                <div className="flex items-center gap-2 pt-0.5">
+                  <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shrink-0">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-mono text-zinc-200 font-medium whitespace-nowrap truncate">
                     {task.start_date ? formatDate(task.start_date, 'short') : 'Not specified'}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
-                <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                  Due Date (DD/MM/YYYY)
-                </span>
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                  <span className="text-xs font-mono text-zinc-200 font-medium">
+              <div
+                className={`p-3.5 rounded-2xl border space-y-1.5 transition-all ${
+                  isOverdue
+                    ? 'bg-red-500/10 border-red-500/30'
+                    : 'bg-zinc-950/60 border-zinc-800/80'
+                }`}
+              >
+                <div
+                  className={`flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider ${
+                    isOverdue ? 'text-red-400' : 'text-zinc-500'
+                  }`}
+                >
+                  <span>Deadline</span>
+                  <span
+                    className={`text-[9px] font-mono font-normal ${
+                      isOverdue ? 'text-red-400/80' : 'text-zinc-600'
+                    }`}
+                  >
+                    DD/MM/YYYY
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 pt-0.5">
+                  <div
+                    className={`p-1.5 rounded-lg shrink-0 ${
+                      isOverdue
+                        ? 'bg-red-500/20 border border-red-500/30 text-red-400'
+                        : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-400'
+                    }`}
+                  >
+                    {isOverdue ? (
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                    ) : (
+                      <Calendar className="w-3.5 h-3.5" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs font-mono font-medium whitespace-nowrap truncate ${
+                      isOverdue ? 'text-red-400 font-bold' : 'text-zinc-200'
+                    }`}
+                  >
                     {task.due_date ? formatDate(task.due_date, 'short') : 'Open-ended'}
                   </span>
                 </div>
