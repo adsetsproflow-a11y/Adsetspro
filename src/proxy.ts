@@ -23,7 +23,12 @@ export async function proxy(request: NextRequest) {
   if (sessionCookie) {
     try {
       const raw = sessionCookie.includes('%') ? decodeURIComponent(sessionCookie) : sessionCookie;
-      const decoded = atob(raw);
+      let decoded = '';
+      try {
+        decoded = Buffer.from(raw, 'base64').toString('utf-8');
+      } catch {
+        decoded = atob(raw);
+      }
       const parsed = JSON.parse(decoded);
       if (parsed?.id) {
         // Authenticated user verified locally in <1ms without network latency

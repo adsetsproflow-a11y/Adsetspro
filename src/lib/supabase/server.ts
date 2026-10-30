@@ -34,7 +34,8 @@ export async function createClient() {
   const sessionCookie = cookieStore.get('saaa_session')?.value;
   if (sessionCookie) {
     try {
-      const decoded = Buffer.from(sessionCookie, 'base64').toString('utf8');
+      const raw = sessionCookie.includes('%') ? decodeURIComponent(sessionCookie) : sessionCookie;
+      const decoded = Buffer.from(raw, 'base64').toString('utf8');
       const parsed = JSON.parse(decoded);
       if (parsed?.id && parsed?.email) {
         const originalGetUser = client.auth.getUser.bind(client.auth);

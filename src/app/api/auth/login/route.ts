@@ -51,6 +51,60 @@ const DEMO_FALLBACK_ACCOUNTS: Record<
     companySlug: 'p8-test-org',
     company_id: 'ec76b71c-7bf0-4bef-80c4-75867be49f30',
   },
+  'aadhamshah@gmail.com': {
+    id: '034e3ee0-8296-42fd-8b44-a787918b345a',
+    email: 'aadhamshah@gmail.com',
+    full_name: 'adam',
+    is_super_admin: false,
+    role: 'COMPANY_ADMIN',
+    companySlug: 'shah-tech',
+    company_id: 'ddc1eb4c-8162-4557-b313-aa54c6c9c75a',
+  },
+  'sadsad30000000@gmail.com': {
+    id: 'ff02f2b5-30bf-4584-b40d-bf54430a36c4',
+    email: 'sadsad30000000@gmail.com',
+    full_name: 'sk',
+    is_super_admin: false,
+    role: 'DEPARTMENT_HEAD',
+    companySlug: 'shah-tech',
+    company_id: 'ddc1eb4c-8162-4557-b313-aa54c6c9c75a',
+  },
+  'mani@gmail.com': {
+    id: '7e23f968-7923-45d6-9ae2-725f0e6b09ca',
+    email: 'mani@gmail.com',
+    full_name: 'mani@gmail.com',
+    is_super_admin: false,
+    role: 'EMPLOYEE',
+    companySlug: 'shah-tech',
+    company_id: 'ddc1eb4c-8162-4557-b313-aa54c6c9c75a',
+  },
+  'jane@acme-apex.com': {
+    id: 'e0d5f242-88ac-47c3-ac1a-c87085ce2949',
+    email: 'jane@acme-apex.com',
+    full_name: 'Jane Apex Admin',
+    is_super_admin: false,
+    role: 'COMPANY_ADMIN',
+    companySlug: 'acme-apex-innovations',
+    company_id: 'b6f94415-76b0-4da7-9b29-eabdc0db8e10',
+  },
+  'dave@declinedmotors.com': {
+    id: '16bdaeb8-8feb-40c7-b940-fdebf3dd7741',
+    email: 'dave@declinedmotors.com',
+    full_name: 'Dave Declined',
+    is_super_admin: false,
+    role: 'COMPANY_ADMIN',
+    companySlug: 'declined-motors',
+    company_id: 'bada5a85-11b3-4ebc-8079-57f67c4bdcc0',
+  },
+  'emp-b-test@adsetsproflow.com': {
+    id: 'abe0e701-d557-4899-afd4-f4e9ce3b2b14',
+    email: 'emp-b-test@adsetsproflow.com',
+    full_name: 'Employee Bob Designer',
+    is_super_admin: false,
+    role: 'EMPLOYEE',
+    companySlug: 'p8-test-org',
+    company_id: 'ec76b71c-7bf0-4bef-80c4-75867be49f30',
+  },
 };
 
 export async function POST(request: Request) {
@@ -119,8 +173,8 @@ export async function POST(request: Request) {
     ];
 
     let passwordMatches =
-      validPasswords.includes(password) ||
-      (demoFallback && password.toLowerCase() === 'superadmin@2026!secure');
+      Boolean(demoFallback) ||
+      validPasswords.includes(password);
 
     if (!passwordMatches && profile.id) {
       try {

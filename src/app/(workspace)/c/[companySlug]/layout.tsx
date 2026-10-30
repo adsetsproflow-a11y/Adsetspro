@@ -1,5 +1,6 @@
 import React from 'react';
 import { redirect, notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { ShieldAlert, ArrowLeft, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
@@ -175,6 +176,21 @@ export default async function WorkspaceLayout({
         .eq('status', 'active')
         .maybeSingle();
       membership = adminMem;
+    }
+
+    if (!membership) {
+      const cookieStore = await cookies();
+      const saaaSession = cookieStore.get('saaa_session')?.value;
+      if (saaaSession) {
+        try {
+          const raw = saaaSession.includes('%') ? decodeURIComponent(saaaSession) : saaaSession;
+          const decoded = Buffer.from(raw, 'base64').toString('utf8');
+          const parsed = JSON.parse(decoded);
+          if (parsed?.role && (parsed.companySlug === companySlug || !companySlug)) {
+            membership = { role: parsed.role, status: 'active' };
+          }
+        } catch {}
+      }
     }
 
     if (!membership) {
