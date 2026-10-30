@@ -39,19 +39,18 @@ export default function LoginPage() {
         await supabase.auth.signInWithPassword({ email: email.trim(), password });
       } catch (e) {}
 
-      // 2. Route based on role
+      // 2. Route based on role with full session reload
       if (data.is_super_admin) {
-        router.push('/super-admin/dashboard');
+        window.location.href = '/super-admin/dashboard';
       } else if (data.companySlug) {
         if (data.user?.role === 'EMPLOYEE') {
-          router.push(`/c/${data.companySlug}/my-tasks`);
+          window.location.href = `/c/${data.companySlug}/my-tasks`;
         } else {
-          router.push(`/c/${data.companySlug}/dashboard`);
+          window.location.href = `/c/${data.companySlug}/dashboard`;
         }
       } else {
-        router.push('/');
+        window.location.href = '/';
       }
-      router.refresh();
     } catch (err: any) {
       setErrorMessage(err.message || 'Authentication failed. Please verify your credentials.');
     } finally {

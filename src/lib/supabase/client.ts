@@ -1,7 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/types/database.types';
 
+let cachedBrowserClient: ReturnType<typeof createBrowserClient<Database>> | null = null;
+
 export function createClient() {
+  if (typeof window !== 'undefined' && cachedBrowserClient) {
+    return cachedBrowserClient;
+  }
+
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wiswkavvupyuzujnbirq.supabase.co';
 
@@ -43,6 +49,10 @@ export function createClient() {
         }
       } catch (e) {}
     }
+  }
+
+  if (typeof window !== 'undefined') {
+    cachedBrowserClient = client;
   }
 
   return client;

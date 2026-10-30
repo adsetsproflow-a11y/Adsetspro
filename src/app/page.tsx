@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import {
   Layers,
   Sparkles,
@@ -17,21 +19,31 @@ import {
   ChevronDown,
   LayoutDashboard,
   LogOut,
-  X,
-  Send,
   Building2,
   Check,
   Flame,
   TrendingUp,
   Cpu,
-  ArrowUp,
-  Loader2,
-  Briefcase,
 } from 'lucide-react';
 import ThemeToggle from '@/components/common/ThemeToggle';
-import AiNeuralCanvas from '@/components/landing/AiNeuralCanvas';
-import AiHolographicSides from '@/components/landing/AiHolographicSides';
-import AiInteractiveTerminal from '@/components/landing/AiInteractiveTerminal';
+
+// High-performance dynamic code splitting for below-the-fold & non-critical interactive widgets
+const AiNeuralCanvas = dynamic(() => import('@/components/landing/AiNeuralCanvas'), {
+  ssr: false,
+  loading: () => <div className="absolute inset-0 pointer-events-none" />,
+});
+
+const AiInteractiveTerminal = dynamic(() => import('@/components/landing/AiInteractiveTerminal'), {
+  ssr: false,
+});
+
+const DemoModal = dynamic(() => import('@/components/landing/DemoModal'), {
+  ssr: false,
+});
+
+const BackToTop = dynamic(() => import('@/components/landing/BackToTop'), {
+  ssr: false,
+});
 
 export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<{
@@ -47,65 +59,6 @@ export default function HomePage() {
 
   // Demo modal state
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
-  const [isDemoLaunching, setIsDemoLaunching] = useState<string | null>(null);
-  const [demoLaunchError, setDemoLaunchError] = useState<string | null>(null);
-
-  const handleInstantLaunch = async (role: 'admin' | 'employee') => {
-    setIsDemoLaunching(role);
-    setDemoLaunchError(null);
-
-    const target = {
-      admin: { email: 'admin@p8-test.com', password: 'SuperAdmin@2026!Secure', redirectUrl: '/c/p8-test-org/dashboard' },
-      employee: { email: 'employee@p8-test.com', password: 'SuperAdmin@2026!Secure', redirectUrl: '/c/p8-test-org/my-tasks' },
-    }[role];
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: target.email, password: target.password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to start demo session');
-      }
-
-      window.location.href = target.redirectUrl;
-    } catch (err: any) {
-      setDemoLaunchError(err?.message || 'Could not connect to demo workspace.');
-      setIsDemoLaunching(null);
-    }
-  };
-
-  // Top-to-go (scroll to top) state & progress percentage (0 to 1)
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (typeof window !== 'undefined') {
-        const scrollTop = window.scrollY;
-        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = docHeight > 0 ? Math.min(Math.max(scrollTop / docHeight, 0), 1) : 0;
-        setScrollProgress(progress);
-        setShowScrollTop(scrollTop > 200);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    if (typeof window !== 'undefined') {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      });
-    }
-  };
 
   useEffect(() => {
     // Read session directly from saaa_session cookie
@@ -170,10 +123,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#070b14] bg-grid-pattern text-slate-900 dark:text-zinc-100 flex flex-col justify-between relative overflow-x-hidden transition-colors duration-300 font-sans">
-      {/* Pinned Futuristic AI Holographic HUD Side Panels (Desktop) */}
-      <AiHolographicSides />
-
-      {/* Side Ambient Light Beams (GPU accelerated CSS breathing on screen edges) */}
+      {/* Side Ambient Light Beams */}
       <div className="fixed top-0 left-0 w-1 sm:w-1.5 h-full bg-gradient-to-b from-indigo-500/0 via-indigo-500/35 to-purple-500/0 animate-light-beam pointer-events-none z-30" />
       <div className="fixed top-0 right-0 w-1 sm:w-1.5 h-full bg-gradient-to-b from-cyan-500/0 via-cyan-500/35 to-indigo-500/0 animate-light-beam pointer-events-none z-30" style={{ animationDelay: '4s' }} />
 
@@ -371,10 +321,13 @@ export default function HomePage() {
 
             {/* Tool Dashboard Image */}
             <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
-              <img
+              <Image
                 src="/images/tool_dashboard_preview.jpg"
                 alt="Adsetspro Flow Tool Dashboard Preview"
-                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.01]"
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.01]"
               />
 
               {/* Floating Badge 1: Sprint Progress (GPU float animation) */}
@@ -641,10 +594,13 @@ export default function HomePage() {
           <div className="order-2 lg:order-1 relative group">
             <div className="rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl overflow-hidden">
               <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
-                <img
+                <Image
                   src="/images/smart_task_planning.jpg"
                   alt="Plan Smarter. Get Work Done Faster - Smart Task Planning"
-                  className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
+                  fill
+                  loading="lazy"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
                 />
                 <div className="animate-float absolute top-4 left-4 px-3.5 py-2 rounded-xl bg-white/95 dark:bg-zinc-900/95 border border-slate-200 dark:border-zinc-700/80 text-xs font-bold text-slate-900 dark:text-white backdrop-blur-md shadow-xl flex items-center gap-2">
                   <div className="relative flex h-2 w-2">
@@ -744,10 +700,13 @@ export default function HomePage() {
         {/* Reference Image Showcase */}
         <div className="mb-14 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl overflow-hidden relative group">
           <div className="relative aspect-[21/9] w-full bg-slate-950 overflow-hidden">
-            <img
+            <Image
               src="/images/ai_growth_features.jpg"
               alt="AI-Powered Features Showcase"
-              className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
+              fill
+              loading="lazy"
+              sizes="(max-width: 1200px) 100vw, 1200px"
+              className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
             />
           </div>
         </div>
@@ -1246,188 +1205,11 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* =========================================================================
-          INTERACTIVE "BOOK A DEMO" & INSTANT 1-CLICK DEMO MODAL
-         ========================================================================= */}
-      {isDemoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl relative max-h-[92vh] overflow-y-auto"
-          >
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setIsDemoModalOpen(false);
-                setDemoLaunchError(null);
-              }}
-              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer z-10"
-              aria-label="Close modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {/* Dynamic Lazy Loaded Interactive Demo Modal */}
+      <DemoModal isOpen={isDemoModalOpen} onClose={() => setIsDemoModalOpen(false)} />
 
-            {/* Modal Header */}
-            <div className="space-y-1.5 mb-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-[11px] font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Instant Interactive Demo</span>
-              </div>
-              <h3 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                Experience Adsetspro Flow
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-                Launch directly into a live, pre-seeded startup workspace. Select a role below to explore features with zero signup or setup required.
-              </p>
-            </div>
-
-            {/* Error Message if Demo Launch Fails */}
-            {demoLaunchError && (
-              <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold">
-                {demoLaunchError}
-              </div>
-            )}
-
-            {/* INSTANT 1-CLICK DEMO ROLES */}
-            <div className="space-y-3.5">
-              {/* Role 1: Company Admin */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-900 dark:text-white">
-                        Company Admin
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
-                        Recommended
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                      Manage task pipelines, assign team work, review deliverables, and view company velocity.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={isDemoLaunching !== null}
-                  onClick={() => handleInstantLaunch('admin')}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0"
-                >
-                  {isDemoLaunching === 'admin' ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Launching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Launch Admin Demo</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Role 2: Team Member / Employee */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 hover:border-cyan-400 dark:hover:border-cyan-500 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <Briefcase className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-900 dark:text-white">
-                        Team Member / Worker
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold">
-                        Daily Flow
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                      Focused task queue, stopwatch timers, WebP compression studio, and real-time team chat.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={isDemoLaunching !== null}
-                  onClick={() => handleInstantLaunch('employee')}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold border border-slate-700 dark:border-zinc-700 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0"
-                >
-                  {isDemoLaunching === 'employee' ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Launching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Launch Member Demo</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="pt-2 text-center text-[11px] text-slate-500 dark:text-zinc-500 flex items-center justify-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Instant access • No email or credit card required • 100% Sandbox safe</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          FLOATING TOP-TO-GO (SCROLL PROGRESS CIRCLE + BACK TO TOP) BUTTON
-         ========================================================================= */}
-      <div
-        className={`fixed bottom-6 right-6 z-40 transition-all duration-300 transform ${
-          showScrollTop
-            ? 'opacity-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 translate-y-6 pointer-events-none'
-        }`}
-      >
-        <button
-          type="button"
-          onClick={scrollToTop}
-          title={`Scroll to top (${Math.round(scrollProgress * 100)}% scrolled)`}
-          aria-label="Scroll back to top"
-          className="relative w-12 h-12 rounded-full bg-white/95 dark:bg-zinc-900/95 border border-slate-200/90 dark:border-zinc-800 shadow-2xl backdrop-blur-md text-slate-700 dark:text-zinc-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400 dark:hover:border-indigo-500/80 hover:shadow-indigo-500/25 transition-all duration-200 transform hover:scale-110 active:scale-95 cursor-pointer group flex items-center justify-center"
-        >
-          {/* Animated Circular SVG Progress Bar */}
-          <svg
-            className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none p-0.5"
-            viewBox="0 0 48 48"
-          >
-            {/* Background Track Ring */}
-            <circle
-              cx="24"
-              cy="24"
-              r="20"
-              className="stroke-slate-200 dark:stroke-zinc-800/80 fill-none"
-              strokeWidth="2.5"
-            />
-            {/* Animated Dynamic Progress Ring */}
-            <circle
-              cx="24"
-              cy="24"
-              r="20"
-              className="stroke-indigo-600 dark:stroke-indigo-400 fill-none transition-[stroke-dashoffset] duration-150 ease-out"
-              strokeWidth="2.5"
-              strokeDasharray={125.66}
-              strokeDashoffset={125.66 - scrollProgress * 125.66}
-              strokeLinecap="round"
-            />
-          </svg>
-
-          {/* Center Arrow Icon */}
-          <ArrowUp className="w-4 h-4 transition-transform duration-200 group-hover:-translate-y-0.5 relative z-10" />
-        </button>
-      </div>
+      {/* Dynamic Isolated Scroll-to-Top Button */}
+      <BackToTop />
     </div>
   );
 }

@@ -10,6 +10,10 @@
 :root {
   color-scheme: light;
 
+  /* Zero-latency modern native font stacks (eliminates external font network requests) */
+  --font-geist-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
   /* Semantic System Tokens */
   --background: #f8fafc;
   --foreground: #0f172a;

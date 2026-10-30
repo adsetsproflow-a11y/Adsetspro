@@ -16,10 +16,17 @@ export function getDbPool(): Pool {
   if (!globalThis.__saasPgPool) {
     let connectionString =
       process.env.DATABASE_URL ||
-      'postgresql://postgres:fZ79*S%HgXB+_zx@db.wiswkavvupyuzujnbirq.supabase.co:6543/postgres';
+      'postgresql://postgres.wiswkavvupyuzujnbirq:fZ79*S%HgXB+_zx@aws-0-ap-south-1.pooler.supabase.com:6543/postgres';
 
-    // Automatically route Supabase direct connections through the Supavisor Pooler (Port 6543)
-    if (connectionString.includes('.supabase.co:5432')) {
+    // Cloud serverless (Vercel / AWS Lambda) has NO IPv6 outbound routing.
+    // If IPv6-only direct host `db.<project>.supabase.co` is passed, auto-rewrite to IPv4 pooler:
+    if (connectionString.includes('db.wiswkavvupyuzujnbirq.supabase.co')) {
+      connectionString = connectionString
+        .replace('postgresql://postgres:', 'postgresql://postgres.wiswkavvupyuzujnbirq:')
+        .replace('db.wiswkavvupyuzujnbirq.supabase.co:5432', 'aws-0-ap-south-1.pooler.supabase.com:6543')
+        .replace('db.wiswkavvupyuzujnbirq.supabase.co:6543', 'aws-0-ap-south-1.pooler.supabase.com:6543')
+        .replace('db.wiswkavvupyuzujnbirq.supabase.co', 'aws-0-ap-south-1.pooler.supabase.com');
+    } else if (connectionString.includes('.supabase.co:5432')) {
       connectionString = connectionString.replace('.supabase.co:5432', '.supabase.co:6543');
     }
 
