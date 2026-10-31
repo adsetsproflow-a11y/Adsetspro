@@ -314,8 +314,8 @@ export default function GlobalSearch({ companySlug }: GlobalSearchProps) {
                             {task.title}
                           </p>
                           <div className="flex items-center gap-2 pt-0.5">
-                            <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                              {task.status.replace('_', ' ')}
+                            <span className="text-[10px] font-mono text-zinc-500 uppercase whitespace-nowrap">
+                              {task.status.replace(/_/g, ' ')}
                             </span>
                             <span className="text-zinc-600">•</span>
                             <span className="text-[10px] text-zinc-500 uppercase">

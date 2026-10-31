@@ -170,7 +170,7 @@ export default function WorkspaceReportsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'approved':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
       case 'in_progress':
@@ -179,8 +179,31 @@ export default function WorkspaceReportsPage() {
         return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
       case 'revision_required':
         return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+      case 'assigned':
+        return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
+      case 'cancelled':
+        return 'bg-zinc-800 text-zinc-400 border-zinc-700';
       default:
         return 'bg-zinc-800 text-zinc-400 border-zinc-700';
+    }
+  };
+
+  const formatStatusLabel = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'submitted_for_review':
+        return 'Submitted for Review';
+      case 'in_progress':
+        return 'In Progress';
+      case 'revision_required':
+        return 'Revision Required';
+      case 'approved':
+        return 'Approved';
+      case 'assigned':
+        return 'Assigned';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return (status || '').replace(/_/g, ' ');
     }
   };
 
@@ -325,12 +348,12 @@ export default function WorkspaceReportsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
               {/* Department */}
               <select
                 value={selectedDept}
                 onChange={(e) => setSelectedDept(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
               >
                 <option value="">All Departments</option>
                 {deptOptions.map((d) => (
@@ -344,7 +367,7 @@ export default function WorkspaceReportsPage() {
               <select
                 value={selectedEmployee}
                 onChange={(e) => setSelectedEmployee(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
               >
                 <option value="">All Employees</option>
                 {employeeOptions.map((e) => (
@@ -358,7 +381,7 @@ export default function WorkspaceReportsPage() {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
               >
                 <option value="">All Statuses</option>
                 <option value="assigned">Assigned</option>
@@ -373,7 +396,7 @@ export default function WorkspaceReportsPage() {
               <select
                 value={selectedPriority}
                 onChange={(e) => setSelectedPriority(e.target.value)}
-                className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
               >
                 <option value="">All Priorities</option>
                 <option value="low">Low</option>
@@ -388,7 +411,7 @@ export default function WorkspaceReportsPage() {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 title="Filter Start Date"
-                className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
               />
 
               {/* End Date */}
@@ -397,7 +420,7 @@ export default function WorkspaceReportsPage() {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 title="Filter End Date"
-                className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
               />
             </div>
           </div>
@@ -426,43 +449,44 @@ export default function WorkspaceReportsPage() {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-zinc-950/80 text-zinc-400 font-semibold border-b border-zinc-800 uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-5 py-3.5">Title</th>
-                      <th className="px-4 py-3.5">Assignee</th>
-                      <th className="px-4 py-3.5">Department</th>
-                      <th className="px-4 py-3.5">Status</th>
-                      <th className="px-4 py-3.5">Priority</th>
-                      <th className="px-4 py-3.5">Due Date</th>
-                      <th className="px-4 py-3.5">Completion Date</th>
+                      <th className="px-5 py-3.5 whitespace-nowrap min-w-[220px]">Title</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[140px]">Assignee</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[130px]">Department</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[180px]">Status</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[100px]">Priority</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[110px]">Due Date</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[140px]">Completion Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/50">
                     {taskReports.map((t) => (
                       <tr key={t.id} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="px-5 py-3 font-semibold text-white max-w-xs truncate">
+                        <td className="px-5 py-3.5 font-semibold text-white max-w-xs truncate" title={t.title}>
                           {t.title}
                         </td>
-                        <td className="px-4 py-3 text-zinc-300">{t.assignee}</td>
-                        <td className="px-4 py-3 text-zinc-400">{t.department}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3.5 text-zinc-300 whitespace-nowrap">{t.assignee}</td>
+                        <td className="px-4 py-3.5 text-zinc-400 whitespace-nowrap">{t.department}</td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase border ${getStatusBadge(
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap border shadow-xs ${getStatusBadge(
                               t.status
                             )}`}
                           >
-                            {t.status.replace('_', ' ')}
+                            <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                            <span>{formatStatusLabel(t.status)}</span>
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3.5 whitespace-nowrap">
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase border ${getPriorityBadge(
+                            className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border ${getPriorityBadge(
                               t.priority
                             )}`}
                           >
                             {t.priority}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-zinc-400 font-mono text-[11px]">{t.dueDate}</td>
-                        <td className="px-4 py-3 text-zinc-400 font-mono text-[11px]">
+                        <td className="px-4 py-3.5 text-zinc-300 font-mono text-xs whitespace-nowrap">{t.dueDate}</td>
+                        <td className="px-4 py-3.5 text-zinc-300 font-mono text-xs whitespace-nowrap">
                           {t.completionDate}
                         </td>
                       </tr>
@@ -516,18 +540,18 @@ export default function WorkspaceReportsPage() {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-zinc-950/80 text-zinc-400 font-semibold border-b border-zinc-800 uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-5 py-3.5">Employee Name</th>
-                      <th className="px-4 py-3.5">Department</th>
-                      <th className="px-4 py-3.5">Designation</th>
-                      <th className="px-4 py-3.5 text-center">Active Tasks</th>
-                      <th className="px-4 py-3.5 text-center">Completed Tasks</th>
-                      <th className="px-4 py-3.5 text-center">Overdue Tasks</th>
+                      <th className="px-5 py-3.5 whitespace-nowrap min-w-[180px]">Employee Name</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[130px]">Department</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[130px]">Designation</th>
+                      <th className="px-4 py-3.5 text-center whitespace-nowrap min-w-[110px]">Active Tasks</th>
+                      <th className="px-4 py-3.5 text-center whitespace-nowrap min-w-[130px]">Completed Tasks</th>
+                      <th className="px-4 py-3.5 text-center whitespace-nowrap min-w-[120px]">Overdue Tasks</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/50">
                     {employeeReports.map((emp) => (
                       <tr key={emp.id} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="px-5 py-3 font-semibold text-white">
+                        <td className="px-5 py-3.5 font-semibold text-white whitespace-nowrap">
                           <div>
                             <span>{emp.name}</span>
                             {emp.email && (
@@ -537,19 +561,19 @@ export default function WorkspaceReportsPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-zinc-300">{emp.department}</td>
-                        <td className="px-4 py-3 text-zinc-400">{emp.designation}</td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3.5 text-zinc-300 whitespace-nowrap">{emp.department}</td>
+                        <td className="px-4 py-3.5 text-zinc-400 whitespace-nowrap">{emp.designation}</td>
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
                           <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold font-mono text-[11px]">
                             {emp.activeTasks}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
                           <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold font-mono text-[11px]">
                             {emp.completedTasks}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
                           <span
                             className={`px-2.5 py-0.5 rounded-full font-bold font-mono text-[11px] ${
                               emp.overdueTasks > 0
@@ -611,27 +635,27 @@ export default function WorkspaceReportsPage() {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-zinc-950/80 text-zinc-400 font-semibold border-b border-zinc-800 uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-5 py-3.5">Department</th>
-                      <th className="px-4 py-3.5">Department Head</th>
-                      <th className="px-4 py-3.5 text-center">Employees</th>
-                      <th className="px-4 py-3.5 text-center">Total Tasks</th>
-                      <th className="px-4 py-3.5 text-center">Completion Rate</th>
-                      <th className="px-4 py-3.5 text-center">Overdue Count</th>
+                      <th className="px-5 py-3.5 whitespace-nowrap min-w-[180px]">Department</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap min-w-[160px]">Department Head</th>
+                      <th className="px-4 py-3.5 text-center whitespace-nowrap min-w-[100px]">Employees</th>
+                      <th className="px-4 py-3.5 text-center whitespace-nowrap min-w-[100px]">Total Tasks</th>
+                      <th className="px-4 py-3.5 text-center whitespace-nowrap min-w-[130px]">Completion Rate</th>
+                      <th className="px-4 py-3.5 text-center whitespace-nowrap min-w-[120px]">Overdue Count</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/50">
                     {departmentReports.map((d) => (
                       <tr key={d.id} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="px-5 py-3 font-semibold text-white">{d.department}</td>
-                        <td className="px-4 py-3 text-zinc-300">{d.head}</td>
-                        <td className="px-4 py-3 text-center text-zinc-300 font-mono">{d.employeeCount}</td>
-                        <td className="px-4 py-3 text-center text-zinc-300 font-mono">{d.totalTasks}</td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-5 py-3.5 font-semibold text-white whitespace-nowrap">{d.department}</td>
+                        <td className="px-4 py-3.5 text-zinc-300 whitespace-nowrap">{d.head}</td>
+                        <td className="px-4 py-3.5 text-center text-zinc-300 font-mono whitespace-nowrap">{d.employeeCount}</td>
+                        <td className="px-4 py-3.5 text-center text-zinc-300 font-mono whitespace-nowrap">{d.totalTasks}</td>
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
                           <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold font-mono text-[11px]">
                             {d.completionRate}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
                           <span
                             className={`px-2.5 py-0.5 rounded-full font-bold font-mono text-[11px] ${
                               d.overdueCount > 0

@@ -261,11 +261,11 @@ export default function WorkspaceShell({
                 </h2>
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <span
-                    className={`text-[10px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full border ${getRoleBadgeStyle(
+                    className={`text-[10px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-full border whitespace-nowrap ${getRoleBadgeStyle(
                       userRole
                     )}`}
                   >
-                    {userRole.replace('_', ' ')}
+                    {userRole.replace(/_/g, ' ')}
                   </span>
                 </div>
               </div>
