@@ -236,23 +236,27 @@ export default function FileList({
                       onClick={() => handleOpenZoom(file)}
                       className="relative aspect-video w-full rounded-xl overflow-hidden bg-black/70 border border-zinc-800/90 flex items-center justify-center cursor-pointer group/img"
                     >
-                      {hasDirectUrl ? (
-                        <img
-                          src={file.storage_path}
-                          alt={file.file_name}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-105"
-                          onError={(e) => {
+                      <img
+                        src={hasDirectUrl ? file.storage_path : `/api/files/${file.id}/download?inline=1`}
+                        alt={file.file_name}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-105"
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          const parent = (e.target as HTMLElement).parentElement;
+                          if (parent) {
                             (e.target as HTMLElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-zinc-500 gap-1.5 p-4 text-center">
-                          <ImageIcon className="w-8 h-8 text-purple-400/80" />
-                          <span className="text-[10px] text-zinc-400 font-mono truncate max-w-[120px]">
-                            {file.file_name}
-                          </span>
-                        </div>
-                      )}
+                            const fallback = parent.querySelector('.thumbnail-fallback');
+                            if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                          }
+                        }}
+                      />
+                      <div className="thumbnail-fallback hidden flex-col items-center justify-center text-zinc-500 gap-1.5 p-4 text-center">
+                        <ImageIcon className="w-8 h-8 text-purple-400/80" />
+                        <span className="text-[10px] text-zinc-400 font-mono truncate max-w-[120px]">
+                          {file.file_name}
+                        </span>
+                      </div>
 
                       {/* Hover Overlay with Zoom Button */}
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-semibold backdrop-blur-xs">

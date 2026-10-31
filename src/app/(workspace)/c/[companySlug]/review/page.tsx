@@ -18,6 +18,8 @@ import {
   Paperclip,
   Check,
   RotateCcw,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 import CenterLoader from '@/components/common/CenterLoader';
@@ -188,7 +190,19 @@ export default function ReviewQueuePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center flex-wrap gap-2.5">
+          <a
+            href={`/api/companies/${companySlug}/reports/export?status=approved${
+              departmentFilter !== 'all' ? `&department_id=${departmentFilter}` : ''
+            }`}
+            download
+            className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-400 hover:text-white text-xs font-bold inline-flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-600/10"
+            title="Export finished and completed deliverables to Excel / CSV"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export Completed Tasks (.xlsx / .csv)</span>
+          </a>
+
           <button
             onClick={() => fetchReviewQueue(false)}
             disabled={isLoading}

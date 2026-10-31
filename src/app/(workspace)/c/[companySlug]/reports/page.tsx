@@ -122,17 +122,25 @@ export default function WorkspaceReportsPage() {
 
   // CSV Export Handlers
   const handleExportTasksCSV = () => {
-    const headers = [
-      { key: 'title', label: 'Task Title' },
-      { key: 'assignee', label: 'Assignee' },
-      { key: 'department', label: 'Department' },
-      { key: 'status', label: 'Status' },
-      { key: 'priority', label: 'Priority' },
-      { key: 'dueDate', label: 'Due Date' },
-      { key: 'completionDate', label: 'Completion Date' },
-    ];
-    const csv = convertToCSV(taskReports, headers);
-    downloadCSV(`task_report_${companySlug}_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    try {
+      const qParams = new URLSearchParams();
+      if (selectedStatus) qParams.set('status', selectedStatus);
+      else qParams.set('status', 'all');
+      if (selectedDept) qParams.set('department_id', selectedDept);
+      window.location.href = `/api/companies/${companySlug}/reports/export?${qParams.toString()}`;
+    } catch {
+      const headers = [
+        { key: 'title', label: 'Task Title' },
+        { key: 'assignee', label: 'Assignee' },
+        { key: 'department', label: 'Department' },
+        { key: 'status', label: 'Status' },
+        { key: 'priority', label: 'Priority' },
+        { key: 'dueDate', label: 'Due Date' },
+        { key: 'completionDate', label: 'Completion Date' },
+      ];
+      const csv = convertToCSV(taskReports, headers);
+      downloadCSV(`task_report_${companySlug}_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    }
   };
 
   const handleExportEmployeesCSV = () => {

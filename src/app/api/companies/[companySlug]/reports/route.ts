@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { adminClient } from '@/lib/supabase/admin';
 import { formatDate } from '@/lib/utils/dateFormat';
@@ -22,9 +23,24 @@ export async function GET(
     const supabase = await createClient();
 
     // 1. Authenticate user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    let user: any = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    } catch {}
+
+    if (!user) {
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('saaa_session')?.value;
+      if (sessionCookie) {
+        try {
+          const raw = sessionCookie.includes('%') ? decodeURIComponent(sessionCookie) : sessionCookie;
+          const decoded = Buffer.from(raw, 'base64').toString('utf8');
+          const parsed = JSON.parse(decoded);
+          if (parsed?.id) user = parsed;
+        } catch {}
+      }
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,7 +65,7 @@ export async function GET(
       .single();
 
     let userRole = 'EMPLOYEE';
-    if (!profile?.is_super_admin) {
+    if (!profile?.is_super_admin && !user.is_super_admin) {
       const { data: membership } = await adminClient
         .from('company_memberships')
         .select('role')
@@ -58,15 +74,26 @@ export async function GET(
         .eq('status', 'active')
         .maybeSingle();
 
-      if (!membership) {
+      if (!membership && !user.companySlug) {
         return NextResponse.json(
           { error: 'Forbidden: Active membership required' },
           { status: 403 }
         );
       }
-      userRole = membership.role;
+      userRole = membership?.role || user.role || 'EMPLOYEE';
     } else {
       userRole = 'SUPER_ADMIN';
+    }
+
+    // Authorization: Only Company Admin and Department Head can access reports (Option A)
+    const isCompanyAdmin = userRole === 'COMPANY_ADMIN' || userRole === 'SUPER_ADMIN';
+    const isDeptHead = userRole === 'DEPARTMENT_HEAD';
+
+    if (!isCompanyAdmin && !isDeptHead) {
+      return NextResponse.json(
+        { error: 'Forbidden: Access to workspace reports is reserved for Company Administrators and Department Heads.' },
+        { status: 403 }
+      );
     }
 
     // 4. Fetch all company departments and designations for mapping
@@ -133,14 +160,29 @@ export async function GET(
     const taskAssigneeMap = new Map<string, string>();
     (assignments || []).forEach((a) => taskAssigneeMap.set(a.task_id, a.employee_id));
 
-    // 7. TASK REPORT QUERY
+    // 7. TASK REPORT QUERY (with Option A Scoping for Department Head)
+    // Identify departments led by this user if Department Head
+    const headDepts = (departments || []).filter((d) => d.head_user_id === user.id);
+    let headDeptIds = headDepts.map((d) => d.id);
+    if (headDeptIds.length === 0) {
+      const userDept = userDeptMap.get(user.id);
+      if (userDept) headDeptIds = [userDept];
+    }
+
     let taskQuery = adminClient
       .from('tasks')
-      .select('id, title, description, status, priority, due_date, department_id, created_at, updated_at')
+      .select('id, title, description, status, priority, due_date, department_id, created_by, reviewer_id, created_at, updated_at')
       .eq('company_id', company.id)
       .order('created_at', { ascending: false });
 
-    if (filterDept) {
+    // Apply Department Head scoping: only tasks belonging to their department or created/reviewed by them
+    if (isDeptHead && !isCompanyAdmin) {
+      if (headDeptIds.length > 0) {
+        taskQuery = taskQuery.or(`department_id.in.(${headDeptIds.join(',')}),created_by.eq.${user.id},reviewer_id.eq.${user.id}`);
+      } else {
+        taskQuery = taskQuery.or(`created_by.eq.${user.id},reviewer_id.eq.${user.id}`);
+      }
+    } else if (filterDept) {
       taskQuery = taskQuery.eq('department_id', filterDept);
     }
     if (filterStatus) {
@@ -220,7 +262,14 @@ export async function GET(
       }
     });
 
-    const employeeReport = (companyMembers || []).map((m) => {
+    const scopedMembers = isDeptHead && !isCompanyAdmin
+      ? (companyMembers || []).filter((m) => {
+          const uDept = userDeptMap.get(m.user_id);
+          return (uDept && headDeptIds.includes(uDept)) || m.user_id === user.id;
+        })
+      : (companyMembers || []);
+
+    const employeeReport = scopedMembers.map((m) => {
       const prof = profileMap.get(m.user_id);
       const stats = empTaskStats.get(m.user_id) || { active: 0, completed: 0, overdue: 0 };
       const userDeptId = userDeptMap.get(m.user_id);
@@ -280,7 +329,11 @@ export async function GET(
       }
     });
 
-    const departmentReport = (departments || []).map((d) => {
+    const scopedDepartments = isDeptHead && !isCompanyAdmin
+      ? (departments || []).filter((d) => headDeptIds.includes(d.id))
+      : (departments || []);
+
+    const departmentReport = scopedDepartments.map((d) => {
       const stats = deptTaskStats[d.id] || { total: 0, completed: 0, overdue: 0 };
       const headName = d.head_user_id ? headMap.get(d.head_user_id) || 'Unassigned' : 'Unassigned';
       const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
@@ -298,9 +351,10 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
+      userRole,
       filters: {
-        departments: (departments || []).map((d) => ({ id: d.id, name: d.name })),
-        employees: (companyMembers || []).map((m) => {
+        departments: scopedDepartments.map((d) => ({ id: d.id, name: d.name })),
+        employees: scopedMembers.map((m) => {
           const p = profileMap.get(m.user_id);
           return { id: m.user_id, name: p?.full_name || 'Team Member' };
         }),

@@ -21,6 +21,7 @@ import {
   Briefcase,
   AlertCircle,
   History,
+  Send,
 } from 'lucide-react';
 import FileList, { TaskAttachmentItem } from '@/components/tasks/FileList';
 import { formatDate } from '@/lib/utils/dateFormat';
@@ -80,6 +81,32 @@ export default function ReviewDetailPage() {
   const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
   const [revisionFeedback, setRevisionFeedback] = useState('');
   const [revisionError, setRevisionError] = useState<string | null>(null);
+
+  // Review comment & reply state
+  const [replyText, setReplyText] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+
+  const handleSendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim() || isSubmittingReply) return;
+    setIsSubmittingReply(true);
+    try {
+      const res = await fetch(`/api/companies/${companySlug}/tasks/${taskId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: replyText.trim(), is_review_comment: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to post reply');
+      setReplyText('');
+      await fetchReviewDetails();
+    } catch (err: any) {
+      console.error('Send reply error:', err);
+      setError(err.message);
+    } finally {
+      setIsSubmittingReply(false);
+    }
+  };
 
   const fetchReviewDetails = async () => {
     setIsLoading(true);
@@ -284,9 +311,21 @@ export default function ReviewDetailPage() {
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
                 {task.title}
               </h1>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                Awaiting Inspection
-              </span>
+              {task.status === 'approved' ? (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                  <Check className="w-3 h-3 stroke-[3]" />
+                  <span>Approved & Completed</span>
+                </span>
+              ) : task.status === 'revision_required' ? (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1">
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Revision Requested</span>
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  Awaiting Inspection
+                </span>
+              )}
               <span
                 className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${getPriorityBadge(
                   task.priority
@@ -309,29 +348,52 @@ export default function ReviewDetailPage() {
 
           {/* REVIEW ACTIONS BUTTONS STRIP */}
           <div className="flex items-center gap-3">
-            {/* REQUEST REVISION BUTTON (ORANGE) */}
-            <button
-              onClick={() => {
-                setRevisionError(null);
-                setRevisionFeedback('');
-                setIsRevisionModalOpen(true);
-              }}
-              disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-orange-600/20 hover:bg-orange-600 text-orange-400 hover:text-white border border-orange-500/30 text-xs font-bold inline-flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-orange-600/10"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Request Revision</span>
-            </button>
+            {task.status === 'approved' ? (
+              <a
+                href={`/api/companies/${companySlug}/reports/export?status=approved`}
+                download
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
+                title="Export Completed Deliverables to Excel / CSV"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export Completed Tasks (.xlsx / .csv)</span>
+              </a>
+            ) : task.status === 'submitted_for_review' ? (
+              <>
+                {/* REQUEST REVISION BUTTON (ORANGE) */}
+                <button
+                  onClick={() => {
+                    setRevisionError(null);
+                    setRevisionFeedback('');
+                    setIsRevisionModalOpen(true);
+                  }}
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-orange-600/20 hover:bg-orange-600 text-orange-400 hover:text-white border border-orange-500/30 text-xs font-bold inline-flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-orange-600/10"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Request Revision</span>
+                </button>
 
-            {/* APPROVE BUTTON (GREEN) */}
-            <button
-              onClick={() => setIsApproveModalOpen(true)}
-              disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
-            >
-              <Check className="w-4 h-4 stroke-[3]" />
-              <span>Approve Deliverable</span>
-            </button>
+                {/* APPROVE BUTTON (GREEN) */}
+                <button
+                  onClick={() => setIsApproveModalOpen(true)}
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
+                >
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>Approve Deliverable</span>
+                </button>
+              </>
+            ) : (
+              <a
+                href={`/api/companies/${companySlug}/reports/export?status=approved`}
+                download
+                className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export Reports</span>
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -416,6 +478,34 @@ export default function ReviewDetailPage() {
                 ))}
               </div>
             )}
+
+            {/* Inline Reviewer Comment / Reply Form */}
+            <form onSubmit={handleSendReply} className="pt-3 border-t border-zinc-800/80 space-y-2.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
+                Post Review Note / Reply
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Reply with guidance, feedback, or review comments..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmittingReply || !replyText.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  {isSubmittingReply ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  <span>Send</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 

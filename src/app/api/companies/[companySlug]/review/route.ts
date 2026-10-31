@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { adminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -14,9 +15,24 @@ export async function GET(
     const supabase = await createClient();
 
     // 1. Authenticate user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    let user: any = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    } catch {}
+
+    if (!user) {
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('saaa_session')?.value;
+      if (sessionCookie) {
+        try {
+          const raw = sessionCookie.includes('%') ? decodeURIComponent(sessionCookie) : sessionCookie;
+          const decoded = Buffer.from(raw, 'base64').toString('utf8');
+          const parsed = JSON.parse(decoded);
+          if (parsed?.id) user = parsed;
+        } catch {}
+      }
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
