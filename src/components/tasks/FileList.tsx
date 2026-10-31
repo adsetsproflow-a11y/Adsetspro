@@ -124,33 +124,17 @@ export default function FileList({
         return;
       }
 
-      const res = await fetch(`/api/files/${file.id}/download`);
-      const data = await res.json();
-
-      if (!res.ok || !data.success || !data.downloadUrl) {
-        if (file.storage_path) {
-          window.open(file.storage_path, '_blank');
-          return;
-        }
-        alert(data.error || 'Failed to generate secure download link');
-        return;
-      }
-
-      // Trigger download using the signed URL
+      // Stream directly via the download endpoint
       const link = document.createElement('a');
-      link.href = data.downloadUrl;
-      link.download = data.fileName || file.file_name;
+      link.href = `/api/files/${file.id}/download?download=1`;
+      link.download = file.file_name;
       link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (err) {
       console.error('Download error:', err);
-      if (file.storage_path) {
-        window.open(file.storage_path, '_blank');
-      } else {
-        alert('Error initiating file download');
-      }
+      alert('Error initiating file download');
     } finally {
       setDownloadingId(null);
     }
@@ -173,35 +157,13 @@ export default function FileList({
       return;
     }
 
-    // Otherwise fetch signed url
-    try {
-      const res = await fetch(`/api/files/${file.id}/download`);
-      const data = await res.json();
-      if (res.ok && data.success && data.downloadUrl) {
-        setLightboxImage({
-          url: data.downloadUrl,
-          fileName: file.file_name,
-          uploader: file.uploader_name,
-          date: file.created_at,
-        });
-      } else if (file.storage_path) {
-        setLightboxImage({
-          url: file.storage_path,
-          fileName: file.file_name,
-          uploader: file.uploader_name,
-          date: file.created_at,
-        });
-      }
-    } catch {
-      if (file.storage_path) {
-        setLightboxImage({
-          url: file.storage_path,
-          fileName: file.file_name,
-          uploader: file.uploader_name,
-          date: file.created_at,
-        });
-      }
-    }
+    // Direct high-resolution inline stream URL
+    setLightboxImage({
+      url: `/api/files/${file.id}/download?inline=1`,
+      fileName: file.file_name,
+      uploader: file.uploader_name,
+      date: file.created_at,
+    });
   };
 
   const handleDelete = async (file: TaskAttachmentItem) => {
@@ -480,7 +442,7 @@ export default function FileList({
 
               <div className="flex items-center gap-2">
                 <a
-                  href={lightboxImage.url}
+                  href={lightboxImage.url.includes('inline=1') ? lightboxImage.url.replace('inline=1', 'download=1') : lightboxImage.url}
                   download={lightboxImage.fileName}
                   target="_blank"
                   rel="noreferrer"

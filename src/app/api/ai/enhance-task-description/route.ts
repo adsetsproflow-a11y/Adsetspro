@@ -4,27 +4,9 @@ import fs from 'fs';
 import path from 'path';
 
 function getLiveGeminiApiKey(): string {
-  // 1. Read directly from .env.local / .env first so changes to env files take effect immediately without restarting the dev server
-  try {
-    for (const filename of ['.env.local', '.env']) {
-      const fullPath = path.join(process.cwd(), filename);
-      if (fs.existsSync(fullPath)) {
-        const content = fs.readFileSync(fullPath, 'utf8');
-        const match = content.match(/GEMINI_API_KEY\s*=\s*["']?([^"'\r\n]+)["']?/);
-        if (match && match[1] && match[1].trim() !== '') {
-          return match[1].trim();
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Error reading env files for GEMINI_API_KEY:', err);
-  }
-
-  // 2. Fallback to process.env if files are absent
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '') {
     return process.env.GEMINI_API_KEY.trim();
   }
-
   return '';
 }
 

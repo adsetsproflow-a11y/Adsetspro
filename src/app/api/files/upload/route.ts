@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { adminClient } from '@/lib/supabase/admin';
+import { queryDb } from '@/lib/db';
 
 // Allowed MIME types and extensions (small images, webp, docs, pdf)
 const ALLOWED_EXTENSIONS = new Set(['pdf', 'doc', 'docx', 'webp', 'png', 'jpg', 'jpeg']);
@@ -155,6 +156,19 @@ export async function POST(request: Request) {
     if (insertError || !attachment) {
       console.error('Database insert error:', insertError);
       throw insertError || new Error('Failed to record task attachment');
+    }
+
+    // Persist real file bytes into PostgreSQL task_file_contents
+    try {
+      await queryDb(
+        `INSERT INTO public.task_file_contents (attachment_id, file_data, mime_type, file_name)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (attachment_id) DO UPDATE 
+         SET file_data = EXCLUDED.file_data, mime_type = EXCLUDED.mime_type, file_name = EXCLUDED.file_name;`,
+        [attachment.id, buffer, file.type || ext || 'application/octet-stream', file.name]
+      );
+    } catch (dbStoreErr: any) {
+      console.warn('[Upload] Failed to persist binary to task_file_contents:', dbStoreErr?.message);
     }
 
     // 10. Audit log / task_activities

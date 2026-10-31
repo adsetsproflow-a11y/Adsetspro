@@ -83,7 +83,7 @@ export async function GET(
       .eq('company_id', company.id)
       .eq('status', 'submitted_for_review');
 
-    // If department head, filter to tasks in their department or where they are designated reviewer
+    // If department head, filter to tasks in their department, or where they created the task, or where they are designated reviewer
     if (userRole === 'DEPARTMENT_HEAD') {
       const { data: headDepts } = await adminClient
         .from('departments')
@@ -93,9 +93,9 @@ export async function GET(
 
       const deptIds = (headDepts || []).map((d) => d.id);
       if (deptIds.length > 0) {
-        query = query.or(`department_id.in.(${deptIds.join(',')}),reviewer_id.eq.${user.id}`);
+        query = query.or(`department_id.in.(${deptIds.join(',')}),reviewer_id.eq.${user.id},created_by.eq.${user.id}`);
       } else {
-        query = query.eq('reviewer_id', user.id);
+        query = query.or(`reviewer_id.eq.${user.id},created_by.eq.${user.id}`);
       }
     } else if (departmentFilter && departmentFilter !== 'all') {
       query = query.eq('department_id', departmentFilter);
