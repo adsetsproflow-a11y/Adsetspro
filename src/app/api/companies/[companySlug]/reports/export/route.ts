@@ -232,3 +232,4 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to generate report export' }, { status: 500 });
   }
 }
+
