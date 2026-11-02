@@ -85,8 +85,47 @@ export default function SuperAdminCompaniesPage() {
     }
   };
 
-  const handleAddSeats = async (companyId: string, companyName: string, increment = 5) => {
-    if (!window.confirm(`Allocate +${increment} seats to organization "${companyName}"?`)) return;
+  const handleAdjustSeats = async (
+    companyId: string,
+    companyName: string,
+    requestedChange: number,
+    currentLimit?: number,
+    activeCount?: number
+  ) => {
+    let increment = requestedChange;
+    const curCap = typeof currentLimit === 'number' ? currentLimit : 5;
+    const curActive = typeof activeCount === 'number' ? activeCount : 0;
+
+    // Safety checks for reducing seats
+    if (increment < 0) {
+      if (curCap <= curActive) {
+        alert(
+          `Cannot reduce seats for "${companyName}": All ${curCap} seats are occupied by active members (${curActive}). To free up quota, remove or deactivate members first.`
+        );
+        return;
+      }
+
+      const target = curCap + increment;
+      if (target < curActive) {
+        const maxReduction = curCap - curActive;
+        const confirmClamp = window.confirm(
+          `Reducing by ${Math.abs(increment)} seats would drop capacity below active members (${curActive}).\n\nWould you like to reduce by ${maxReduction} seats instead to match current active usage (${curActive} seats)?`
+        );
+        if (!confirmClamp) return;
+        increment = -maxReduction;
+      } else {
+        const confirmPrompt = window.confirm(
+          `Reduce ${Math.abs(increment)} seats from organization "${companyName}"?\n\nCurrent Capacity: ${curCap} Seats\nNew Capacity: ${curCap + increment} Seats`
+        );
+        if (!confirmPrompt) return;
+      }
+    } else {
+      const confirmPrompt = window.confirm(
+        `Allocate +${increment} seats to organization "${companyName}"?\n\nCurrent Capacity: ${curCap} Seats\nNew Capacity: ${curCap + increment} Seats`
+      );
+      if (!confirmPrompt) return;
+    }
+
     setActionLoadingId(companyId);
     try {
       const res = await fetch(`/api/super-admin/companies/${companyId}/add-seats`, {
@@ -95,8 +134,8 @@ export default function SuperAdminCompaniesPage() {
         body: JSON.stringify({ increment }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to allocate seats');
-      alert(data.message || `Successfully allocated +${increment} seats.`);
+      if (!res.ok) throw new Error(data.error || 'Failed to adjust seats');
+      alert(data.message || `Successfully adjusted seats.`);
       await fetchCompanies();
       if (selectedCompanyDetails && selectedCompanyDetails.id === companyId) {
         setSelectedCompanyDetails((prev: any) => ({
@@ -105,10 +144,14 @@ export default function SuperAdminCompaniesPage() {
         }));
       }
     } catch (err: any) {
-      alert(err.message || 'Error allocating seats');
+      alert(err.message || 'Error adjusting seats');
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  const handleAddSeats = (companyId: string, companyName: string, increment = 5) => {
+    return handleAdjustSeats(companyId, companyName, increment);
   };
 
   const handleConfirmReject = async () => {
@@ -251,13 +294,13 @@ export default function SuperAdminCompaniesPage() {
           <table className="w-full text-left text-xs">
             <thead className="bg-zinc-950/70 border-b border-zinc-800 text-zinc-400 uppercase tracking-wider font-semibold">
               <tr>
-                <th className="py-3.5 px-4">Organization Name</th>
-                <th className="py-3.5 px-4">Workspace Slug</th>
-                <th className="py-3.5 px-4">Admin Email</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4">Seat Quota</th>
-                <th className="py-3.5 px-4">Created Date</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Organization Name</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Workspace Slug</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Admin Email</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Status</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Seat Quota</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Created Date</th>
+                <th className="py-3.5 px-4 whitespace-nowrap text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60">
@@ -277,7 +320,7 @@ export default function SuperAdminCompaniesPage() {
                     <tr key={c.id} className="hover:bg-zinc-800/30 transition-colors">
                       {/* Name */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-[140px]">
                           <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-zinc-200 font-bold shrink-0">
                             {c.name.charAt(0)}
                           </div>
@@ -295,20 +338,20 @@ export default function SuperAdminCompaniesPage() {
                       </td>
 
                       {/* Slug */}
-                      <td className="py-3.5 px-4 font-mono text-zinc-400">/c/{c.slug}</td>
+                      <td className="py-3.5 px-4 font-mono text-zinc-400 whitespace-nowrap">/c/{c.slug}</td>
 
                       {/* Admin Email */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="space-y-0.5">
-                          <span className="font-mono text-zinc-200 text-[11px] block">
+                          <span className="font-mono text-zinc-200 text-[11px] block whitespace-nowrap">
                             {adminEmail}
                           </span>
-                          <span className="text-[10px] text-zinc-500 block">{adminName}</span>
+                          <span className="text-[10px] text-zinc-500 block truncate max-w-[160px]">{adminName}</span>
                         </div>
                       </td>
 
                       {/* Status */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
                           className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                             c.status === 'approved'
@@ -325,7 +368,7 @@ export default function SuperAdminCompaniesPage() {
                       </td>
 
                       {/* Seat Quota */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         {(() => {
                           const active = Number(c.member_count || 0);
                           const pending = Number(c.pending_count || 0);
@@ -367,22 +410,55 @@ export default function SuperAdminCompaniesPage() {
                       </td>
 
                       {/* Created date */}
-                      <td className="py-3.5 px-4 text-zinc-400">
+                      <td className="py-3.5 px-4 text-zinc-400 whitespace-nowrap">
                         {new Date(c.created_at).toLocaleDateString()}
                       </td>
 
                       {/* Action buttons */}
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5 flex-nowrap">
                           {c.status === 'approved' && (
-                            <button
-                              disabled={isActionLoading}
-                              onClick={() => handleAddSeats(c.id, c.name, 5)}
-                              className="px-2 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-semibold text-[11px] transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1 shadow-sm"
-                              title="Allocate +5 Seats Add-on Pack"
-                            >
-                              <span>+5 Seats</span>
-                            </button>
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                disabled={
+                                  isActionLoading ||
+                                  Number(c.member_limit || 5) <= Number(c.member_count || 0)
+                                }
+                                onClick={() =>
+                                  handleAdjustSeats(
+                                    c.id,
+                                    c.name,
+                                    -5,
+                                    Number(c.member_limit || 5),
+                                    Number(c.member_count || 0)
+                                  )
+                                }
+                                className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 border border-amber-500/30 font-semibold text-[11px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-0.5 shadow-sm whitespace-nowrap"
+                                title={
+                                  Number(c.member_limit || 5) <= Number(c.member_count || 0)
+                                    ? `All ${c.member_limit || 5} seats are currently occupied (${c.member_count || 0} active members)`
+                                    : `Reduce seats quota (Capacity: ${c.member_limit || 5}, Active: ${c.member_count || 0})`
+                                }
+                              >
+                                <span>-5 Seats</span>
+                              </button>
+                              <button
+                                disabled={isActionLoading}
+                                onClick={() =>
+                                  handleAdjustSeats(
+                                    c.id,
+                                    c.name,
+                                    5,
+                                    Number(c.member_limit || 5),
+                                    Number(c.member_count || 0)
+                                  )
+                                }
+                                className="px-2 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 font-semibold text-[11px] transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-0.5 shadow-sm whitespace-nowrap"
+                                title="Allocate +5 Seats Add-on Pack"
+                              >
+                                <span>+5 Seats</span>
+                              </button>
+                            </div>
                           )}
 
                           {c.status !== 'approved' && (
@@ -753,18 +829,90 @@ export default function SuperAdminCompaniesPage() {
               </div>
 
               {selectedCompanyDetails.status === 'approved' && (
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center flex-wrap gap-2 shrink-0">
+                  <button
+                    disabled={
+                      actionLoadingId === selectedCompanyDetails.id ||
+                      Number(selectedCompanyDetails.member_limit || 5) <=
+                        Number(selectedCompanyDetails.member_count || 0)
+                    }
+                    onClick={() =>
+                      handleAdjustSeats(
+                        selectedCompanyDetails.id,
+                        selectedCompanyDetails.name,
+                        -5,
+                        Number(selectedCompanyDetails.member_limit || 5),
+                        Number(selectedCompanyDetails.member_count || 0)
+                      )
+                    }
+                    className="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-semibold text-xs transition-colors border border-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+                    title="Reduce -5 Seats Quota"
+                  >
+                    -5 Seats
+                  </button>
+                  <button
+                    disabled={
+                      actionLoadingId === selectedCompanyDetails.id ||
+                      Number(selectedCompanyDetails.member_limit || 5) <=
+                        Number(selectedCompanyDetails.member_count || 0)
+                    }
+                    onClick={() =>
+                      handleAdjustSeats(
+                        selectedCompanyDetails.id,
+                        selectedCompanyDetails.name,
+                        -1,
+                        Number(selectedCompanyDetails.member_limit || 5),
+                        Number(selectedCompanyDetails.member_count || 0)
+                      )
+                    }
+                    className="px-2.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+                    title="Reduce -1 Seat Quota"
+                  >
+                    -1 Seat
+                  </button>
                   <button
                     disabled={actionLoadingId === selectedCompanyDetails.id}
-                    onClick={() => handleAddSeats(selectedCompanyDetails.id, selectedCompanyDetails.name, 5)}
-                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 cursor-pointer"
+                    onClick={() =>
+                      handleAdjustSeats(
+                        selectedCompanyDetails.id,
+                        selectedCompanyDetails.name,
+                        1,
+                        Number(selectedCompanyDetails.member_limit || 5),
+                        Number(selectedCompanyDetails.member_count || 0)
+                      )
+                    }
+                    className="px-2.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                    title="Allocate +1 Seat"
+                  >
+                    +1 Seat
+                  </button>
+                  <button
+                    disabled={actionLoadingId === selectedCompanyDetails.id}
+                    onClick={() =>
+                      handleAdjustSeats(
+                        selectedCompanyDetails.id,
+                        selectedCompanyDetails.name,
+                        5,
+                        Number(selectedCompanyDetails.member_limit || 5),
+                        Number(selectedCompanyDetails.member_count || 0)
+                      )
+                    }
+                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 cursor-pointer whitespace-nowrap"
                   >
                     +5 Seats Pack
                   </button>
                   <button
                     disabled={actionLoadingId === selectedCompanyDetails.id}
-                    onClick={() => handleAddSeats(selectedCompanyDetails.id, selectedCompanyDetails.name, 10)}
-                    className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-50 cursor-pointer"
+                    onClick={() =>
+                      handleAdjustSeats(
+                        selectedCompanyDetails.id,
+                        selectedCompanyDetails.name,
+                        10,
+                        Number(selectedCompanyDetails.member_limit || 5),
+                        Number(selectedCompanyDetails.member_count || 0)
+                      )
+                    }
+                    className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-50 cursor-pointer whitespace-nowrap"
                   >
                     +10 Seats
                   </button>
