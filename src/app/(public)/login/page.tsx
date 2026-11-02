@@ -44,18 +44,45 @@ export default function LoginPage() {
   const [demoFormError, setDemoFormError] = useState<string | null>(null);
   const [demoSuccessMessage, setDemoSuccessMessage] = useState<string | null>(null);
 
-  // Check on mount if visitor previously unlocked demo access
+  // Check on mount if visitor previously unlocked demo access, verifying against DB
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('demo_access_unlocked');
-      const storedName = localStorage.getItem('demo_lead_name');
-      const hasCookie = document.cookie.includes('demo_access_unlocked=true');
+    const checkDemoAccess = async () => {
+      try {
+        const stored = localStorage.getItem('demo_access_unlocked');
+        const storedName = localStorage.getItem('demo_lead_name');
+        const storedId = localStorage.getItem('demo_lead_id');
 
-      if (stored === 'true' || hasCookie) {
-        setIsDemoUnlocked(true);
-        if (storedName) setLeadName(storedName);
+        if (stored !== 'true' || (!storedName && !storedId)) {
+          setIsDemoUnlocked(false);
+          setLeadName('');
+          return;
+        }
+
+        const q = new URLSearchParams({ verify: 'true' });
+        if (storedId) q.set('leadId', storedId);
+        if (storedName) q.set('name', storedName);
+
+        const res = await fetch(`/api/demo/request-access?${q.toString()}`);
+        const data = await res.json();
+
+        if (data?.valid && data?.lead) {
+          setIsDemoUnlocked(true);
+          setLeadName(data.lead.fullName || storedName || 'Guest');
+        } else {
+          // Lead was deleted from DB! Revoke unlock
+          localStorage.removeItem('demo_access_unlocked');
+          localStorage.removeItem('demo_lead_name');
+          localStorage.removeItem('demo_lead_id');
+          document.cookie = 'demo_access_unlocked=; Max-Age=0; path=/;';
+          setIsDemoUnlocked(false);
+          setLeadName('');
+        }
+      } catch {
+        setIsDemoUnlocked(false);
       }
-    } catch {}
+    };
+
+    checkDemoAccess();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -158,6 +185,9 @@ export default function LoginPage() {
       }
 
       // Persist unlock state
+      if (data?.lead?.id) {
+        localStorage.setItem('demo_lead_id', data.lead.id);
+      }
       localStorage.setItem('demo_access_unlocked', 'true');
       localStorage.setItem('demo_lead_name', demoFullName.trim());
       setIsDemoUnlocked(true);

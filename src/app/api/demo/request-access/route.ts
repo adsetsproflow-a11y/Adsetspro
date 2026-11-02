@@ -189,10 +189,56 @@ export async function POST(request: Request) {
   }
 }
 
-// GET endpoint to list leads for platform Super Admins
+// GET endpoint to list leads for platform Super Admins or verify existing demo access
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+
+    // 1. Verification check: Verify if a lead still exists in the database
+    const verify = searchParams.get('verify');
+    if (verify === 'true') {
+      const leadId = searchParams.get('leadId');
+      const leadName = searchParams.get('name');
+
+      if (!leadId && !leadName) {
+        const response = NextResponse.json({ success: true, valid: false });
+        response.cookies.set('demo_access_unlocked', '', { path: '/', maxAge: 0 });
+        return response;
+      }
+
+      let leadQuery = adminClient.from('demo_leads').select('id, full_name, email, status');
+      if (leadId) {
+        leadQuery = leadQuery.eq('id', leadId);
+      } else if (leadName) {
+        leadQuery = leadQuery.ilike('full_name', leadName.trim());
+      }
+
+      const { data: lead } = await leadQuery.maybeSingle();
+
+      if (!lead) {
+        // Lead was deleted from database! Invalidate access and expire cookie
+        const response = NextResponse.json({
+          success: true,
+          valid: false,
+          reason: 'Lead record no longer exists.',
+        });
+        response.cookies.set('demo_access_unlocked', '', { path: '/', maxAge: 0 });
+        return response;
+      }
+
+      return NextResponse.json({
+        success: true,
+        valid: true,
+        lead: {
+          id: lead.id,
+          fullName: lead.full_name,
+          email: lead.email,
+          status: lead.status,
+        },
+      });
+    }
+
+    // 2. Super Admin leads list query
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || 'all';
 

@@ -36,14 +36,48 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
   const [savedLeadName, setSavedLeadName] = useState<string>('');
 
   useEffect(() => {
-    try {
-      const unlocked = localStorage.getItem('demo_access_unlocked');
-      const leadName = localStorage.getItem('demo_lead_name');
-      if (unlocked === 'true') {
-        setIsAlreadyUnlocked(true);
-        if (leadName) setSavedLeadName(leadName);
+    if (!isOpen) return;
+
+    const leadId = localStorage.getItem('demo_lead_id');
+    const leadName = localStorage.getItem('demo_lead_name');
+    const unlocked = localStorage.getItem('demo_access_unlocked');
+
+    if (!unlocked || (!leadId && !leadName)) {
+      setIsAlreadyUnlocked(false);
+      setSavedLeadName('');
+      return;
+    }
+
+    // Verify against DB if lead actually exists (handles cases where lead was deleted by Super Admin)
+    const verifyLeadStatus = async () => {
+      try {
+        const q = new URLSearchParams({ verify: 'true' });
+        if (leadId) q.set('leadId', leadId);
+        if (leadName) q.set('name', leadName);
+
+        const res = await fetch(`/api/demo/request-access?${q.toString()}`);
+        const data = await res.json();
+
+        if (data?.valid && data?.lead) {
+          setIsAlreadyUnlocked(true);
+          setSavedLeadName(data.lead.fullName || leadName || 'Guest');
+        } else {
+          // Lead was deleted from DB (or never existed)! Purge stale state and display form
+          localStorage.removeItem('demo_access_unlocked');
+          localStorage.removeItem('demo_lead_name');
+          localStorage.removeItem('demo_lead_id');
+          document.cookie = 'demo_access_unlocked=; Max-Age=0; path=/;';
+          setIsAlreadyUnlocked(false);
+          setSavedLeadName('');
+        }
+      } catch {
+        // Fallback: if network fails or error, do not assume unlocked
+        setIsAlreadyUnlocked(false);
+        setSavedLeadName('');
       }
-    } catch {}
+    };
+
+    verifyLeadStatus();
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -99,7 +133,7 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
       // 1. Submit lead to database & Google Sheets webhook if not already stored
       if (!isAlreadyUnlocked) {
         try {
-          await fetch('/api/demo/request-access', {
+          const leadRes = await fetch('/api/demo/request-access', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -110,7 +144,10 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
               requestedRole: role === 'admin' ? 'Company Admin' : 'Team Member',
             }),
           });
-
+          const leadData = await leadRes.json();
+          if (leadData?.lead?.id) {
+            localStorage.setItem('demo_lead_id', leadData.lead.id);
+          }
           localStorage.setItem('demo_access_unlocked', 'true');
           localStorage.setItem('demo_lead_name', fullName.trim());
         } catch (leadErr) {
@@ -277,7 +314,14 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
             </div>
             <button
               type="button"
-              onClick={() => setIsAlreadyUnlocked(false)}
+              onClick={() => {
+                localStorage.removeItem('demo_access_unlocked');
+                localStorage.removeItem('demo_lead_name');
+                localStorage.removeItem('demo_lead_id');
+                document.cookie = 'demo_access_unlocked=; Max-Age=0; path=/;';
+                setIsAlreadyUnlocked(false);
+                setSavedLeadName('');
+              }}
               className="text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
             >
               Change Details

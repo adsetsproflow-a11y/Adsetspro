@@ -103,6 +103,15 @@ export default function SuperAdminEnquiriesPage() {
       const data = await res.json();
       if (data.success) {
         setLeads((prev) => prev.filter((l) => l.id !== leadId));
+        // If testing on the same browser, also clear active demo session unlock immediately
+        try {
+          if (localStorage.getItem('demo_lead_id') === leadId) {
+            localStorage.removeItem('demo_access_unlocked');
+            localStorage.removeItem('demo_lead_name');
+            localStorage.removeItem('demo_lead_id');
+            document.cookie = 'demo_access_unlocked=; Max-Age=0; path=/;';
+          }
+        } catch {}
       }
     } catch (err) {
       console.error('Error deleting lead:', err);
@@ -417,3 +426,4 @@ export default function SuperAdminEnquiriesPage() {
     </div>
   );
 }
+
