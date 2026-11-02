@@ -21,6 +21,9 @@ import {
   Shield,
   Layers,
   Trash2,
+  Plus,
+  Minus,
+  Sliders,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -38,6 +41,10 @@ export default function SuperAdminCompaniesPage() {
 
   // Modals
   const [selectedCompanyDetails, setSelectedCompanyDetails] = useState<any | null>(null);
+  const [modalCustomAmount, setModalCustomAmount] = useState<number>(5);
+  const [seatAdjustCompany, setSeatAdjustCompany] = useState<any | null>(null);
+  const [customSeatMode, setCustomSeatMode] = useState<'add' | 'remove'>('add');
+  const [customSeatAmount, setCustomSeatAmount] = useState<number>(5);
   const [rejectingCompany, setRejectingCompany] = useState<any | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectError, setRejectError] = useState<string | null>(null);
@@ -90,7 +97,8 @@ export default function SuperAdminCompaniesPage() {
     companyName: string,
     requestedChange: number,
     currentLimit?: number,
-    activeCount?: number
+    activeCount?: number,
+    skipConfirm = false
   ) => {
     let increment = requestedChange;
     const curCap = typeof currentLimit === 'number' ? currentLimit : 5;
@@ -113,13 +121,13 @@ export default function SuperAdminCompaniesPage() {
         );
         if (!confirmClamp) return;
         increment = -maxReduction;
-      } else {
+      } else if (!skipConfirm) {
         const confirmPrompt = window.confirm(
           `Reduce ${Math.abs(increment)} seats from organization "${companyName}"?\n\nCurrent Capacity: ${curCap} Seats\nNew Capacity: ${curCap + increment} Seats`
         );
         if (!confirmPrompt) return;
       }
-    } else {
+    } else if (!skipConfirm) {
       const confirmPrompt = window.confirm(
         `Allocate +${increment} seats to organization "${companyName}"?\n\nCurrent Capacity: ${curCap} Seats\nNew Capacity: ${curCap + increment} Seats`
       );
@@ -139,6 +147,12 @@ export default function SuperAdminCompaniesPage() {
       await fetchCompanies();
       if (selectedCompanyDetails && selectedCompanyDetails.id === companyId) {
         setSelectedCompanyDetails((prev: any) => ({
+          ...prev,
+          member_limit: data.newLimit,
+        }));
+      }
+      if (seatAdjustCompany && seatAdjustCompany.id === companyId) {
+        setSeatAdjustCompany((prev: any) => ({
           ...prev,
           member_limit: data.newLimit,
         }));
@@ -457,6 +471,19 @@ export default function SuperAdminCompaniesPage() {
                                 title="Allocate +5 Seats Add-on Pack"
                               >
                                 <span>+5 Seats</span>
+                              </button>
+                              <button
+                                disabled={isActionLoading}
+                                onClick={() => {
+                                  setSeatAdjustCompany(c);
+                                  setCustomSeatMode('add');
+                                  setCustomSeatAmount(5);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 hover:text-purple-200 border border-purple-500/30 font-semibold text-[11px] transition-colors disabled:opacity-50 cursor-pointer inline-flex items-center gap-1 shadow-sm whitespace-nowrap"
+                                title="Adjust custom seats quota (+ / - custom number)"
+                              >
+                                <Sliders className="w-3 h-3" />
+                                <span>Custom</span>
                               </button>
                             </div>
                           )}
@@ -813,109 +840,208 @@ export default function SuperAdminCompaniesPage() {
             </div>
 
             {/* Seat Capacity Card */}
-            <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
-                  Member Seat Allocation & Quota
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black font-mono text-white">
-                    {Number(selectedCompanyDetails.member_count || 0) + Number(selectedCompanyDetails.pending_count || 0)} / {selectedCompanyDetails.member_limit || 5} Seats
+            <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                    Member Seat Allocation & Quota
                   </span>
-                  <span className="text-xs text-zinc-400">
-                    ({selectedCompanyDetails.member_count || 0} active, {selectedCompanyDetails.pending_count || 0} pending)
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-black font-mono text-white">
+                      {Number(selectedCompanyDetails.member_count || 0) + Number(selectedCompanyDetails.pending_count || 0)} / {selectedCompanyDetails.member_limit || 5} Seats
+                    </span>
+                    <span className="text-xs text-zinc-400">
+                      ({selectedCompanyDetails.member_count || 0} active, {selectedCompanyDetails.pending_count || 0} pending)
+                    </span>
+                  </div>
                 </div>
+
+                {selectedCompanyDetails.status === 'approved' && (
+                  <div className="flex items-center flex-wrap gap-2 shrink-0">
+                    <button
+                      disabled={
+                        actionLoadingId === selectedCompanyDetails.id ||
+                        Number(selectedCompanyDetails.member_limit || 5) <=
+                          Number(selectedCompanyDetails.member_count || 0)
+                      }
+                      onClick={() =>
+                        handleAdjustSeats(
+                          selectedCompanyDetails.id,
+                          selectedCompanyDetails.name,
+                          -5,
+                          Number(selectedCompanyDetails.member_limit || 5),
+                          Number(selectedCompanyDetails.member_count || 0)
+                        )
+                      }
+                      className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-semibold text-xs transition-colors border border-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+                      title="Reduce -5 Seats Quota"
+                    >
+                      -5 Seats
+                    </button>
+                    <button
+                      disabled={
+                        actionLoadingId === selectedCompanyDetails.id ||
+                        Number(selectedCompanyDetails.member_limit || 5) <=
+                          Number(selectedCompanyDetails.member_count || 0)
+                      }
+                      onClick={() =>
+                        handleAdjustSeats(
+                          selectedCompanyDetails.id,
+                          selectedCompanyDetails.name,
+                          -1,
+                          Number(selectedCompanyDetails.member_limit || 5),
+                          Number(selectedCompanyDetails.member_count || 0)
+                        )
+                      }
+                      className="px-2 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+                      title="Reduce -1 Seat Quota"
+                    >
+                      -1 Seat
+                    </button>
+                    <button
+                      disabled={actionLoadingId === selectedCompanyDetails.id}
+                      onClick={() =>
+                        handleAdjustSeats(
+                          selectedCompanyDetails.id,
+                          selectedCompanyDetails.name,
+                          1,
+                          Number(selectedCompanyDetails.member_limit || 5),
+                          Number(selectedCompanyDetails.member_count || 0)
+                        )
+                      }
+                      className="px-2 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                      title="Allocate +1 Seat"
+                    >
+                      +1 Seat
+                    </button>
+                    <button
+                      disabled={actionLoadingId === selectedCompanyDetails.id}
+                      onClick={() =>
+                        handleAdjustSeats(
+                          selectedCompanyDetails.id,
+                          selectedCompanyDetails.name,
+                          5,
+                          Number(selectedCompanyDetails.member_limit || 5),
+                          Number(selectedCompanyDetails.member_count || 0)
+                        )
+                      }
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                    >
+                      +5 Seats
+                    </button>
+                    <button
+                      disabled={actionLoadingId === selectedCompanyDetails.id}
+                      onClick={() =>
+                        handleAdjustSeats(
+                          selectedCompanyDetails.id,
+                          selectedCompanyDetails.name,
+                          10,
+                          Number(selectedCompanyDetails.member_limit || 5),
+                          Number(selectedCompanyDetails.member_count || 0)
+                        )
+                      }
+                      className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                    >
+                      +10 Seats
+                    </button>
+                  </div>
+                )}
               </div>
 
+              {/* Custom Number Input & Apply Row */}
               {selectedCompanyDetails.status === 'approved' && (
-                <div className="flex items-center flex-wrap gap-2 shrink-0">
-                  <button
-                    disabled={
-                      actionLoadingId === selectedCompanyDetails.id ||
-                      Number(selectedCompanyDetails.member_limit || 5) <=
-                        Number(selectedCompanyDetails.member_count || 0)
-                    }
-                    onClick={() =>
-                      handleAdjustSeats(
-                        selectedCompanyDetails.id,
-                        selectedCompanyDetails.name,
-                        -5,
-                        Number(selectedCompanyDetails.member_limit || 5),
-                        Number(selectedCompanyDetails.member_count || 0)
-                      )
-                    }
-                    className="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-semibold text-xs transition-colors border border-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
-                    title="Reduce -5 Seats Quota"
-                  >
-                    -5 Seats
-                  </button>
-                  <button
-                    disabled={
-                      actionLoadingId === selectedCompanyDetails.id ||
-                      Number(selectedCompanyDetails.member_limit || 5) <=
-                        Number(selectedCompanyDetails.member_count || 0)
-                    }
-                    onClick={() =>
-                      handleAdjustSeats(
-                        selectedCompanyDetails.id,
-                        selectedCompanyDetails.name,
-                        -1,
-                        Number(selectedCompanyDetails.member_limit || 5),
-                        Number(selectedCompanyDetails.member_count || 0)
-                      )
-                    }
-                    className="px-2.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
-                    title="Reduce -1 Seat Quota"
-                  >
-                    -1 Seat
-                  </button>
-                  <button
-                    disabled={actionLoadingId === selectedCompanyDetails.id}
-                    onClick={() =>
-                      handleAdjustSeats(
-                        selectedCompanyDetails.id,
-                        selectedCompanyDetails.name,
-                        1,
-                        Number(selectedCompanyDetails.member_limit || 5),
-                        Number(selectedCompanyDetails.member_count || 0)
-                      )
-                    }
-                    className="px-2.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-50 cursor-pointer whitespace-nowrap"
-                    title="Allocate +1 Seat"
-                  >
-                    +1 Seat
-                  </button>
-                  <button
-                    disabled={actionLoadingId === selectedCompanyDetails.id}
-                    onClick={() =>
-                      handleAdjustSeats(
-                        selectedCompanyDetails.id,
-                        selectedCompanyDetails.name,
-                        5,
-                        Number(selectedCompanyDetails.member_limit || 5),
-                        Number(selectedCompanyDetails.member_count || 0)
-                      )
-                    }
-                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 cursor-pointer whitespace-nowrap"
-                  >
-                    +5 Seats Pack
-                  </button>
-                  <button
-                    disabled={actionLoadingId === selectedCompanyDetails.id}
-                    onClick={() =>
-                      handleAdjustSeats(
-                        selectedCompanyDetails.id,
-                        selectedCompanyDetails.name,
-                        10,
-                        Number(selectedCompanyDetails.member_limit || 5),
-                        Number(selectedCompanyDetails.member_count || 0)
-                      )
-                    }
-                    className="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition-colors border border-zinc-700 disabled:opacity-50 cursor-pointer whitespace-nowrap"
-                  >
-                    +10 Seats
-                  </button>
+                <div className="pt-3 border-t border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50">
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className="text-[11px] font-bold text-zinc-300">Custom Number:</span>
+                    <div className="inline-flex items-center bg-zinc-950 border border-zinc-700 rounded-xl overflow-hidden p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setModalCustomAmount((prev) => Math.max(1, prev - 1))}
+                        className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                        title="Decrease amount"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        value={modalCustomAmount}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          setModalCustomAmount(isNaN(val) ? 1 : Math.max(1, val));
+                        }}
+                        className="w-14 bg-transparent text-center text-xs font-mono font-bold text-white focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setModalCustomAmount((prev) => prev + 1)}
+                        className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                        title="Increase amount"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 5, 10, 20, 50].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setModalCustomAmount(preset)}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-mono font-semibold transition-colors cursor-pointer ${
+                            modalCustomAmount === preset
+                              ? 'bg-zinc-700 text-white'
+                              : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      disabled={
+                        actionLoadingId === selectedCompanyDetails.id ||
+                        Number(selectedCompanyDetails.member_limit || 5) <=
+                          Number(selectedCompanyDetails.member_count || 0)
+                      }
+                      onClick={() =>
+                        handleAdjustSeats(
+                          selectedCompanyDetails.id,
+                          selectedCompanyDetails.name,
+                          -modalCustomAmount,
+                          Number(selectedCompanyDetails.member_limit || 5),
+                          Number(selectedCompanyDetails.member_count || 0)
+                        )
+                      }
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 font-semibold text-xs transition-colors border border-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1 shadow-sm whitespace-nowrap"
+                      title={`Reduce -${modalCustomAmount} Seats Quota`}
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                      <span>Remove {modalCustomAmount} Seats</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={actionLoadingId === selectedCompanyDetails.id}
+                      onClick={() =>
+                        handleAdjustSeats(
+                          selectedCompanyDetails.id,
+                          selectedCompanyDetails.name,
+                          modalCustomAmount,
+                          Number(selectedCompanyDetails.member_limit || 5),
+                          Number(selectedCompanyDetails.member_count || 0)
+                        )
+                      }
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50 cursor-pointer inline-flex items-center gap-1 whitespace-nowrap"
+                      title={`Allocate +${modalCustomAmount} Seats`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add {modalCustomAmount} Seats</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -944,6 +1070,231 @@ export default function SuperAdminCompaniesPage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Seat Adjustment Modal (from Table or Modal) */}
+      {seatAdjustCompany && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-2xl space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Adjust Seats Quota
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    {seatAdjustCompany.name} • <span className="font-mono">/c/{seatAdjustCompany.slug}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSeatAdjustCompany(null)}
+                className="text-zinc-500 hover:text-zinc-300 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mode Selector Tabs: Add vs Remove */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-900 border border-zinc-800 rounded-2xl">
+              <button
+                type="button"
+                onClick={() => setCustomSeatMode('add')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  customSeatMode === 'add'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Seats (+)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomSeatMode('remove')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  customSeatMode === 'remove'
+                    ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Minus className="w-4 h-4" />
+                <span>Remove Seats (-)</span>
+              </button>
+            </div>
+
+            {/* Custom Amount Stepper & Presets */}
+            <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-3">
+              <label className="text-xs font-semibold text-zinc-300 block">
+                {customSeatMode === 'add' ? 'Number of seats to add:' : 'Number of seats to remove:'}
+              </label>
+
+              <div className="flex items-center gap-3">
+                <div className="inline-flex items-center bg-zinc-950 border border-zinc-700 rounded-xl overflow-hidden p-1 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => setCustomSeatAmount((prev) => Math.max(1, prev - 1))}
+                    className="w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={customSeatAmount}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setCustomSeatAmount(isNaN(val) ? 1 : Math.max(1, val));
+                    }}
+                    className="w-20 bg-transparent text-center text-sm font-mono font-bold text-white focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCustomSeatAmount((prev) => prev + 1)}
+                    className="w-9 h-9 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center flex-wrap gap-1.5">
+                  {[1, 2, 5, 10, 20, 50].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setCustomSeatAmount(preset)}
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
+                        customSeatAmount === preset
+                          ? customSeatMode === 'add'
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                            : 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                          : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      }`}
+                    >
+                      {customSeatMode === 'add' ? `+${preset}` : `-${preset}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Live Projected Calculation Preview */}
+            {(() => {
+              const curCap = Number(seatAdjustCompany.member_limit || 5);
+              const curActive = Number(seatAdjustCompany.member_count || 0);
+              const curPending = Number(seatAdjustCompany.pending_count || 0);
+              const change = customSeatMode === 'add' ? customSeatAmount : -customSeatAmount;
+              const projected = curCap + change;
+              const maxReduction = Math.max(0, curCap - curActive);
+              const isInvalid = customSeatMode === 'remove' && (projected < curActive || projected < 1);
+
+              return (
+                <div className="space-y-3">
+                  <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between text-zinc-400">
+                      <span>Current Member Limit:</span>
+                      <span className="font-mono font-bold text-white">{curCap} Seats</span>
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-400">
+                      <span>Adjustment:</span>
+                      <span
+                        className={`font-mono font-bold ${
+                          customSeatMode === 'add' ? 'text-indigo-400' : 'text-amber-400'
+                        }`}
+                      >
+                        {customSeatMode === 'add' ? `+${customSeatAmount}` : `-${customSeatAmount}`} Seats
+                      </span>
+                    </div>
+                    <div className="pt-2 border-t border-zinc-800 flex items-center justify-between font-bold text-sm">
+                      <span className="text-zinc-200">Projected New Capacity:</span>
+                      <span
+                        className={`font-mono ${
+                          isInvalid ? 'text-rose-400' : 'text-emerald-400'
+                        }`}
+                      >
+                        {projected} Seats
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 flex items-center justify-between">
+                      <span>Active Usage:</span>
+                      <span>
+                        {curActive} active • {curPending} pending • {Math.max(0, projected - curActive)} available headroom
+                      </span>
+                    </div>
+                  </div>
+
+                  {isInvalid && (
+                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1.5">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        <span>Cannot Reduce Below Active Usage</span>
+                      </p>
+                      <p className="text-[11px] text-zinc-300">
+                        "{seatAdjustCompany.name}" currently has <strong>{curActive}</strong> active members. The maximum allowable reduction is <strong>{maxReduction}</strong> seat(s).
+                      </p>
+                      {maxReduction > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setCustomSeatAmount(maxReduction)}
+                          className="mt-1 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-semibold text-[11px] transition-colors cursor-pointer"
+                        >
+                          Set to Maximum Reduction (-{maxReduction} Seats)
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setSeatAdjustCompany(null)}
+                      className="px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isInvalid || actionLoadingId === seatAdjustCompany.id}
+                      onClick={async () => {
+                        const amount = customSeatMode === 'add' ? customSeatAmount : -customSeatAmount;
+                        await handleAdjustSeats(
+                          seatAdjustCompany.id,
+                          seatAdjustCompany.name,
+                          amount,
+                          curCap,
+                          curActive,
+                          true
+                        );
+                        setSeatAdjustCompany(null);
+                      }}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
+                        customSeatMode === 'add'
+                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                          : 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30'
+                      }`}
+                    >
+                      {actionLoadingId === seatAdjustCompany.id ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Applying Changes...</span>
+                        </>
+                      ) : (
+                        <span>
+                          Apply {customSeatMode === 'add' ? `+${customSeatAmount}` : `-${customSeatAmount}`} Seats
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
