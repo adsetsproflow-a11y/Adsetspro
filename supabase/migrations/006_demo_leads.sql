@@ -18,3 +18,4 @@ ALTER TABLE public.demo_leads ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Service role can manage demo_leads" ON public.demo_leads;
 CREATE POLICY "Service role can manage demo_leads" ON public.demo_leads
   FOR ALL TO service_role USING (true) WITH CHECK (true);
+

@@ -1,7 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Sparkles, Building2, Briefcase, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Sparkles,
+  Building2,
+  Briefcase,
+  Loader2,
+  ArrowRight,
+  CheckCircle2,
+  User,
+  Mail,
+  Phone,
+  AlertCircle,
+  ShieldCheck,
+} from 'lucide-react';
 
 interface DemoModalProps {
   isOpen: boolean;
@@ -9,21 +22,100 @@ interface DemoModalProps {
 }
 
 export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
-  const [isDemoLaunching, setIsDemoLaunching] = useState<string | null>(null);
+  const [isDemoLaunching, setIsDemoLaunching] = useState<'admin' | 'employee' | null>(null);
   const [demoLaunchError, setDemoLaunchError] = useState<string | null>(null);
+
+  // Form Fields
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [companyName, setCompanyName] = useState('');
+
+  // Remember previously submitted lead
+  const [isAlreadyUnlocked, setIsAlreadyUnlocked] = useState(false);
+  const [savedLeadName, setSavedLeadName] = useState<string>('');
+
+  useEffect(() => {
+    try {
+      const unlocked = localStorage.getItem('demo_access_unlocked');
+      const leadName = localStorage.getItem('demo_lead_name');
+      if (unlocked === 'true') {
+        setIsAlreadyUnlocked(true);
+        if (leadName) setSavedLeadName(leadName);
+      }
+    } catch {}
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleInstantLaunch = async (role: 'admin' | 'employee') => {
-    setIsDemoLaunching(role);
+  const validateInputs = () => {
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      setDemoLaunchError('Please enter your full name (at least 2 characters).');
+      return false;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email.trim())) {
+      setDemoLaunchError('Please enter a valid work email address (e.g. name@company.com).');
+      return false;
+    }
+
+    const digitsOnly = phone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) {
+      setDemoLaunchError('Please enter a valid phone number with at least 10 digits.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleLaunchWithLead = async (role: 'admin' | 'employee') => {
     setDemoLaunchError(null);
 
-    const target = {
-      admin: { email: 'admin@p8-test.com', password: 'SuperAdmin@2026!Secure', redirectUrl: '/c/p8-test-org/dashboard' },
-      employee: { email: 'employee@p8-test.com', password: 'SuperAdmin@2026!Secure', redirectUrl: '/c/p8-test-org/my-tasks' },
-    }[role];
+    // If not previously unlocked, require valid contact details
+    if (!isAlreadyUnlocked) {
+      if (!validateInputs()) return;
+    }
+
+    setIsDemoLaunching(role);
 
     try {
+      // 1. Submit lead to database & Google Sheets webhook if not already stored
+      if (!isAlreadyUnlocked) {
+        try {
+          await fetch('/api/demo/request-access', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fullName: fullName.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              companyName: companyName.trim() || null,
+              requestedRole: role === 'admin' ? 'Company Admin' : 'Team Member',
+            }),
+          });
+
+          localStorage.setItem('demo_access_unlocked', 'true');
+          localStorage.setItem('demo_lead_name', fullName.trim());
+        } catch (leadErr) {
+          console.warn('[DemoModal] Lead sync error (proceeding to launch):', leadErr);
+        }
+      }
+
+      // 2. Authenticate session as chosen demo account
+      const target = {
+        admin: {
+          email: 'admin@p8-test.com',
+          password: 'SuperAdmin@2026!Secure',
+          redirectUrl: '/c/p8-test-org/dashboard',
+        },
+        employee: {
+          email: 'employee@p8-test.com',
+          password: 'SuperAdmin@2026!Secure',
+          redirectUrl: '/c/p8-test-org/my-tasks',
+        },
+      }[role];
+
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,9 +124,10 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to start demo session');
+        throw new Error(data.error || 'Failed to initialize demo session');
       }
 
+      // 3. Direct redirect to live workspace
       window.location.href = target.redirectUrl;
     } catch (err: any) {
       setDemoLaunchError(err?.message || 'Could not connect to demo workspace.');
@@ -43,10 +136,10 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl relative max-h-[92vh] overflow-y-auto"
+        className="w-full max-w-xl p-6 sm:p-8 rounded-3xl bg-zinc-950 border border-zinc-800 shadow-2xl relative max-h-[92vh] overflow-y-auto text-zinc-100"
       >
         {/* Close Button */}
         <button
@@ -54,51 +147,144 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
             onClose();
             setDemoLaunchError(null);
           }}
-          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer z-10"
+          className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer z-10"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
-        <div className="space-y-1.5 mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-[11px] font-bold uppercase tracking-wider">
+        <div className="space-y-1.5 mb-5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Instant Interactive Demo</span>
           </div>
-          <h3 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+          <h3 className="text-2xl font-black tracking-tight text-white">
             Experience Adsetspro Flow
           </h3>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-            Launch directly into a live, pre-seeded startup workspace. Select a role below to explore features with zero signup or setup required.
+          <p className="text-xs sm:text-sm text-zinc-400">
+            {isAlreadyUnlocked
+              ? `Welcome back, ${savedLeadName || 'Demo Tester'}! Choose your role below to launch directly into the live workspace.`
+              : 'Enter your contact details below to instantly unlock full access to live enterprise workspaces.'}
           </p>
         </div>
 
-        {/* Error Message if Demo Launch Fails */}
+        {/* Error Message */}
         {demoLaunchError && (
-          <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold">
-            {demoLaunchError}
+          <div className="mb-4 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{demoLaunchError}</span>
           </div>
         )}
 
-        {/* INSTANT 1-CLICK DEMO ROLES */}
-        <div className="space-y-3.5">
+        {/* Contact Form (Shown if not yet unlocked) */}
+        {!isAlreadyUnlocked ? (
+          <div className="space-y-3.5 mb-5 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Full Name */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-zinc-300">
+                  Full Name <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-500" />
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Alex Johnson"
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Work Email */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-zinc-300">
+                  Business Email <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-500" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="alex@company.com"
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-zinc-300">
+                  Phone Number <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-500" />
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 9876543210 (10 digits)"
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Company Name */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-zinc-300">
+                  Company / Organization <span className="text-zinc-500 text-[10px]">(Optional)</span>
+                </label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="e.g. Acme Media Corp"
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Demo access verified for <strong>{savedLeadName || 'Guest'}</strong></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAlreadyUnlocked(false)}
+              className="text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
+            >
+              Change Details
+            </button>
+          </div>
+        )}
+
+        {/* 1-CLICK LAUNCH BUTTONS */}
+        <div className="space-y-3">
           {/* Role 1: Company Admin */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group">
+          <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-indigo-500 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group shadow-md">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
                 <Building2 className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">
-                    Company Admin
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+                  <span className="text-sm font-bold text-white">Company Admin</span>
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-bold">
                     Recommended
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-zinc-400 mt-0.5">
                   Manage task pipelines, assign team work, review deliverables, and view company velocity.
                 </p>
               </div>
@@ -107,13 +293,13 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
             <button
               type="button"
               disabled={isDemoLaunching !== null}
-              onClick={() => handleInstantLaunch('admin')}
+              onClick={() => handleLaunchWithLead('admin')}
               className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0"
             >
               {isDemoLaunching === 'admin' ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Launching...</span>
+                  <span>Launching Live Admin...</span>
                 </>
               ) : (
                 <>
@@ -124,23 +310,21 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
             </button>
           </div>
 
-          {/* Role 2: Team Member / Employee */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 hover:border-cyan-400 dark:hover:border-cyan-500 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group">
+          {/* Role 2: Team Member / Worker */}
+          <div className="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-cyan-500 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group shadow-md">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
                 <Briefcase className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">
-                    Team Member / Worker
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold">
+                  <span className="text-sm font-bold text-white">Team Member / Worker</span>
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] font-bold">
                     Daily Flow
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                  Focused task queue, stopwatch timers, WebP compression studio, and real-time team chat.
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Focused task queue, stopwatch timers, deliverable submissions, and real-time team chat.
                 </p>
               </div>
             </div>
@@ -148,13 +332,13 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
             <button
               type="button"
               disabled={isDemoLaunching !== null}
-              onClick={() => handleInstantLaunch('employee')}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold border border-slate-700 dark:border-zinc-700 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0"
+              onClick={() => handleLaunchWithLead('employee')}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold border border-zinc-700 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0"
             >
               {isDemoLaunching === 'employee' ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Launching...</span>
+                  <span>Launching Live Member...</span>
                 </>
               ) : (
                 <>
@@ -165,9 +349,9 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
             </button>
           </div>
 
-          <div className="pt-2 text-center text-[11px] text-slate-500 dark:text-zinc-500 flex items-center justify-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Instant access • No email or credit card required • 100% Sandbox safe</span>
+          <div className="pt-2 text-center text-[11px] text-zinc-500 flex items-center justify-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Instant sandbox entry • Verified contact data securely synced • No credit card required</span>
           </div>
         </div>
       </div>
