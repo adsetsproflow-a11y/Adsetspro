@@ -1519,8 +1519,7 @@ export default function WorkspaceTasksPage() {
                   <input
                     type="text"
                     required
-                    list="task-project-options"
-                    placeholder="Type project name (or choose from list)..."
+                    placeholder="e.g. Website Redesign or Enterprise Q4"
                     value={projectName}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -1530,11 +1529,6 @@ export default function WorkspaceTasksPage() {
                     }}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
                   />
-                  <datalist id="task-project-options">
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.name} />
-                    ))}
-                  </datalist>
                 </div>
               </div>
 
