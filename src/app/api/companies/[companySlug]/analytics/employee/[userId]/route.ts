@@ -285,10 +285,15 @@ export async function GET(
     // 5. Monthly completion trend
     approved.forEach((t: any) => {
       if (t.updated_at) {
-        const key = t.updated_at.substring(0, 7);
-        if (monthlyMap[key]) {
-          monthlyMap[key].approved++;
-        }
+        try {
+          const d = new Date(t.updated_at);
+          if (!isNaN(d.getTime())) {
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            if (monthlyMap[key]) {
+              monthlyMap[key].approved++;
+            }
+          }
+        } catch {}
       }
     });
 
@@ -345,9 +350,9 @@ export async function GET(
       task_url: t.task_url || null,
       departmentName: (t.department_id && deptMap.get(t.department_id)) || 'General',
       projectName: (t.project_id && projMap.get(t.project_id)) || 'Independent',
-      due_date: t.due_date,
-      start_date: t.start_date,
-      created_at: t.created_at,
+      due_date: t.due_date ? new Date(t.due_date).toISOString() : null,
+      start_date: t.start_date ? new Date(t.start_date).toISOString() : null,
+      created_at: t.created_at ? new Date(t.created_at).toISOString() : new Date().toISOString(),
       revisionCycles: revisionsByTask[t.id] || (t.status === 'revision_required' ? 1 : 0),
       isOverdue: t.due_date ? new Date(t.due_date) < now && t.status !== 'approved' && t.status !== 'cancelled' : false,
     }));
