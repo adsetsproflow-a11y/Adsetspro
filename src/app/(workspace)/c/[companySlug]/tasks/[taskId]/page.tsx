@@ -31,6 +31,7 @@ import {
   FileText,
   Pencil,
   Trash2,
+  ExternalLink,
 } from 'lucide-react';
 import FileUpload from '@/components/tasks/FileUpload';
 import { TaskAttachmentItem } from '@/components/tasks/FileList';
@@ -41,6 +42,7 @@ interface TaskData {
   id: string;
   title: string;
   description: string;
+  task_url?: string | null;
   status: string;
   priority: string;
   start_date: string | null;
@@ -124,6 +126,7 @@ export default function SingleTaskDetailPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editTaskUrl, setEditTaskUrl] = useState('');
   const [editPriority, setEditPriority] = useState('MEDIUM');
   const [editStartDate, setEditStartDate] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
@@ -204,6 +207,7 @@ export default function SingleTaskDetailPage() {
       if (taskData.task) {
         setEditTitle(taskData.task.title || '');
         setEditDescription(taskData.task.description || '');
+        setEditTaskUrl(taskData.task.task_url || '');
         setEditPriority(taskData.task.priority || 'MEDIUM');
         setEditStartDate(
           taskData.task.start_date ? taskData.task.start_date.split('T')[0] : ''
@@ -350,6 +354,7 @@ export default function SingleTaskDetailPage() {
         body: JSON.stringify({
           title: editTitle.trim(),
           description: editDescription.trim(),
+          task_url: editTaskUrl.trim() || null,
           priority: editPriority,
           start_date: editStartDate ? new Date(editStartDate).toISOString() : null,
           due_date: editDueDate ? new Date(editDueDate).toISOString() : null,
@@ -671,6 +676,40 @@ export default function SingleTaskDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Columns: Description, Attachments, Comments */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Reference URL / Resource Link Banner */}
+          {task.task_url && (
+            <div className="p-5 rounded-3xl bg-indigo-500/10 border border-indigo-500/30 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0 shadow-inner">
+                  <ExternalLink className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 space-y-0.5">
+                  <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider block">
+                    Reference URL / Deliverable Link
+                  </span>
+                  <a
+                    href={task.task_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs sm:text-sm text-white hover:text-indigo-300 font-mono font-medium truncate block hover:underline transition-colors"
+                    title={task.task_url}
+                  >
+                    {task.task_url}
+                  </a>
+                </div>
+              </div>
+              <a
+                href={task.task_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all shrink-0 cursor-pointer self-start sm:self-auto"
+              >
+                <span>Open Resource Link</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          )}
+
           {/* Description Card */}
           <div className="p-6 rounded-3xl bg-zinc-900/50 border border-zinc-800/80 shadow-xl space-y-3">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -1117,6 +1156,34 @@ export default function SingleTaskDetailPage() {
                   onChange={(e) => setEditDescription(e.target.value)}
                   placeholder="Outline the scope, milestones, or specific guidelines..."
                   className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none font-mono"
+                />
+              </div>
+
+              {/* Reference URL / Resource Link */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                    <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Reference URL / Deliverable Link (Optional)</span>
+                  </label>
+                  {editTaskUrl.trim() && (
+                    <a
+                      href={editTaskUrl.startsWith('http://') || editTaskUrl.startsWith('https://') ? editTaskUrl : `https://${editTaskUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      <span>Test Link</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+                <input
+                  type="url"
+                  placeholder="e.g. https://www.figma.com/design/... or https://docs.google.com/..."
+                  value={editTaskUrl}
+                  onChange={(e) => setEditTaskUrl(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors font-mono"
                 />
               </div>
 

@@ -335,6 +335,7 @@ export interface Database {
           priority: PriorityLevel;
           start_date: string | null;
           due_date: string | null;
+          task_url: string | null;
           reviewer_id: string | null;
           created_by: string;
           created_at: string;
@@ -351,6 +352,7 @@ export interface Database {
           priority?: PriorityLevel;
           start_date?: string | null;
           due_date?: string | null;
+          task_url?: string | null;
           reviewer_id?: string | null;
           created_by: string;
           created_at?: string;
@@ -367,6 +369,7 @@ export interface Database {
           priority?: PriorityLevel;
           start_date?: string | null;
           due_date?: string | null;
+          task_url?: string | null;
           reviewer_id?: string | null;
           created_by?: string;
           created_at?: string;

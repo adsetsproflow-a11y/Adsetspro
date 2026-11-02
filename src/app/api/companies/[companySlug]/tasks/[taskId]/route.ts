@@ -245,6 +245,7 @@ export async function PATCH(
     const {
       title,
       description,
+      task_url,
       priority,
       start_date,
       due_date,
@@ -326,6 +327,16 @@ export async function PATCH(
     }
     if (department_id !== undefined) updatePayload.department_id = department_id || null;
     if (project_id !== undefined) updatePayload.project_id = project_id || null;
+    if (task_url !== undefined) {
+      if (typeof task_url === 'string' && task_url.trim()) {
+        const trimmed = task_url.trim();
+        updatePayload.task_url = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+          ? trimmed
+          : `https://${trimmed}`;
+      } else {
+        updatePayload.task_url = null;
+      }
+    }
 
     const { data: updatedTask, error: updateErr } = await adminClient
       .from('tasks')

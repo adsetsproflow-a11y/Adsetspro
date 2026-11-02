@@ -91,30 +91,10 @@ export async function GET(
 
     const now = new Date();
 
-    // 5. Fetch all tasks assigned to this employee (is_current=true only)
+    // 5. Fetch all active task assignments for this employee
     const { data: assignments, error: assignErr } = await adminClient
       .from('task_assignments')
-      .select(`
-        task_id,
-        is_current,
-        assigned_at,
-        tasks (
-          id,
-          title,
-          description,
-          status,
-          priority,
-          start_date,
-          due_date,
-          created_at,
-          updated_at,
-          company_id,
-          department_id,
-          project_id,
-          departments (name),
-          projects (name)
-        )
-      `)
+      .select('task_id, assigned_at')
       .eq('employee_id', userId)
       .eq('is_current', true);
 
@@ -122,10 +102,121 @@ export async function GET(
       throw assignErr;
     }
 
-    const employeeTasks = (assignments || [])
-      .map((a: any) => a.tasks)
-      .filter(Boolean)
-      .filter((t: any) => t.company_id === company.id);
+    const taskIds = Array.from(new Set((assignments || []).map((a: any) => a.task_id).filter(Boolean))) as string[];
+
+    // Monthly baseline map for last 6 months
+    const monthlyMap: Record<string, { month: string; approved: number }> = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = d.toLocaleDateString('default', { month: 'short' });
+      monthlyMap[key] = { month: monthName, approved: 0 };
+    }
+
+    if (taskIds.length === 0) {
+      return NextResponse.json({
+        success: true,
+        employee: {
+          id: targetProfile?.id || userId,
+          name: targetProfile?.full_name || targetProfile?.email || 'Employee',
+          email: targetProfile?.email,
+          avatarUrl: targetProfile?.avatar_url,
+        },
+        summary: {
+          assigned: 0,
+          inProgress: 0,
+          submitted: 0,
+          revisionRequired: 0,
+          approved: 0,
+          overdue: 0,
+          totalTasks: 0,
+          completionRate: 0,
+          onTimeRate: 100,
+          firstTimeApprovalRate: 100,
+          avgTurnaroundDays: 0,
+          qualityScore: 100,
+          qualityTier: 'Good Standing',
+        },
+        charts: {
+          monthlyCompletionTrend: Object.values(monthlyMap),
+          priorityCounts: { urgent: 0, high: 0, medium: 0, low: 0 },
+        },
+        badges: [
+          {
+            id: 'dead_on_time',
+            title: 'Dead-on-Time Delivery',
+            description: 'Maintain 90%+ on-time completion record',
+            icon: 'Target',
+            unlocked: false,
+            progress: '0% on-time',
+          },
+          {
+            id: 'first_time_right',
+            title: 'First-Time Right',
+            description: 'Deliver tasks approved on initial submission without rework',
+            icon: 'CheckCircle2',
+            unlocked: false,
+            progress: '0 approved cleanly',
+          },
+          {
+            id: 'speed_demon',
+            title: 'High Velocity',
+            description: 'Average deliverable turnaround time under 3 days',
+            icon: 'Zap',
+            unlocked: false,
+            progress: 'No completed tasks yet',
+          },
+          {
+            id: 'master_contributor',
+            title: 'Master Contributor',
+            description: 'Complete 3+ enterprise deliverables',
+            icon: 'Award',
+            unlocked: false,
+            progress: '0 / 3 completed',
+          },
+        ],
+        taskHistory: [],
+      });
+    }
+
+    // 6. Fetch task records
+    const { data: rawTasks, error: taskErr } = await adminClient
+      .from('tasks')
+      .select('id, title, description, task_url, status, priority, start_date, due_date, created_at, updated_at, company_id, department_id, project_id')
+      .in('id', taskIds)
+      .eq('company_id', company.id);
+
+    if (taskErr) {
+      throw taskErr;
+    }
+
+    const employeeTasks = rawTasks || [];
+
+    // 7. Parallel fetch related departments, projects, and activities
+    const deptIds = Array.from(new Set(employeeTasks.map((t: any) => t.department_id).filter(Boolean))) as string[];
+    const projIds = Array.from(new Set(employeeTasks.map((t: any) => t.project_id).filter(Boolean))) as string[];
+
+    const [deptsRes, projsRes, activitiesRes] = await Promise.all([
+      deptIds.length > 0
+        ? adminClient.from('departments').select('id, name').in('id', deptIds)
+        : Promise.resolve({ data: [] }),
+      projIds.length > 0
+        ? adminClient.from('projects').select('id, name').in('id', projIds)
+        : Promise.resolve({ data: [] }),
+      adminClient
+        .from('task_activities')
+        .select('task_id, action, created_at')
+        .in('task_id', taskIds)
+        .eq('action', 'REVISION_REQUESTED'),
+    ]);
+
+    const deptMap = new Map((deptsRes.data || []).map((d: any) => [d.id, d.name]));
+    const projMap = new Map((projsRes.data || []).map((p: any) => [p.id, p.name]));
+
+    let revisionsByTask: Record<string, number> = {};
+    (activitiesRes.data || []).forEach((r: any) => {
+      revisionsByTask[r.task_id] = (revisionsByTask[r.task_id] || 0) + 1;
+    });
 
     const nonCancelled = employeeTasks.filter((t: any) => t.status !== 'cancelled');
     const approved = employeeTasks.filter((t: any) => t.status === 'approved');
@@ -148,15 +239,50 @@ export async function GET(
         ? Math.round((approved.length / nonCancelled.length) * 100)
         : 0;
 
-    // a) Monthly completion trend — LineChart (last 6 months approved tasks)
-    const monthlyMap: Record<string, { month: string; approved: number }> = {};
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = d.toLocaleDateString('default', { month: 'short' });
-      monthlyMap[key] = { month: monthName, approved: 0 };
-    }
+    // Advanced Metrics:
+    // 1. On-Time Delivery Rate
+    const onTimeApproved = approved.filter((t: any) => {
+      if (!t.due_date) return true;
+      const completedTime = t.updated_at ? new Date(t.updated_at).getTime() : now.getTime();
+      const dueTime = new Date(t.due_date).getTime() + 86400000;
+      return completedTime <= dueTime;
+    });
+    const onTimeRate = approved.length > 0
+      ? Math.round((onTimeApproved.length / approved.length) * 100)
+      : 100;
 
+    // 2. First-Time Approval Rate
+    const firstTimeApproved = approved.filter((t: any) => (revisionsByTask[t.id] || 0) === 0);
+    const firstTimeApprovalRate = approved.length > 0
+      ? Math.round((firstTimeApproved.length / approved.length) * 100)
+      : 100;
+
+    // 3. Average Turnaround Days
+    let totalTurnaroundMs = 0;
+    let turnaroundCount = 0;
+    approved.forEach((t: any) => {
+      if (t.created_at && t.updated_at) {
+        const diff = new Date(t.updated_at).getTime() - new Date(t.created_at).getTime();
+        if (diff > 0) {
+          totalTurnaroundMs += diff;
+          turnaroundCount++;
+        }
+      }
+    });
+    const avgTurnaroundDays = turnaroundCount > 0
+      ? Number((totalTurnaroundMs / (turnaroundCount * 86400000)).toFixed(1))
+      : 0;
+
+    // 4. Quality Score & Tier
+    const qualityScore = approved.length > 0
+      ? Math.min(100, Math.round(onTimeRate * 0.4 + firstTimeApprovalRate * 0.4 + completionRate * 0.2))
+      : 85;
+
+    let qualityTier = 'Good Standing';
+    if (qualityScore >= 90) qualityTier = 'Exceptional';
+    else if (qualityScore >= 75) qualityTier = 'High Performer';
+
+    // 5. Monthly completion trend
     approved.forEach((t: any) => {
       if (t.updated_at) {
         const key = t.updated_at.substring(0, 7);
@@ -166,32 +292,59 @@ export async function GET(
       }
     });
 
-    const monthlyCompletionTrend = Object.values(monthlyMap);
+    // 6. Priority distribution
+    const priorityCounts = {
+      urgent: employeeTasks.filter((t: any) => t.priority === 'urgent').length,
+      high: employeeTasks.filter((t: any) => t.priority === 'high').length,
+      medium: employeeTasks.filter((t: any) => t.priority === 'medium').length,
+      low: employeeTasks.filter((t: any) => t.priority === 'low').length,
+    };
 
-    // b) Revision history — how many revision cycles per task
-    const taskIds = employeeTasks.map((t: any) => t.id);
-    let revisionsByTask: Record<string, number> = {};
+    // 7. Gamification Badges
+    const badges = [
+      {
+        id: 'dead_on_time',
+        title: 'Dead-on-Time Delivery',
+        description: 'Maintain 90%+ on-time completion record',
+        icon: 'Target',
+        unlocked: onTimeRate >= 90 && approved.length >= 1,
+        progress: `${onTimeRate}% on-time`,
+      },
+      {
+        id: 'first_time_right',
+        title: 'First-Time Right',
+        description: 'Deliver tasks approved on initial submission without rework',
+        icon: 'CheckCircle2',
+        unlocked: firstTimeApproved.length >= 1,
+        progress: `${firstTimeApproved.length} approved cleanly`,
+      },
+      {
+        id: 'speed_demon',
+        title: 'High Velocity',
+        description: 'Average deliverable turnaround time under 3 days',
+        icon: 'Zap',
+        unlocked: avgTurnaroundDays > 0 && avgTurnaroundDays <= 3 && approved.length >= 1,
+        progress: avgTurnaroundDays > 0 ? `${avgTurnaroundDays} days avg` : 'Pending',
+      },
+      {
+        id: 'master_contributor',
+        title: 'Master Contributor',
+        description: 'Complete 3+ enterprise deliverables',
+        icon: 'Award',
+        unlocked: approved.length >= 3,
+        progress: `${approved.length} / 3 completed`,
+      },
+    ];
 
-    if (taskIds.length > 0) {
-      const { data: activities } = await adminClient
-        .from('task_activities')
-        .select('task_id, action')
-        .in('task_id', taskIds)
-        .eq('action', 'REVISION_REQUESTED');
-
-      (activities || []).forEach((r) => {
-        revisionsByTask[r.task_id] = (revisionsByTask[r.task_id] || 0) + 1;
-      });
-    }
-
-    // c) Task history table
+    // 8. Task history table
     const taskHistory = employeeTasks.map((t: any) => ({
       id: t.id,
       title: t.title,
       status: t.status,
       priority: t.priority,
-      departmentName: t.departments?.name || 'General',
-      projectName: t.projects?.name || 'Independent',
+      task_url: t.task_url || null,
+      departmentName: (t.department_id && deptMap.get(t.department_id)) || 'General',
+      projectName: (t.project_id && projMap.get(t.project_id)) || 'Independent',
       due_date: t.due_date,
       start_date: t.start_date,
       created_at: t.created_at,
@@ -216,10 +369,17 @@ export async function GET(
         overdue: overdue.length,
         totalTasks: employeeTasks.length,
         completionRate,
+        onTimeRate,
+        firstTimeApprovalRate,
+        avgTurnaroundDays,
+        qualityScore,
+        qualityTier,
       },
       charts: {
-        monthlyCompletionTrend,
+        monthlyCompletionTrend: Object.values(monthlyMap),
+        priorityCounts,
       },
+      badges,
       taskHistory,
     });
   } catch (err: any) {

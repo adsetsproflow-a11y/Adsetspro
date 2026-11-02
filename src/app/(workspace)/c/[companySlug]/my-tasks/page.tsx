@@ -22,6 +22,7 @@ import {
   Briefcase,
   ChevronRight,
   TrendingUp,
+  ExternalLink,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 import CenterLoader from '@/components/common/CenterLoader';
@@ -31,6 +32,7 @@ interface MyTaskItem {
   id: string;
   title: string;
   description: string;
+  task_url?: string | null;
   status: string;
   priority: string;
   start_date: string | null;
@@ -517,6 +519,19 @@ export default function MyTasksDashboard() {
                             <span className="line-clamp-1 group-hover:text-indigo-400 transition-colors font-bold text-xs">
                               {task.title}
                             </span>
+                            {task.task_url && (
+                              <a
+                                href={task.task_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-[10px] text-indigo-300 hover:text-white font-medium shrink-0 transition-colors"
+                                title={`Open resource link: ${task.task_url}`}
+                              >
+                                <ExternalLink className="w-2.5 h-2.5" />
+                                <span>Link</span>
+                              </a>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
                             <span className="text-indigo-400 font-semibold">#{task.id.slice(0, 8)}</span>
@@ -662,6 +677,20 @@ export default function MyTasksDashboard() {
                         {task.due_date ? formatDate(task.due_date, 'short') : 'No date'}
                       </span>
                     </div>
+                    {task.task_url && (
+                      <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        <a
+                          href={task.task_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] text-indigo-400 hover:text-indigo-300 hover:underline"
+                          title={`Redirect to: ${task.task_url}`}
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span className="truncate max-w-[160px]">Resource Link</span>
+                        </a>
+                      </div>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -711,6 +740,20 @@ export default function MyTasksDashboard() {
                         {task.due_date ? formatDate(task.due_date, 'short') : 'No date'}
                       </span>
                     </div>
+                    {task.task_url && (
+                      <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        <a
+                          href={task.task_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] text-indigo-400 hover:text-indigo-300 hover:underline"
+                          title={`Redirect to: ${task.task_url}`}
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span className="truncate max-w-[160px]">Resource Link</span>
+                        </a>
+                      </div>
+                    )}
                     <Link
                       href={`/c/${companySlug}/my-tasks/${task.id}`}
                       onClick={(e) => e.stopPropagation()}
@@ -759,6 +802,20 @@ export default function MyTasksDashboard() {
                         <span>Under Review</span>
                       </span>
                     </div>
+                    {task.task_url && (
+                      <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        <a
+                          href={task.task_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] text-indigo-400 hover:text-indigo-300 hover:underline"
+                          title={`Redirect to: ${task.task_url}`}
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span className="truncate max-w-[160px]">Resource Link</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -799,6 +856,20 @@ export default function MyTasksDashboard() {
                         <span>Action Required</span>
                       </span>
                     </div>
+                    {task.task_url && (
+                      <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        <a
+                          href={task.task_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] text-indigo-400 hover:text-indigo-300 hover:underline"
+                          title={`Redirect to: ${task.task_url}`}
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span className="truncate max-w-[160px]">Resource Link</span>
+                        </a>
+                      </div>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

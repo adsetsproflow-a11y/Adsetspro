@@ -22,6 +22,7 @@ import {
   AlertCircle,
   History,
   Send,
+  ExternalLink,
 } from 'lucide-react';
 import FileList, { TaskAttachmentItem } from '@/components/tasks/FileList';
 import { formatDate } from '@/lib/utils/dateFormat';
@@ -32,6 +33,7 @@ interface TaskDetail {
   id: string;
   title: string;
   description: string;
+  task_url?: string | null;
   status: string;
   priority: string;
   due_date: string | null;
@@ -402,6 +404,40 @@ export default function ReviewDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (2 Cols): Task Brief & Submitted Files */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Reference URL / Deliverable Link Banner */}
+          {task.task_url && (
+            <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+                  <ExternalLink className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 space-y-0.5">
+                  <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">
+                    Reference URL / Deliverable Link
+                  </span>
+                  <a
+                    href={task.task_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs sm:text-sm text-white hover:text-amber-300 font-mono font-medium truncate block hover:underline transition-colors"
+                    title={task.task_url}
+                  >
+                    {task.task_url}
+                  </a>
+                </div>
+              </div>
+              <a
+                href={task.task_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-amber-600/30 transition-all shrink-0 cursor-pointer self-start sm:self-auto"
+              >
+                <span>Open Resource Link</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          )}
+
           {/* Deliverable Brief */}
           <div className="p-6 rounded-3xl bg-zinc-900/50 border border-zinc-800/80 shadow-xl space-y-3">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">

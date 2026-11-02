@@ -77,7 +77,7 @@ export async function GET(
     // 4. Build task query
     let query = adminClient
       .from('tasks')
-      .select('id, company_id, department_id, project_id, title, description, status, priority, start_date, due_date, reviewer_id, created_by, created_at, updated_at', { count: 'exact' })
+      .select('id, company_id, department_id, project_id, title, description, task_url, status, priority, start_date, due_date, reviewer_id, created_by, created_at, updated_at', { count: 'exact' })
       .eq('company_id', company.id);
 
     if (statusFilter && statusFilter !== 'all') {
@@ -179,6 +179,7 @@ export async function GET(
         id: t.id,
         title: t.title,
         description: t.description || '',
+        task_url: t.task_url || null,
         status: t.status,
         priority: t.priority,
         start_date: t.start_date,
@@ -230,14 +231,24 @@ export async function POST(
     const {
       title,
       description,
+      task_url,
       department_id,
       project_id,
+      project_name,
       assignee_id,
       reviewer_id,
       priority,
       start_date,
       due_date,
     } = body;
+
+    let sanitizedTaskUrl: string | null = null;
+    if (typeof task_url === 'string' && task_url.trim()) {
+      const trimmed = task_url.trim();
+      sanitizedTaskUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+        ? trimmed
+        : `https://${trimmed}`;
+    }
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return NextResponse.json({ error: 'Task title is required' }, { status: 400 });
@@ -368,15 +379,56 @@ export async function POST(
       finalReviewerId = compAdmin?.user_id || user.id;
     }
 
-    // 5. Insert task
+    // 5. Resolve Project (Support manual typing / auto-creation or existing selection)
+    let finalProjectId: string | null = null;
+    const rawProjectInput = (typeof project_name === 'string' && project_name.trim())
+      ? project_name.trim()
+      : (typeof project_id === 'string' && project_id.trim())
+      ? project_id.trim()
+      : '';
+
+    if (rawProjectInput) {
+      const { data: matchedProjects } = await adminClient
+        .from('projects')
+        .select('id, name')
+        .eq('company_id', company.id);
+
+      const existing = (matchedProjects || []).find(
+        (p) => p.id === rawProjectInput || p.name.toLowerCase() === rawProjectInput.toLowerCase()
+      );
+
+      if (existing) {
+        finalProjectId = existing.id;
+      } else {
+        const { data: createdProj, error: createProjErr } = await adminClient
+          .from('projects')
+          .insert({
+            company_id: company.id,
+            name: rawProjectInput,
+            status: 'active',
+            priority: (priority as any) || 'medium',
+            department_id: department_id || null,
+            created_by: user.id,
+          })
+          .select('id')
+          .single();
+
+        if (!createProjErr && createdProj) {
+          finalProjectId = createdProj.id;
+        }
+      }
+    }
+
+    // 6. Insert task
     const { data: newTask, error: taskErr } = await adminClient
       .from('tasks')
       .insert({
         company_id: company.id,
         department_id: department_id || null,
-        project_id: project_id || null,
+        project_id: finalProjectId,
         title: title.trim(),
         description: description.trim(),
+        task_url: sanitizedTaskUrl,
         status: 'assigned',
         priority: priority || 'medium',
         start_date: start_date ? new Date(start_date).toISOString() : null,
@@ -411,6 +463,7 @@ export async function POST(
       details: {
         title: newTask.title,
         priority: newTask.priority,
+        task_url: sanitizedTaskUrl,
         assignee_id,
         reviewer_id: finalReviewerId,
         department_id: newTask.department_id,

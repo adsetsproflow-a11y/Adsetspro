@@ -29,6 +29,8 @@ import {
   Sparkles,
   RotateCcw,
   Loader2,
+  ExternalLink,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 import CenterLoader from '@/components/common/CenterLoader';
@@ -39,6 +41,7 @@ interface TaskItem {
   id: string;
   title: string;
   description: string;
+  task_url?: string | null;
   status: string;
   priority: string;
   start_date: string | null;
@@ -178,8 +181,10 @@ export default function WorkspaceTasksPage() {
   // Create Task Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [taskUrl, setTaskUrl] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [projectName, setProjectName] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [reviewerId, setReviewerId] = useState('');
   const [priority, setPriority] = useState('medium');
@@ -396,6 +401,10 @@ export default function WorkspaceTasksPage() {
       setError('Task description is required');
       return;
     }
+    if (!projectName.trim()) {
+      setError('Project name is mandatory. Please type or pick a project name.');
+      return;
+    }
     if (!assigneeId) {
       setError('Please assign this task to a team member');
       return;
@@ -411,8 +420,10 @@ export default function WorkspaceTasksPage() {
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
+          task_url: taskUrl.trim() || null,
           department_id: departmentId || null,
           project_id: projectId || null,
+          project_name: projectName.trim(),
           assignee_id: assigneeId,
           reviewer_id: reviewerId || null,
           priority,
@@ -427,11 +438,13 @@ export default function WorkspaceTasksPage() {
       // Reset form
       setTitle('');
       setDescription('');
+      setTaskUrl('');
       setPreviousDescription(null);
       setPreviousTitle(null);
       setAiNotice(null);
       setDepartmentId('');
       setProjectId('');
+      setProjectName('');
       setAssigneeId('');
       setReviewerId('');
       setPriority('medium');
@@ -1042,6 +1055,19 @@ export default function WorkspaceTasksPage() {
                               >
                                 {task.title}
                               </Link>
+                              {task.task_url && (
+                                <a
+                                  href={task.task_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-[10px] text-indigo-300 hover:text-white font-medium shrink-0 transition-colors"
+                                  title={`Open resource link: ${task.task_url}`}
+                                >
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                  <span>Link</span>
+                                </a>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
                               <span className="text-indigo-400/90 font-semibold">#{task.id.slice(0, 8)}</span>
@@ -1221,6 +1247,21 @@ export default function WorkspaceTasksPage() {
                       <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed font-sans">
                         {task.description}
                       </p>
+                    )}
+                    {task.task_url && (
+                      <div className="pt-1">
+                        <a
+                          href={task.task_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-xs text-indigo-300 hover:text-white font-medium transition-colors cursor-pointer"
+                          title={`Open link: ${task.task_url}`}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate max-w-[200px]">Resource Link</span>
+                        </a>
+                      </div>
                     )}
                   </div>
 
@@ -1418,6 +1459,41 @@ export default function WorkspaceTasksPage() {
                 />
               </div>
 
+              {/* Reference URL / Resource Link */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                    <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Reference URL / Deliverable Link</span>
+                    <span className="text-zinc-500 font-normal text-[11px]">(Optional)</span>
+                  </label>
+                  {taskUrl.trim() && (
+                    <a
+                      href={taskUrl.startsWith('http://') || taskUrl.startsWith('https://') ? taskUrl : `https://${taskUrl}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      <span>Test Link</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="url"
+                    placeholder="e.g. https://www.figma.com/design/... or https://docs.google.com/..."
+                    value={taskUrl}
+                    onChange={(e) => setTaskUrl(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors font-mono"
+                  />
+                  <ExternalLink className="w-4 h-4 text-zinc-500 absolute left-3 top-3 pointer-events-none" />
+                </div>
+                <p className="text-[11px] text-zinc-500">
+                  Assignees and reviewers can click to directly redirect to Figma, Google Docs, Canva, GitHub, or tickets.
+                </p>
+              </div>
+
               {/* Department & Project Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -1437,19 +1513,28 @@ export default function WorkspaceTasksPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-zinc-300">Project (Optional)</label>
-                  <select
-                    value={projectId}
-                    onChange={(e) => setProjectId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
-                  >
-                    <option value="">No Project Linked</option>
+                  <label className="text-xs font-semibold text-zinc-300">
+                    Project <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    list="task-project-options"
+                    placeholder="Type project name (or choose from list)..."
+                    value={projectName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProjectName(val);
+                      const match = projects.find((p) => p.name.toLowerCase() === val.trim().toLowerCase());
+                      setProjectId(match ? match.id : '');
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                  <datalist id="task-project-options">
                     {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
+                      <option key={p.id} value={p.name} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
               </div>
 
