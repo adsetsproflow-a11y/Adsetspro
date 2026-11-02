@@ -117,9 +117,25 @@ export default function LoginPage() {
       return;
     }
 
+    const emailDomain = demoEmail.trim().toLowerCase().split('@')[1];
+    const disposable = [
+      'tempmail.com', 'mailinator.com', '10minutemail.com', 'guerrillamail.com',
+      'throwawaymail.com', 'yopmail.com', 'sharklasers.com', 'dispostable.com',
+      'trashmail.com', 'fakeinbox.com', 'test.com', 'example.com'
+    ];
+    if (emailDomain && disposable.includes(emailDomain)) {
+      setDemoFormError('Please provide a genuine permanent work or personal email address.');
+      return;
+    }
+
     const phoneDigits = demoPhone.replace(/\D/g, '');
-    if (phoneDigits.length < 10) {
-      setDemoFormError('Please enter a valid phone number (at least 10 digits).');
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      setDemoFormError('Please enter a valid phone number (10 to 15 digits).');
+      return;
+    }
+
+    if (/^(\d)\1+$/.test(phoneDigits) || '0123456789012345'.includes(phoneDigits) || '9876543210987654'.includes(phoneDigits)) {
+      setDemoFormError('Please enter a genuine, active phone number.');
       return;
     }
 

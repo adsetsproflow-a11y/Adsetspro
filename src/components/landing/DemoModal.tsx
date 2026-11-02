@@ -60,9 +60,25 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
       return false;
     }
 
+    const emailDomain = email.trim().toLowerCase().split('@')[1];
+    const disposable = [
+      'tempmail.com', 'mailinator.com', '10minutemail.com', 'guerrillamail.com',
+      'throwawaymail.com', 'yopmail.com', 'sharklasers.com', 'dispostable.com',
+      'test.com', 'example.com'
+    ];
+    if (emailDomain && disposable.includes(emailDomain)) {
+      setDemoLaunchError('Please provide a genuine permanent work or personal email address.');
+      return false;
+    }
+
     const digitsOnly = phone.replace(/\D/g, '');
-    if (digitsOnly.length < 10) {
-      setDemoLaunchError('Please enter a valid phone number with at least 10 digits.');
+    if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+      setDemoLaunchError('Please enter a valid phone number with 10 to 15 digits.');
+      return false;
+    }
+
+    if (/^(\d)\1+$/.test(digitsOnly) || '0123456789012345'.includes(digitsOnly)) {
+      setDemoLaunchError('Please enter a genuine, active phone number.');
       return false;
     }
 

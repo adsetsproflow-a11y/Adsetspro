@@ -16,6 +16,7 @@ import {
   Layers,
   Menu,
   X,
+  Mail,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import ThemeToggle from '@/components/common/ThemeToggle';
@@ -83,6 +84,7 @@ export default function SuperAdminLayout({
       icon: CheckCircle,
       badge: pendingBadgeCount > 0 ? pendingBadgeCount : null,
     },
+    { label: 'Enquiries & Leads', href: '/super-admin/enquiries', icon: Mail },
     { label: 'Analytics', href: '/super-admin/analytics', icon: BarChart3 },
     { label: 'Audit Logs', href: '/super-admin/audit-logs', icon: FileText },
     { label: 'Settings', href: '/super-admin/settings', icon: Settings },

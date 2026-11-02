@@ -1,16 +1,54 @@
 import { NextResponse } from 'next/server';
 import { adminClient } from '@/lib/supabase/admin';
 
-// Email validation regex (RFC 5322 compliant simple form)
+// Email validation regex (RFC 5322 compliant)
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/;
 
-// Phone number validation: strips spaces/symbols, expects at least 10 digits
-function validatePhone(phone: string): { valid: boolean; formatted: string } {
-  if (!phone || typeof phone !== 'string') return { valid: false, formatted: '' };
+// Common disposable/dummy email domains
+const DISPOSABLE_DOMAINS = [
+  'tempmail.com',
+  'mailinator.com',
+  '10minutemail.com',
+  'guerrillamail.com',
+  'throwawaymail.com',
+  'yopmail.com',
+  'sharklasers.com',
+  'dispostable.com',
+  'trashmail.com',
+  'fakeinbox.com',
+  'test.com',
+  'example.com',
+];
+
+// Strict phone number validation
+function validatePhone(phone: string): { valid: boolean; formatted: string; reason?: string } {
+  if (!phone || typeof phone !== 'string') {
+    return { valid: false, formatted: '', reason: 'Phone number is required.' };
+  }
+
   const cleaned = phone.replace(/[^\d+]/g, '');
   const digitsOnly = phone.replace(/\D/g, '');
+
+  if (digitsOnly.length < 10) {
+    return { valid: false, formatted: '', reason: 'Phone number must have at least 10 digits.' };
+  }
+
+  if (digitsOnly.length > 15) {
+    return { valid: false, formatted: '', reason: 'Phone number cannot exceed 15 digits.' };
+  }
+
+  // Reject repeating digits like 0000000000, 1111111111
+  if (/^(\d)\1+$/.test(digitsOnly)) {
+    return { valid: false, formatted: '', reason: 'Please provide a genuine, active phone number.' };
+  }
+
+  // Reject trivial sequential numbers like 1234567890
+  if ('0123456789012345'.includes(digitsOnly) || '9876543210987654'.includes(digitsOnly)) {
+    return { valid: false, formatted: '', reason: 'Please provide a genuine, active phone number.' };
+  }
+
   return {
-    valid: digitsOnly.length >= 10 && digitsOnly.length <= 15,
+    valid: true,
     formatted: cleaned,
   };
 }
@@ -32,7 +70,15 @@ export async function POST(request: Request) {
     const trimmedEmail = (email || '').trim().toLowerCase();
     if (!trimmedEmail || !EMAIL_REGEX.test(trimmedEmail)) {
       return NextResponse.json(
-        { error: 'Please enter a valid business email address (e.g. name@company.com).' },
+        { error: 'Please enter a valid email address (e.g. name@company.com).' },
+        { status: 400 }
+      );
+    }
+
+    const domain = trimmedEmail.split('@')[1];
+    if (!domain || DISPOSABLE_DOMAINS.includes(domain) || !domain.includes('.')) {
+      return NextResponse.json(
+        { error: 'Please provide a valid permanent business or personal email address.' },
         { status: 400 }
       );
     }
@@ -41,7 +87,7 @@ export async function POST(request: Request) {
     const phoneCheck = validatePhone(phone);
     if (!phoneCheck.valid) {
       return NextResponse.json(
-        { error: 'Please enter a valid phone number (at least 10 digits).' },
+        { error: phoneCheck.reason || 'Please enter a valid phone number (at least 10 digits).' },
         { status: 400 }
       );
     }
@@ -64,6 +110,7 @@ export async function POST(request: Request) {
         company_name: (companyName || '').trim() || null,
         unlocked_role: requestedRole || 'all',
         ip_address: ipAddress,
+        status: 'new',
         synced_to_sheets: false,
       })
       .select('id')
@@ -116,8 +163,10 @@ export async function POST(request: Request) {
       success: true,
       message: 'Demo access successfully unlocked! Welcome to Adsetspro Flow.',
       lead: {
+        id: leadId,
         fullName: fullName.trim(),
         email: trimmedEmail,
+        phone: phoneCheck.formatted,
         syncedToSheets,
       },
     });
@@ -127,7 +176,7 @@ export async function POST(request: Request) {
       path: '/',
       maxAge: 30 * 24 * 60 * 60,
       sameSite: 'lax',
-      httpOnly: false, // Accessible client-side for UI toggles
+      httpOnly: false,
     });
 
     return response;
@@ -143,11 +192,26 @@ export async function POST(request: Request) {
 // GET endpoint to list leads for platform Super Admins
 export async function GET(request: Request) {
   try {
-    const { data: leads, error } = await adminClient
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || 'all';
+
+    let query = adminClient
       .from('demo_leads')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .order('created_at', { ascending: false });
+
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    if (search.trim()) {
+      query = query.or(
+        `full_name.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%,phone.ilike.%${search.trim()}%,company_name.ilike.%${search.trim()}%`
+      );
+    }
+
+    const { data: leads, error } = await query.limit(200);
 
     if (error) throw error;
 
@@ -157,3 +221,47 @@ export async function GET(request: Request) {
   }
 }
 
+// PATCH endpoint to update lead status (e.g. new, contacted, qualified, converted)
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, status } = body;
+
+    if (!id || !status) {
+      return NextResponse.json({ error: 'Missing lead id or status' }, { status: 400 });
+    }
+
+    const { data: updated, error } = await adminClient
+      .from('demo_leads')
+      .update({ status })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, lead: updated });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+// DELETE endpoint to remove a lead
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing lead id' }, { status: 400 });
+    }
+
+    const { error } = await adminClient.from('demo_leads').delete().eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, message: 'Lead deleted successfully' });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

@@ -38,6 +38,7 @@ export interface Database {
           company_name: string | null;
           unlocked_role: string | null;
           ip_address: string | null;
+          status: string;
           synced_to_sheets: boolean;
           created_at: string;
         };
@@ -49,6 +50,7 @@ export interface Database {
           company_name?: string | null;
           unlocked_role?: string | null;
           ip_address?: string | null;
+          status?: string;
           synced_to_sheets?: boolean;
           created_at?: string;
         };
@@ -60,6 +62,7 @@ export interface Database {
           company_name?: string | null;
           unlocked_role?: string | null;
           ip_address?: string | null;
+          status?: string;
           synced_to_sheets?: boolean;
           created_at?: string;
         };

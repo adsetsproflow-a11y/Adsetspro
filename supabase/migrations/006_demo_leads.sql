@@ -7,9 +7,13 @@ CREATE TABLE IF NOT EXISTS public.demo_leads (
   company_name TEXT,
   unlocked_role TEXT,
   ip_address TEXT,
+  status TEXT DEFAULT 'new',
   synced_to_sheets BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure status column exists if table was previously created
+ALTER TABLE public.demo_leads ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'new';
 
 -- Enable RLS and add basic security policy
 ALTER TABLE public.demo_leads ENABLE ROW LEVEL SECURITY;
