@@ -1519,7 +1519,7 @@ export default function WorkspaceTasksPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Website Redesign or Enterprise Q4"
+                    placeholder="Enter your project name"
                     value={projectName}
                     onChange={(e) => {
                       const val = e.target.value;
