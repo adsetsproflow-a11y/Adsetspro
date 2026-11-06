@@ -33,9 +33,7 @@ const AiNeuralCanvas = dynamic(() => import('@/components/landing/AiNeuralCanvas
   loading: () => <div className="absolute inset-0 pointer-events-none" />,
 });
 
-const AiInteractiveTerminal = dynamic(() => import('@/components/landing/AiInteractiveTerminal'), {
-  ssr: false,
-});
+import ClickUpSpeedStreaks from '@/components/landing/ClickUpSpeedStreaks';
 
 const DemoModal = dynamic(() => import('@/components/landing/DemoModal'), {
   ssr: false,
@@ -290,13 +288,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Live Interactive AI Copilot Synthesizer */}
-        <AiInteractiveTerminal />
-
         {/* =====================================================================
-            Reference Image: Tool Dashboard (Hero Showcase)
+            Reference Image: Tool Dashboard (Hero Showcase with ClickUp-style Speed Streaks)
            ===================================================================== */}
-        <div className="mt-14 max-w-6xl mx-auto relative group">
+        <div className="mt-12 max-w-6xl mx-auto relative group">
+          {/* ClickUp-style Laser Speed Streaks & Cosmic Energy Trails (Left & Right Wings) */}
+          <ClickUpSpeedStreaks />
+
           {/* Glowing Ambient Behind Preview */}
           <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-cyan-500/20 to-purple-500/20 rounded-3xl blur-2xl -z-10 transform group-hover:scale-102 transition-transform duration-500 opacity-70 dark:opacity-100" />
 

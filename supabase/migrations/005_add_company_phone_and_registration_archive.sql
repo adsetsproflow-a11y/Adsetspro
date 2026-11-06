@@ -24,3 +24,4 @@ CREATE TABLE IF NOT EXISTS public.company_registrations (
 
 CREATE INDEX IF NOT EXISTS idx_comp_reg_created_at ON public.company_registrations (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_comp_reg_phone ON public.company_registrations (phone);
+
