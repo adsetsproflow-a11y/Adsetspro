@@ -55,6 +55,7 @@ import {
 import CenterLoader from '@/components/common/CenterLoader';
 import { getCachedData, setCachedData, invalidateCache } from '@/lib/cache/clientCache';
 import { createClient } from '@/lib/supabase/client';
+import { useTheme } from '@/lib/theme/ThemeContext';
 
 export interface EmployeeTaskItem {
   id: string;
@@ -151,80 +152,80 @@ const CustomEmployeeTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const item = payload[0].payload as EmployeeWorkloadItem;
     return (
-      <div className="bg-zinc-950/95 border border-zinc-800 p-4 rounded-xl shadow-2xl backdrop-blur-md space-y-2.5 min-w-[240px]">
-        <div className="border-b border-zinc-800 pb-2">
+      <div className="bg-white dark:bg-zinc-950/95 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-xl dark:shadow-2xl backdrop-blur-md space-y-2.5 min-w-[240px] text-zinc-900 dark:text-zinc-100">
+        <div className="border-b border-zinc-200 dark:border-zinc-800 pb-2">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+            <p className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
               {item.name}
             </p>
             {item.load_status === 'overloaded' && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30">
                 Heavy Load
               </span>
             )}
             {item.load_status === 'balanced' && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30">
                 Balanced
               </span>
             )}
             {item.load_status === 'available' && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-500/30">
                 Available
               </span>
             )}
           </div>
-          <p className="text-[10px] text-zinc-400 mt-0.5">{item.department || 'General'}</p>
+          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">{item.department || 'General'}</p>
         </div>
 
         <div className="space-y-1.5 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-zinc-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Completed:
+            <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Completed:
             </span>
-            <span className="font-semibold text-emerald-400">{item.completed}</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{item.completed}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-zinc-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-sky-400"></span> In Progress:
+            <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-sky-500"></span> In Progress:
             </span>
-            <span className="font-semibold text-sky-400">{item.in_progress}</span>
+            <span className="font-semibold text-sky-600 dark:text-sky-400">{item.in_progress}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-zinc-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span> Under Review:
+            <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span> Under Review:
             </span>
-            <span className="font-semibold text-amber-400">{item.under_review}</span>
+            <span className="font-semibold text-amber-600 dark:text-amber-400">{item.under_review}</span>
           </div>
           {(item.revision_required || 0) > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-zinc-400 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-orange-400"></span> In Revision:
+              <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-orange-500"></span> In Revision:
               </span>
-              <span className="font-semibold text-orange-400">{item.revision_required}</span>
+              <span className="font-semibold text-orange-600 dark:text-orange-400">{item.revision_required}</span>
             </div>
           )}
           <div className="flex items-center justify-between">
-            <span className="text-zinc-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-purple-400"></span> Assigned:
+            <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-purple-500"></span> Assigned:
             </span>
-            <span className="font-semibold text-purple-400">{item.assigned}</span>
+            <span className="font-semibold text-purple-600 dark:text-purple-400">{item.assigned}</span>
           </div>
           {item.overdue > 0 && (
-            <div className="flex items-center justify-between pt-1 border-t border-zinc-900">
-              <span className="text-rose-400 flex items-center gap-1.5 font-medium">
+            <div className="flex items-center justify-between pt-1 border-t border-zinc-200 dark:border-zinc-800">
+              <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1.5 font-medium">
                 <span className="w-2 h-2 rounded-full bg-rose-500"></span> Overdue:
               </span>
-              <span className="font-bold text-rose-400">{item.overdue}</span>
+              <span className="font-bold text-rose-600 dark:text-rose-400">{item.overdue}</span>
             </div>
           )}
         </div>
 
-        <div className="pt-2 border-t border-zinc-800 flex items-center justify-between text-[11px]">
-          <span className="text-zinc-400">Completion Rate:</span>
-          <span className="font-bold text-emerald-300">{item.completion_rate || 0}%</span>
+        <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-[11px]">
+          <span className="text-zinc-600 dark:text-zinc-400">Completion Rate:</span>
+          <span className="font-bold text-emerald-600 dark:text-emerald-300">{item.completion_rate || 0}%</span>
         </div>
-        <p className="text-[10px] text-zinc-500 text-center italic pt-0.5">Click row to inspect all tasks</p>
+        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 text-center italic pt-0.5">Click row to inspect all tasks</p>
       </div>
     );
   }
@@ -234,6 +235,8 @@ const CustomEmployeeTooltip = ({ active, payload }: any) => {
 export default function WorkspaceDashboardPage() {
   const params = useParams();
   const companySlug = params.companySlug as string;
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -613,28 +616,28 @@ export default function WorkspaceDashboardPage() {
       )}
 
       {/* ELABORATED TASK LIFECYCLE PIPELINE BANNER */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-zinc-900/90 via-zinc-900/60 to-zinc-950 border border-zinc-800 shadow-2xl relative overflow-hidden">
+      <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-zinc-900/90 dark:via-zinc-900/60 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-sm dark:shadow-2xl relative overflow-hidden">
         {/* Glow accent */}
         <div className="absolute top-0 right-0 w-96 h-32 bg-indigo-500/5 blur-3xl pointer-events-none"></div>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <div>
             <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-indigo-400" />
-              <h2 className="text-sm font-bold text-white tracking-wide">
+              <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <h2 className="text-sm font-bold text-zinc-900 dark:text-white tracking-wide">
                 Operational Task Lifecycle Pipeline
               </h2>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
               End-to-end throughput across assignment, execution, review verification, and deliverable sign-off.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="bg-zinc-800/80 border border-zinc-700/80 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-zinc-300 font-medium">Throughput:</span>
-              <span className="font-bold text-emerald-400">{lifecycle.completionRate}% Accepted</span>
+            <div className="bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-zinc-700 dark:text-zinc-300 font-medium">Throughput:</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">{lifecycle.completionRate}% Accepted</span>
             </div>
           </div>
         </div>
@@ -642,63 +645,63 @@ export default function WorkspaceDashboardPage() {
         {/* Lifecycle Phase Step Badges */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* Phase 1: Assigned */}
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-purple-500/20 hover:border-purple-500/40 transition-colors space-y-1">
-            <div className="flex items-center justify-between text-purple-300 text-[11px] font-semibold uppercase tracking-wider">
+          <div className="p-3 rounded-xl bg-purple-50/50 dark:bg-zinc-950/60 border border-purple-200 dark:border-purple-500/20 hover:border-purple-400 dark:hover:border-purple-500/40 transition-colors space-y-1">
+            <div className="flex items-center justify-between text-purple-700 dark:text-purple-300 text-[11px] font-bold uppercase tracking-wider">
               <span>1. Assigned</span>
-              <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+              <span className="w-2 h-2 rounded-full bg-purple-500 dark:bg-purple-400"></span>
             </div>
-            <p className="text-2xl font-black text-white">{lifecycle.assigned}</p>
-            <p className="text-[10px] text-zinc-500">Ready for pickup</p>
+            <p className="text-2xl font-black text-zinc-900 dark:text-white">{lifecycle.assigned}</p>
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Ready for pickup</p>
           </div>
 
           {/* Phase 2: In Progress */}
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-sky-500/20 hover:border-sky-500/40 transition-colors space-y-1">
-            <div className="flex items-center justify-between text-sky-300 text-[11px] font-semibold uppercase tracking-wider">
+          <div className="p-3 rounded-xl bg-sky-50/50 dark:bg-zinc-950/60 border border-sky-200 dark:border-sky-500/20 hover:border-sky-400 dark:hover:border-sky-500/40 transition-colors space-y-1">
+            <div className="flex items-center justify-between text-sky-700 dark:text-sky-300 text-[11px] font-bold uppercase tracking-wider">
               <span>2. In Progress</span>
-              <span className="w-2 h-2 rounded-full bg-sky-400"></span>
+              <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400"></span>
             </div>
-            <p className="text-2xl font-black text-white">{lifecycle.in_progress}</p>
-            <p className="text-[10px] text-zinc-500">Active execution</p>
+            <p className="text-2xl font-black text-zinc-900 dark:text-white">{lifecycle.in_progress}</p>
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Active execution</p>
           </div>
 
           {/* Phase 3: Under Review */}
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-amber-500/20 hover:border-amber-500/40 transition-colors space-y-1">
-            <div className="flex items-center justify-between text-amber-300 text-[11px] font-semibold uppercase tracking-wider">
+          <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-zinc-950/60 border border-amber-200 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-500/40 transition-colors space-y-1">
+            <div className="flex items-center justify-between text-amber-700 dark:text-amber-300 text-[11px] font-bold uppercase tracking-wider">
               <span>3. In Review</span>
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400"></span>
             </div>
-            <p className="text-2xl font-black text-amber-300">{lifecycle.submitted_for_review}</p>
-            <p className="text-[10px] text-amber-400/70">Awaiting sign-off</p>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-300">{lifecycle.submitted_for_review}</p>
+            <p className="text-[10px] text-amber-700/80 dark:text-amber-400/70">Awaiting sign-off</p>
           </div>
 
           {/* Phase 4: Revision Required */}
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-orange-500/20 hover:border-orange-500/40 transition-colors space-y-1">
-            <div className="flex items-center justify-between text-orange-300 text-[11px] font-semibold uppercase tracking-wider">
+          <div className="p-3 rounded-xl bg-orange-50/50 dark:bg-zinc-950/60 border border-orange-200 dark:border-orange-500/20 hover:border-orange-400 dark:hover:border-orange-500/40 transition-colors space-y-1">
+            <div className="flex items-center justify-between text-orange-700 dark:text-orange-300 text-[11px] font-bold uppercase tracking-wider">
               <span>4. In Revision</span>
-              <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+              <span className="w-2 h-2 rounded-full bg-orange-500 dark:bg-orange-400"></span>
             </div>
-            <p className="text-2xl font-black text-white">{lifecycle.revision_required}</p>
-            <p className="text-[10px] text-zinc-500">Feedback returned</p>
+            <p className="text-2xl font-black text-zinc-900 dark:text-white">{lifecycle.revision_required}</p>
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Feedback returned</p>
           </div>
 
           {/* Phase 5: Approved Deliverable */}
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors space-y-1">
-            <div className="flex items-center justify-between text-emerald-300 text-[11px] font-semibold uppercase tracking-wider">
+          <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-zinc-950/60 border border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/40 transition-colors space-y-1">
+            <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-300 text-[11px] font-bold uppercase tracking-wider">
               <span>5. Approved</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
             </div>
-            <p className="text-2xl font-black text-emerald-400">{lifecycle.approved}</p>
-            <p className="text-[10px] text-zinc-500">Accepted outputs</p>
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{lifecycle.approved}</p>
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Accepted outputs</p>
           </div>
 
           {/* Bottleneck Alert: Overdue & Blocked */}
-          <div className="p-3 rounded-xl bg-zinc-950/60 border border-rose-500/20 hover:border-rose-500/40 transition-colors space-y-1">
-            <div className="flex items-center justify-between text-rose-300 text-[11px] font-semibold uppercase tracking-wider">
+          <div className="p-3 rounded-xl bg-rose-50/50 dark:bg-zinc-950/60 border border-rose-200 dark:border-rose-500/20 hover:border-rose-400 dark:hover:border-rose-500/40 transition-colors space-y-1">
+            <div className="flex items-center justify-between text-rose-700 dark:text-rose-300 text-[11px] font-bold uppercase tracking-wider">
               <span>Escalation</span>
-              <AlertTriangle className="w-3 h-3 text-rose-400" />
+              <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
             </div>
-            <p className="text-2xl font-black text-rose-400">{lifecycle.overdue}</p>
-            <p className="text-[10px] text-rose-300/80">Overdue deadlines</p>
+            <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{lifecycle.overdue}</p>
+            <p className="text-[10px] text-rose-700/80 dark:text-rose-300/80">Overdue deadlines</p>
           </div>
         </div>
 
@@ -750,61 +753,61 @@ export default function WorkspaceDashboardPage() {
       {/* ROW 1: Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Employees */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-zinc-900/60 to-zinc-900/80 border border-indigo-500/20 space-y-2 relative overflow-hidden group hover:border-indigo-500/40 transition-all">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-300">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-indigo-950/40 dark:via-zinc-900/60 dark:to-zinc-900/80 border border-indigo-200 dark:border-indigo-500/20 space-y-2 relative overflow-hidden group hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all shadow-sm dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
               Total Employees
             </span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-black text-white">{kpis.totalEmployees}</p>
-          <p className="text-[11px] text-zinc-500">Active company staff</p>
+          <p className="text-3xl font-black text-zinc-900 dark:text-white">{kpis.totalEmployees}</p>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Active company staff</p>
         </div>
 
         {/* Total Departments */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-cyan-950/40 via-zinc-900/60 to-zinc-900/80 border border-cyan-500/20 space-y-2 relative overflow-hidden group hover:border-cyan-500/40 transition-all">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-cyan-950/40 dark:via-zinc-900/60 dark:to-zinc-900/80 border border-cyan-200 dark:border-cyan-500/20 space-y-2 relative overflow-hidden group hover:border-cyan-400 dark:hover:border-cyan-500/40 transition-all shadow-sm dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-300">
               Total Departments
             </span>
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
               <Building className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-black text-white">{kpis.totalDepartments}</p>
-          <p className="text-[11px] text-zinc-500">Active divisions</p>
+          <p className="text-3xl font-black text-zinc-900 dark:text-white">{kpis.totalDepartments}</p>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Active divisions</p>
         </div>
 
         {/* Active Projects */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-zinc-900/60 to-zinc-900/80 border border-emerald-500/20 space-y-2 relative overflow-hidden group hover:border-emerald-500/40 transition-all">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-emerald-950/40 dark:via-zinc-900/60 dark:to-zinc-900/80 border border-emerald-200 dark:border-emerald-500/20 space-y-2 relative overflow-hidden group hover:border-emerald-400 dark:hover:border-emerald-500/40 transition-all shadow-sm dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
               Active Projects
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <Briefcase className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-black text-white">{kpis.activeProjects}</p>
-          <p className="text-[11px] text-zinc-500">In-flight initiatives</p>
+          <p className="text-3xl font-black text-zinc-900 dark:text-white">{kpis.activeProjects}</p>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">In-flight initiatives</p>
         </div>
 
         {/* Tasks Awaiting Review */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-950/40 via-zinc-900/60 to-zinc-900/80 border border-amber-500/30 space-y-2 relative overflow-hidden group hover:border-amber-500/50 transition-all">
-          <div className="flex items-center justify-between text-amber-300">
-            <span className="text-xs font-semibold uppercase tracking-wider">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-amber-950/40 dark:via-zinc-900/60 dark:to-zinc-900/80 border border-amber-200 dark:border-amber-500/30 space-y-2 relative overflow-hidden group hover:border-amber-400 dark:hover:border-amber-500/50 transition-all shadow-sm dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
               Awaiting Review
             </span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-black text-amber-300">{kpis.tasksAwaitingReview}</p>
+          <p className="text-3xl font-black text-amber-600 dark:text-amber-300">{kpis.tasksAwaitingReview}</p>
           <Link
             href={`/c/${companySlug}/review`}
-            className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold inline-flex items-center gap-1"
+            className="text-[11px] text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-semibold inline-flex items-center gap-1"
           >
             Review Queue <ArrowUpRight className="w-3 h-3" />
           </Link>
@@ -814,79 +817,79 @@ export default function WorkspaceDashboardPage() {
       {/* ROW 2: Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Overdue Tasks */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-red-950/50 to-red-900/20 border-2 border-red-500/40 space-y-2 relative shadow-lg shadow-red-500/5">
-          <div className="flex items-center justify-between text-red-300">
-            <span className="text-xs font-bold uppercase tracking-wider">Overdue Tasks</span>
-            <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
+        <div className="p-5 rounded-2xl bg-red-50/60 dark:bg-gradient-to-br dark:from-red-950/50 dark:to-red-900/20 border-2 border-red-300 dark:border-red-500/40 space-y-2 relative shadow-sm dark:shadow-lg dark:shadow-red-500/5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-300">Overdue Tasks</span>
+            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 animate-pulse" />
           </div>
-          <p className="text-3xl font-black text-red-400">{kpis.overdueTasks}</p>
-          <p className="text-[11px] text-red-300/80">Requires escalation</p>
+          <p className="text-3xl font-black text-red-600 dark:text-red-400">{kpis.overdueTasks}</p>
+          <p className="text-[11px] text-red-700/80 dark:text-red-300/80">Requires escalation</p>
         </div>
 
         {/* In Progress Tasks */}
-        <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-2">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-semibold uppercase tracking-wider text-sky-400">
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 space-y-2 shadow-sm dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400">
               In Progress
             </span>
-            <Clock className="w-4 h-4 text-sky-400" />
+            <Clock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
           </div>
-          <p className="text-3xl font-black text-white">{kpis.inProgressTasks}</p>
-          <p className="text-[11px] text-zinc-500">Actively being worked</p>
+          <p className="text-3xl font-black text-zinc-900 dark:text-white">{kpis.inProgressTasks}</p>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Actively being worked</p>
         </div>
 
         {/* Approved This Month */}
-        <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-2">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 space-y-2 shadow-sm dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
               Approved This Month
             </span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-3xl font-black text-emerald-400">{kpis.approvedThisMonth}</p>
-          <p className="text-[11px] text-zinc-500">Accepted deliverables</p>
+          <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{kpis.approvedThisMonth}</p>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Accepted deliverables</p>
         </div>
 
         {/* Upcoming Deadlines (Next 7 days) */}
-        <div className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-2">
-          <div className="flex items-center justify-between text-zinc-400">
-            <span className="text-xs font-semibold uppercase tracking-wider text-purple-400">
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 space-y-2 shadow-sm dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
               Upcoming Deadlines
             </span>
-            <Calendar className="w-4 h-4 text-purple-400" />
+            <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           </div>
-          <p className="text-3xl font-black text-purple-300">{kpis.upcomingDeadlines}</p>
-          <p className="text-[11px] text-zinc-500">Due within next 7 days</p>
+          <p className="text-3xl font-black text-purple-700 dark:text-purple-300">{kpis.upcomingDeadlines}</p>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Due within next 7 days</p>
         </div>
       </div>
 
       {/* SCALABLE EMPLOYEE WORKLOAD & LIFECYCLE SECTION (SCALES TO 50-100+ EMPLOYEES) */}
-      <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-6 shadow-xl">
+      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 space-y-6 shadow-sm dark:shadow-xl">
         {/* Header & View Mode Switcher */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Users className="w-4 h-4 text-emerald-400" />
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>
                 {data?.userRole === 'EMPLOYEE'
                   ? 'My Task Lifecycle Progress'
                   : 'Employee Workload & Task Lifecycle Distribution'}
               </span>
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
               Live capacity monitoring, bottleneck detection, and phase breakdown across team members.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
             {/* View Mode Switcher */}
-            <div className="flex items-center p-1 rounded-xl bg-zinc-950 border border-zinc-800">
+            <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
               <button
                 onClick={() => setViewMode('chart')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'chart'
-                    ? 'bg-zinc-800 text-white shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
                 }`}
                 title="Stacked Bar Chart View"
               >
@@ -897,8 +900,8 @@ export default function WorkspaceDashboardPage() {
                 onClick={() => setViewMode('cards')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'cards'
-                    ? 'bg-zinc-800 text-white shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
                 }`}
                 title="Member Cards View"
               >
@@ -908,7 +911,7 @@ export default function WorkspaceDashboardPage() {
             </div>
 
             {/* Total member pill */}
-            <span className="text-xs bg-zinc-800/80 text-zinc-300 border border-zinc-700/60 px-3 py-1.5 rounded-xl font-medium">
+            <span className="text-xs bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-3 py-1.5 rounded-xl font-medium">
               {totalEmployees} {totalEmployees === 1 ? 'Member' : 'Members'}
             </span>
 
@@ -1151,10 +1154,10 @@ export default function WorkspaceDashboardPage() {
                   }}
                   className="cursor-pointer"
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#e2e8f0"} horizontal={false} />
                   <XAxis
                     type="number"
-                    stroke="#71717a"
+                    stroke={isDark ? "#a1a1aa" : "#475569"}
                     fontSize={11}
                     allowDecimals={false}
                     tickLine={false}
@@ -1162,8 +1165,10 @@ export default function WorkspaceDashboardPage() {
                   <YAxis
                     type="category"
                     dataKey="name"
-                    stroke="#d4d4d8"
+                    stroke={isDark ? "#e4e4e7" : "#0f172a"}
+                    fill={isDark ? "#e4e4e7" : "#0f172a"}
                     fontSize={12}
+                    fontWeight={600}
                     tickLine={false}
                     width={130}
                     tickFormatter={(val) => (val && val.length > 16 ? `${val.substring(0, 14)}…` : val)}
@@ -1178,7 +1183,7 @@ export default function WorkspaceDashboardPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-[11px] text-zinc-500 text-center italic">
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 text-center italic py-2 px-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
               💡 Tip: Click on any employee's bar to inspect their full assigned task breakdown.
             </p>
           </div>
@@ -1189,33 +1194,33 @@ export default function WorkspaceDashboardPage() {
               <div
                 key={emp.employee_id}
                 onClick={() => setSelectedEmployee(emp)}
-                className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800 hover:border-zinc-700 transition-all space-y-3 cursor-pointer group hover:bg-zinc-950 shadow-md"
+                className="p-4 rounded-xl bg-zinc-50/70 dark:bg-zinc-950/70 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all space-y-3 cursor-pointer group hover:bg-zinc-100/70 dark:hover:bg-zinc-950 shadow-sm dark:shadow-md"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-bold text-indigo-700 dark:text-white shrink-0">
                       {emp.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors truncate">
+                      <h3 className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
                         {emp.name}
                       </h3>
-                      <p className="text-[10px] text-zinc-400 truncate">{emp.department || 'General'}</p>
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">{emp.department || 'General'}</p>
                     </div>
                   </div>
 
                   {emp.load_status === 'overloaded' && (
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30 shrink-0">
                       Heavy Load
                     </span>
                   )}
                   {emp.load_status === 'balanced' && (
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 shrink-0">
                       Balanced
                     </span>
                   )}
                   {emp.load_status === 'available' && (
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-500/30 shrink-0">
                       Available
                     </span>
                   )}
@@ -1224,40 +1229,40 @@ export default function WorkspaceDashboardPage() {
                 {/* Progress bar */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-zinc-500">Progress</span>
-                    <span className="font-bold text-emerald-400">{emp.completion_rate || 0}%</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">Progress</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{emp.completion_rate || 0}%</span>
                   </div>
-                  <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden flex">
+                  <div className="h-1.5 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden flex">
                     <div
                       style={{ width: `${emp.completion_rate || 0}%` }}
-                      className="bg-emerald-400 rounded-full"
+                      className="bg-emerald-500 dark:bg-emerald-400 rounded-full"
                     />
                   </div>
                 </div>
 
                 {/* Lifecycle counts row */}
-                <div className="grid grid-cols-4 gap-1.5 text-center pt-1 border-t border-zinc-900 text-[11px]">
-                  <div className="p-1 rounded bg-zinc-900/60">
-                    <p className="text-[9px] text-zinc-500">Done</p>
-                    <p className="font-bold text-emerald-400">{emp.completed}</p>
+                <div className="grid grid-cols-4 gap-1.5 text-center pt-1 border-t border-zinc-200 dark:border-zinc-800/80 text-[11px]">
+                  <div className="p-1 rounded bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-transparent">
+                    <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Done</p>
+                    <p className="font-bold text-emerald-600 dark:text-emerald-400">{emp.completed}</p>
                   </div>
-                  <div className="p-1 rounded bg-zinc-900/60">
-                    <p className="text-[9px] text-zinc-500">Active</p>
-                    <p className="font-bold text-sky-400">{emp.in_progress}</p>
+                  <div className="p-1 rounded bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-transparent">
+                    <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Active</p>
+                    <p className="font-bold text-sky-600 dark:text-sky-400">{emp.in_progress}</p>
                   </div>
-                  <div className="p-1 rounded bg-zinc-900/60">
-                    <p className="text-[9px] text-zinc-500">Review</p>
-                    <p className="font-bold text-amber-400">{emp.under_review}</p>
+                  <div className="p-1 rounded bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-transparent">
+                    <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Review</p>
+                    <p className="font-bold text-amber-600 dark:text-amber-400">{emp.under_review}</p>
                   </div>
-                  <div className="p-1 rounded bg-zinc-900/60">
-                    <p className="text-[9px] text-zinc-500">Overdue</p>
-                    <p className="font-bold text-rose-400">{emp.overdue}</p>
+                  <div className="p-1 rounded bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-transparent">
+                    <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Overdue</p>
+                    <p className="font-bold text-rose-600 dark:text-rose-400">{emp.overdue}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] pt-1 text-zinc-400 group-hover:text-zinc-200">
+                <div className="flex items-center justify-between text-[11px] pt-1 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200">
                   <span>{emp.total} assigned tasks</span>
-                  <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold text-[10px]">
+                  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px]">
                     Inspect <Eye className="w-3 h-3" />
                   </span>
                 </div>
@@ -1268,10 +1273,10 @@ export default function WorkspaceDashboardPage() {
 
         {/* PAGINATION CONTROLS (Enables smooth navigation across 50 to 100+ employees) */}
         {totalEmployees > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-800/60 text-xs">
-            <div className="text-zinc-400">
-              Showing <span className="text-white font-semibold">{pageSize === 9999 ? 1 : (currentPage - 1) * pageSize + 1}</span> to{' '}
-              <span className="text-white font-semibold">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800/60 text-xs">
+            <div className="text-zinc-500 dark:text-zinc-400">
+              Showing <span className="text-zinc-900 dark:text-white font-semibold">{pageSize === 9999 ? 1 : (currentPage - 1) * pageSize + 1}</span> to{' '}
+              <span className="text-zinc-900 dark:text-white font-semibold">
                 {pageSize === 9999 ? totalEmployees : Math.min(currentPage * pageSize, totalEmployees)}
               </span>{' '}
               of <span className="text-white font-semibold">{totalEmployees}</span> team members
@@ -1323,13 +1328,13 @@ export default function WorkspaceDashboardPage() {
       {/* ROW 3: Charts (Donut Task Status & Bar Department Workload) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Donut Chart: Task Status Distribution */}
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4 shadow-xl">
+        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 space-y-4 shadow-sm dark:shadow-xl">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <CheckSquare className="w-4 h-4 text-indigo-400" />
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               <span>Task Status Distribution</span>
             </h2>
-            <span className="text-[11px] text-zinc-500 font-mono">Status Breakdown</span>
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">Status Breakdown</span>
           </div>
 
           <div className="h-64 w-full">
@@ -1350,18 +1355,20 @@ export default function WorkspaceDashboardPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#090d16',
-                    borderColor: '#27272a',
+                    backgroundColor: isDark ? '#090d16' : '#ffffff',
+                    borderColor: isDark ? '#27272a' : '#e2e8f0',
                     borderRadius: '12px',
                     fontSize: '12px',
+                    color: isDark ? '#ffffff' : '#0f172a',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
                   }}
-                  itemStyle={{ color: '#ffffff' }}
+                  itemStyle={{ color: isDark ? '#ffffff' : '#0f172a' }}
                 />
                 <Legend
                   verticalAlign="bottom"
                   height={36}
                   iconType="circle"
-                  formatter={(val) => <span className="text-xs text-zinc-400">{val}</span>}
+                  formatter={(val) => <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">{val}</span>}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -1369,13 +1376,13 @@ export default function WorkspaceDashboardPage() {
         </div>
 
         {/* Bar Chart: Department Workload */}
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4 shadow-xl">
+        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 space-y-4 shadow-sm dark:shadow-xl">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Building className="w-4 h-4 text-cyan-400" />
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <Building className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               <span>Department Workload</span>
             </h2>
-            <span className="text-[11px] text-zinc-500 font-mono">Tasks per division</span>
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">Tasks per division</span>
           </div>
 
           <div className="h-64 w-full">
@@ -1384,24 +1391,28 @@ export default function WorkspaceDashboardPage() {
                 data={data?.charts.departmentWorkload || []}
                 margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#e2e8f0"} vertical={false} />
                 <XAxis
                   dataKey="department"
-                  stroke="#71717a"
+                  stroke={isDark ? "#a1a1aa" : "#334155"}
                   fontSize={11}
                   tickLine={false}
                   interval={0}
                   angle={-15}
                   textAnchor="end"
                 />
-                <YAxis stroke="#71717a" fontSize={11} tickLine={false} />
+                <YAxis stroke={isDark ? "#a1a1aa" : "#334155"} fontSize={11} tickLine={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#090d16',
-                    borderColor: '#27272a',
+                    backgroundColor: isDark ? '#090d16' : '#ffffff',
+                    borderColor: isDark ? '#27272a' : '#e2e8f0',
                     borderRadius: '12px',
                     fontSize: '12px',
+                    color: isDark ? '#ffffff' : '#0f172a',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
                   }}
+                  itemStyle={{ color: isDark ? '#ffffff' : '#0f172a' }}
+                  labelStyle={{ color: isDark ? '#ffffff' : '#0f172a', fontWeight: 'bold' }}
                 />
                 <Bar dataKey="count" fill="#06b6d4" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -1413,13 +1424,13 @@ export default function WorkspaceDashboardPage() {
       {/* ROW 4: Charts (Line Weekly Trend & Bar Priority Distribution) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Line Chart: Weekly Task Completion Trend */}
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4 shadow-xl">
+        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 space-y-4 shadow-sm dark:shadow-xl">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Weekly Task Completion Trend</span>
             </h2>
-            <span className="text-[11px] text-zinc-500 font-mono">Last 8 Weeks</span>
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">Last 8 Weeks</span>
           </div>
 
           <div className="h-64 w-full">
@@ -1428,16 +1439,20 @@ export default function WorkspaceDashboardPage() {
                 data={data?.charts.weeklyCompletionTrend || []}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                <XAxis dataKey="week" stroke="#71717a" fontSize={11} tickLine={false} />
-                <YAxis stroke="#71717a" fontSize={11} tickLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#e2e8f0"} vertical={false} />
+                <XAxis dataKey="week" stroke={isDark ? "#a1a1aa" : "#334155"} fontSize={11} tickLine={false} />
+                <YAxis stroke={isDark ? "#a1a1aa" : "#334155"} fontSize={11} tickLine={false} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#090d16',
-                    borderColor: '#27272a',
+                    backgroundColor: isDark ? '#090d16' : '#ffffff',
+                    borderColor: isDark ? '#27272a' : '#e2e8f0',
                     borderRadius: '12px',
                     fontSize: '12px',
+                    color: isDark ? '#ffffff' : '#0f172a',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
                   }}
+                  itemStyle={{ color: isDark ? '#ffffff' : '#0f172a' }}
+                  labelStyle={{ color: isDark ? '#ffffff' : '#0f172a', fontWeight: 'bold' }}
                 />
                 <Line
                   type="monotone"
@@ -1453,13 +1468,13 @@ export default function WorkspaceDashboardPage() {
         </div>
 
         {/* Bar Chart: Priority Distribution */}
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4 shadow-xl">
+        <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 space-y-4 shadow-sm dark:shadow-xl">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400" />
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>Priority Distribution</span>
             </h2>
-            <span className="text-[11px] text-zinc-500 font-mono">By Urgency Level</span>
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">By Urgency Level</span>
           </div>
 
           <div className="h-64 w-full">
@@ -1468,16 +1483,20 @@ export default function WorkspaceDashboardPage() {
                 data={data?.charts.priorityDistribution || []}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                <XAxis dataKey="priority" stroke="#71717a" fontSize={11} tickLine={false} />
-                <YAxis stroke="#71717a" fontSize={11} tickLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#27272a" : "#e2e8f0"} vertical={false} />
+                <XAxis dataKey="priority" stroke={isDark ? "#a1a1aa" : "#334155"} fontSize={11} tickLine={false} />
+                <YAxis stroke={isDark ? "#a1a1aa" : "#334155"} fontSize={11} tickLine={false} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#090d16',
-                    borderColor: '#27272a',
+                    backgroundColor: isDark ? '#090d16' : '#ffffff',
+                    borderColor: isDark ? '#27272a' : '#e2e8f0',
                     borderRadius: '12px',
                     fontSize: '12px',
+                    color: isDark ? '#ffffff' : '#0f172a',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
                   }}
+                  itemStyle={{ color: isDark ? '#ffffff' : '#0f172a' }}
+                  labelStyle={{ color: isDark ? '#ffffff' : '#0f172a', fontWeight: 'bold' }}
                 />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {(data?.charts.priorityDistribution || []).map((entry, index) => (
@@ -1491,38 +1510,38 @@ export default function WorkspaceDashboardPage() {
       </div>
 
       {/* SECTION: Tasks Due Soon (Full Width & Responsive Table) */}
-      <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 space-y-4 shadow-xl">
+      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 space-y-4 shadow-sm dark:shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-white tracking-wide">Tasks Due Soon</h2>
+                <h2 className="text-sm font-bold text-zinc-900 dark:text-white tracking-wide">Tasks Due Soon</h2>
                 {data?.tables.tasksDueSoon && data.tables.tasksDueSoon.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-[10px] font-bold text-purple-300">
+                  <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-500/15 border border-purple-200 dark:border-purple-500/30 text-[10px] font-bold text-purple-700 dark:text-purple-300">
                     {data.tables.tasksDueSoon.length} Active
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 Upcoming deadlines requiring immediate team focus and deliverable submission.
               </p>
             </div>
           </div>
           <Link
             href={`/c/${companySlug}/tasks`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/70 hover:bg-zinc-800 border border-zinc-700/60 hover:border-zinc-600 text-xs text-zinc-200 hover:text-white font-semibold transition-all self-start sm:self-auto shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/70 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 text-xs text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white font-semibold transition-all self-start sm:self-auto shadow-sm"
           >
             <span>All Tasks</span>
-            <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+            <ExternalLink className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
           </Link>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-950/40">
+        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/40">
           <table className="w-full text-left text-xs min-w-[760px] border-collapse">
-            <thead className="text-[11px] text-zinc-400 uppercase tracking-wider font-semibold bg-zinc-900/60 border-b border-zinc-800/80">
+            <thead className="text-[11px] text-zinc-600 dark:text-zinc-400 uppercase tracking-wider font-semibold bg-zinc-100/80 dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800/80">
               <tr>
                 <th className="py-3 px-4 font-semibold">Task</th>
                 <th className="py-3 px-4 font-semibold">Department</th>
@@ -1533,7 +1552,7 @@ export default function WorkspaceDashboardPage() {
                 <th className="py-3 px-4 font-semibold text-center w-16">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 text-zinc-700 dark:text-zinc-300">
               {!data?.tables.tasksDueSoon || data.tables.tasksDueSoon.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-zinc-500 space-y-2">

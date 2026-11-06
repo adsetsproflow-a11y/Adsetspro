@@ -210,7 +210,11 @@ html[data-accent="cyan"] .text-indigo-600 { color: #0891b2 !important; }
 html[data-accent="cyan"] .border-indigo-500 { border-color: #06b6d4 !important; }
 
 
-/* In Light Mode: Remap arbitrary dark background classes */
+/* ==========================================================================
+   LIGHT MODE: VIBRANT, HIGH-CONTRAST TEXT & PRISTINE SURFACES
+   ========================================================================== */
+
+/* 1. Remap arbitrary dark background classes */
 html:not(.dark) .bg-\[\#070b14\] {
   background-color: var(--background) !important;
 }
@@ -221,7 +225,7 @@ html:not(.dark) .bg-\[\#090d16\] {
   background-color: var(--background) !important;
 }
 
-/* In Light Mode: High-contrast text & surface safety */
+/* 2. High-contrast neutral text & surfaces */
 html:not(.dark) .text-zinc-900 {
   color: #0f172a !important;
 }
@@ -234,24 +238,193 @@ html:not(.dark) .text-zinc-700 {
 html:not(.dark) .text-zinc-600 {
   color: #475569 !important;
 }
+html:not(.dark) .text-zinc-500 {
+  color: #64748b !important;
+}
+html:not(.dark) .text-zinc-400 {
+  color: #475569 !important;
+}
+html:not(.dark) .text-zinc-300 {
+  color: #334155 !important;
+}
 html:not(.dark) .bg-zinc-100 {
   background-color: #f1f5f9 !important;
 }
 html:not(.dark) .bg-zinc-50 {
   background-color: #f8fafc !important;
 }
-html:not(.dark) :not([class*="dark:"]) > .text-indigo-400,
-html:not(.dark) span.text-indigo-400,
-html:not(.dark) p.text-indigo-400 {
-  color: var(--accent) !important;
+
+/* 3. High-Contrast Category Accent Colors in Light Mode */
+html:not(.dark) .text-indigo-300,
+html:not(.dark) .text-indigo-400 {
+  color: #4338ca !important; /* Indigo 700 */
+}
+html:not(.dark) .text-cyan-300,
+html:not(.dark) .text-cyan-400 {
+  color: #0e7490 !important; /* Cyan 700 */
+}
+html:not(.dark) .text-emerald-300,
+html:not(.dark) .text-emerald-400 {
+  color: #047857 !important; /* Emerald 700 */
+}
+html:not(.dark) .text-amber-300,
+html:not(.dark) .text-amber-400 {
+  color: #b45309 !important; /* Amber 700 */
+}
+html:not(.dark) .text-purple-300,
+html:not(.dark) .text-purple-400 {
+  color: #6d28d9 !important; /* Purple 700 */
+}
+html:not(.dark) .text-sky-300,
+html:not(.dark) .text-sky-400 {
+  color: #0369a1 !important; /* Sky 700 */
+}
+html:not(.dark) .text-orange-300,
+html:not(.dark) .text-orange-400 {
+  color: #c2410c !important; /* Orange 700 */
+}
+html:not(.dark) .text-rose-300,
+html:not(.dark) .text-rose-400 {
+  color: #be123c !important; /* Rose 700 */
+}
+html:not(.dark) .text-red-300,
+html:not(.dark) .text-red-400 {
+  color: #b91c1c !important; /* Red 700 */
 }
 
-/* In Light Mode: Add soft elevation shadows to cards and containers */
-html:not(.dark) .bg-zinc-900:not(button):not(input):not(select):not(textarea):not(code):not([class*="badge"]) {
+/* 4. Light Mode Dashboard Cards & Clean Gradient Tints */
+html:not(.dark) [class*="from-indigo-950"] {
+  --tw-gradient-from: #f5f7ff !important;
+  --tw-gradient-to: #ffffff !important;
+  background-color: #ffffff !important;
+}
+html:not(.dark) [class*="from-cyan-950"] {
+  --tw-gradient-from: #f0fdfa !important;
+  --tw-gradient-to: #ffffff !important;
+  background-color: #ffffff !important;
+}
+html:not(.dark) [class*="from-emerald-950"] {
+  --tw-gradient-from: #f0fdf4 !important;
+  --tw-gradient-to: #ffffff !important;
+  background-color: #ffffff !important;
+}
+html:not(.dark) [class*="from-amber-950"] {
+  --tw-gradient-from: #fffbeb !important;
+  --tw-gradient-to: #ffffff !important;
+  background-color: #ffffff !important;
+}
+html:not(.dark) [class*="from-purple-950"] {
+  --tw-gradient-from: #faf5ff !important;
+  --tw-gradient-to: #ffffff !important;
+  background-color: #ffffff !important;
+}
+html:not(.dark) [class*="from-red-950"],
+html:not(.dark) [class*="from-rose-950"] {
+  --tw-gradient-from: #fef2f2 !important;
+  --tw-gradient-to: #fff5f5 !important;
+  background-color: #ffffff !important;
+}
+html:not(.dark) [class*="to-red-900"] {
+  --tw-gradient-to: #fee2e2 !important;
+}
+html:not(.dark) [class*="from-zinc-900"] {
+  --tw-gradient-from: #ffffff !important;
+}
+html:not(.dark) [class*="via-zinc-900"] {
+  --tw-gradient-via: #ffffff !important;
+}
+html:not(.dark) [class*="to-zinc-950"],
+html:not(.dark) [class*="to-zinc-900"] {
+  --tw-gradient-to: #f8fafc !important;
+}
+
+/* 5. Light Mode Card Surfaces & Outer Elevation */
+html:not(.dark) .bg-zinc-900,
+html:not(.dark) .bg-zinc-900\/40,
+html:not(.dark) .bg-zinc-900\/50,
+html:not(.dark) .bg-zinc-900\/60,
+html:not(.dark) .bg-zinc-900\/70,
+html:not(.dark) .bg-zinc-900\/80,
+html:not(.dark) .bg-zinc-900\/90 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
 }
+html:not(.dark) .bg-zinc-950,
+html:not(.dark) .bg-zinc-950\/40,
+html:not(.dark) .bg-zinc-950\/50,
+html:not(.dark) .bg-zinc-950\/60,
+html:not(.dark) .bg-zinc-950\/70,
+html:not(.dark) .bg-zinc-950\/80 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
 
-/* In Light Mode: Headings, titles, text fields that have text-white */
+/* 6. Light Mode Accent Borders */
+html:not(.dark) [class*="border-indigo-500"] {
+  border-color: #c7d2fe !important;
+}
+html:not(.dark) [class*="border-cyan-500"] {
+  border-color: #a5f3fc !important;
+}
+html:not(.dark) [class*="border-emerald-500"] {
+  border-color: #a7f3d0 !important;
+}
+html:not(.dark) [class*="border-amber-500"] {
+  border-color: #fde68a !important;
+}
+html:not(.dark) [class*="border-purple-500"] {
+  border-color: #e9d5ff !important;
+}
+html:not(.dark) [class*="border-red-500"],
+html:not(.dark) [class*="border-rose-500"] {
+  border-color: #fca5a5 !important;
+}
+html:not(.dark) [class*="border-sky-500"] {
+  border-color: #bae6fd !important;
+}
+html:not(.dark) [class*="border-orange-500"] {
+  border-color: #fed7aa !important;
+}
+
+/* 7. Light Mode Icon Pill / Badge Tints */
+html:not(.dark) [class*="bg-indigo-500/10"],
+html:not(.dark) [class*="bg-indigo-500/20"] {
+  background-color: #e0e7ff !important;
+}
+html:not(.dark) [class*="bg-cyan-500/10"],
+html:not(.dark) [class*="bg-cyan-500/20"] {
+  background-color: #cffafe !important;
+}
+html:not(.dark) [class*="bg-emerald-500/10"],
+html:not(.dark) [class*="bg-emerald-500/20"] {
+  background-color: #d1fae5 !important;
+}
+html:not(.dark) [class*="bg-amber-500/10"],
+html:not(.dark) [class*="bg-amber-500/20"] {
+  background-color: #fef3c7 !important;
+}
+html:not(.dark) [class*="bg-purple-500/10"],
+html:not(.dark) [class*="bg-purple-500/15"],
+html:not(.dark) [class*="bg-purple-500/20"] {
+  background-color: #f3e8ff !important;
+}
+html:not(.dark) [class*="bg-red-500/10"],
+html:not(.dark) [class*="bg-red-500/20"],
+html:not(.dark) [class*="bg-rose-500/10"],
+html:not(.dark) [class*="bg-rose-500/20"] {
+  background-color: #fee2e2 !important;
+}
+html:not(.dark) [class*="bg-sky-500/10"],
+html:not(.dark) [class*="bg-sky-500/20"] {
+  background-color: #e0f2fe !important;
+}
+html:not(.dark) [class*="bg-orange-500/10"],
+html:not(.dark) [class*="bg-orange-500/20"] {
+  background-color: #ffedd5 !important;
+}
+
+/* 8. Light Mode: Headings, titles, text fields that have text-white */
 html:not(.dark) :is(
   h1, h2, h3, h4, h5, h6,
   th,
@@ -265,7 +438,7 @@ html:not(.dark) :is(
   color: #0f172a !important;
 }
 
-/* In Light Mode: Ensure secondary hover text switches cleanly */
+/* 9. Light Mode: Ensure secondary hover text switches cleanly */
 html:not(.dark) .hover\:text-white:hover {
   color: #0f172a !important;
 }
@@ -279,7 +452,7 @@ html:not(.dark) .hover\:bg-zinc-900\/60:hover {
   background-color: #f1f5f9 !important;
 }
 
-/* In Light Mode: Form inputs and controls */
+/* 10. Light Mode: Form inputs and controls */
 html:not(.dark) input:not([type="checkbox"]):not([type="radio"]),
 html:not(.dark) textarea,
 html:not(.dark) select {
@@ -292,12 +465,91 @@ html:not(.dark) textarea::placeholder {
   color: #94a3b8 !important;
 }
 
-/* In Light Mode: Dropdown menus & popovers */
+/* 11. Light Mode: Dropdown menus & popovers */
 html:not(.dark) [role="dialog"],
 html:not(.dark) [role="menu"] {
   background-color: #ffffff;
   border-color: #e2e8f0;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+/* 12. High-Contrast Chart Rendering Across Modes */
+html:not(.dark) .recharts-text,
+html:not(.dark) .recharts-cartesian-axis-tick text,
+html:not(.dark) .recharts-label {
+  fill: #0f172a !important;
+  font-weight: 500;
+}
+html:not(.dark) .recharts-cartesian-axis-tick-value {
+  fill: #0f172a !important;
+}
+html:not(.dark) .recharts-cartesian-grid line {
+  stroke: #e2e8f0 !important;
+}
+html:not(.dark) .recharts-legend-item-text {
+  color: #0f172a !important;
+}
+html:not(.dark) .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+}
+html:not(.dark) .recharts-tooltip-label {
+  color: #0f172a !important;
+  font-weight: 600;
+}
+html:not(.dark) .recharts-tooltip-item {
+  color: #334155 !important;
+}
+
+/* ==========================================================================
+   DARK MODE: CRISP LIGHT TEXT, NEON GLOWS & DEEP RICH SURFACES
+   ========================================================================== */
+html.dark :is(h1, h2, h3, h4, h5, h6) {
+  color: #ffffff;
+}
+html.dark .text-zinc-100 {
+  color: #f4f4f5 !important;
+}
+html.dark .text-zinc-200 {
+  color: #e4e4e7 !important;
+}
+html.dark .text-zinc-300 {
+  color: #d4d4d8 !important;
+}
+html.dark .text-zinc-400 {
+  color: #a1a1aa !important;
+}
+html.dark .text-zinc-500 {
+  color: #71717a !important;
+}
+html.dark .recharts-text,
+html.dark .recharts-cartesian-axis-tick text,
+html.dark .recharts-label {
+  fill: #d4d4d8 !important;
+}
+html.dark .recharts-cartesian-axis-tick-value {
+  fill: #d4d4d8 !important;
+}
+html.dark .recharts-cartesian-grid line {
+  stroke: #27272a !important;
+}
+html.dark .recharts-legend-item-text {
+  color: #e4e4e7 !important;
+}
+html.dark .recharts-default-tooltip {
+  background-color: #090d16 !important;
+  border-color: #27272a !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+html.dark .recharts-tooltip-label {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+html.dark .recharts-tooltip-item {
+  color: #d4d4d8 !important;
 }
 
 body {

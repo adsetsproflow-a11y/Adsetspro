@@ -17,6 +17,7 @@ import {
   X,
   Mail,
   User,
+  Phone,
   Calendar,
   Shield,
   Layers,
@@ -226,13 +227,15 @@ export default function SuperAdminCompaniesPage() {
 
   const filteredCompanies = companies.filter((c) => {
     const query = searchQuery.toLowerCase();
-    const adminEmail = (c.created_by_profile as any)?.email?.toLowerCase() || '';
-    const adminName = (c.created_by_profile as any)?.full_name?.toLowerCase() || '';
+    const adminEmail = (c.created_by_profile as any)?.email?.toLowerCase() || c.registrant_email?.toLowerCase() || '';
+    const adminName = (c.created_by_profile as any)?.full_name?.toLowerCase() || c.registrant_name?.toLowerCase() || '';
+    const adminPhone = (c.created_by_profile as any)?.phone?.toLowerCase() || c.registrant_phone?.toLowerCase() || c.phone?.toLowerCase() || '';
     return (
       c.name.toLowerCase().includes(query) ||
       c.slug.toLowerCase().includes(query) ||
       adminEmail.includes(query) ||
-      adminName.includes(query)
+      adminName.includes(query) ||
+      adminPhone.includes(query)
     );
   });
 
@@ -310,7 +313,7 @@ export default function SuperAdminCompaniesPage() {
               <tr>
                 <th className="py-3.5 px-4 whitespace-nowrap">Organization Name</th>
                 <th className="py-3.5 px-4 whitespace-nowrap">Workspace Slug</th>
-                <th className="py-3.5 px-4 whitespace-nowrap">Admin Email</th>
+                <th className="py-3.5 px-4 whitespace-nowrap">Admin Contact</th>
                 <th className="py-3.5 px-4 whitespace-nowrap">Status</th>
                 <th className="py-3.5 px-4 whitespace-nowrap">Seat Quota</th>
                 <th className="py-3.5 px-4 whitespace-nowrap">Created Date</th>
@@ -326,8 +329,10 @@ export default function SuperAdminCompaniesPage() {
                 </tr>
               ) : (
                 paginatedCompanies.map((c) => {
-                  const adminEmail = (c.created_by_profile as any)?.email || 'None';
-                  const adminName = (c.created_by_profile as any)?.full_name || 'Admin';
+                  const adminProfile = c.created_by_profile;
+                  const adminEmail = (adminProfile as any)?.email || c.registrant_email || 'No email';
+                  const adminName = (adminProfile as any)?.full_name || c.registrant_name || 'Admin';
+                  const adminPhone = (adminProfile as any)?.phone || c.registrant_phone || c.phone || null;
                   const isActionLoading = actionLoadingId === c.id;
 
                   return (
@@ -354,13 +359,27 @@ export default function SuperAdminCompaniesPage() {
                       {/* Slug */}
                       <td className="py-3.5 px-4 font-mono text-zinc-400 whitespace-nowrap">/c/{c.slug}</td>
 
-                      {/* Admin Email */}
+                      {/* Admin Contact & Phone */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="space-y-0.5">
-                          <span className="font-mono text-zinc-200 text-[11px] block whitespace-nowrap">
+                          <span className="text-zinc-200 text-xs font-semibold block truncate max-w-[160px]">
+                            {adminName}
+                          </span>
+                          <span className="font-mono text-zinc-400 text-[11px] block whitespace-nowrap">
                             {adminEmail}
                           </span>
-                          <span className="text-[10px] text-zinc-500 block truncate max-w-[160px]">{adminName}</span>
+                          {adminPhone ? (
+                            <a
+                              href={`tel:${adminPhone.replace(/\s+/g, '')}`}
+                              className="font-mono text-emerald-400 hover:text-emerald-300 font-bold text-[10px] inline-flex items-center gap-1 hover:underline"
+                              title="Call applicant"
+                            >
+                              <Phone className="w-2.5 h-2.5" />
+                              <span>{adminPhone}</span>
+                            </a>
+                          ) : (
+                            <span className="text-[10px] text-zinc-500 italic block">No phone</span>
+                          )}
                         </div>
                       </td>
 
@@ -800,11 +819,23 @@ export default function SuperAdminCompaniesPage() {
                   Primary Contact / Admin
                 </span>
                 <span className="font-semibold text-zinc-200 block">
-                  {selectedCompanyDetails.created_by_profile?.full_name || 'Not available'}
+                  {selectedCompanyDetails.created_by_profile?.full_name || selectedCompanyDetails.registrant_name || 'Not available'}
                 </span>
                 <span className="font-mono text-zinc-400 text-[11px] block">
-                  {selectedCompanyDetails.created_by_profile?.email || 'N/A'}
+                  {selectedCompanyDetails.created_by_profile?.email || selectedCompanyDetails.registrant_email || 'N/A'}
                 </span>
+                {selectedCompanyDetails.created_by_profile?.phone || selectedCompanyDetails.registrant_phone || selectedCompanyDetails.phone ? (
+                  <a
+                    href={`tel:${(selectedCompanyDetails.created_by_profile?.phone || selectedCompanyDetails.registrant_phone || selectedCompanyDetails.phone).replace(/\s+/g, '')}`}
+                    className="font-mono text-emerald-400 hover:text-emerald-300 font-bold text-xs inline-flex items-center gap-1.5 pt-0.5 hover:underline"
+                    title="Call applicant"
+                  >
+                    <Phone className="w-3 h-3" />
+                    <span>{selectedCompanyDetails.created_by_profile?.phone || selectedCompanyDetails.registrant_phone || selectedCompanyDetails.phone}</span>
+                  </a>
+                ) : (
+                  <span className="text-[10px] text-zinc-500 italic block">No phone recorded</span>
+                )}
               </div>
 
               <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-1">

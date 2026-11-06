@@ -33,7 +33,16 @@ export async function GET(request: Request) {
     let query = `
       SELECT c.id, c.name, c.slug, c.status, c.created_at, c.approved_at, c.rejected_at, c.reject_reason,
              COALESCE(c.member_limit, 5)::int as member_limit,
-             json_build_object('id', p.id, 'full_name', p.full_name, 'email', p.email) as created_by_profile,
+             c.phone as company_phone,
+             c.registrant_phone,
+             c.registrant_name,
+             c.registrant_email,
+             json_build_object(
+               'id', p.id,
+               'full_name', COALESCE(p.full_name, c.registrant_name, 'Unknown Applicant'),
+               'email', COALESCE(p.email, c.registrant_email, 'No email'),
+               'phone', COALESCE(p.phone, c.registrant_phone, c.phone, null)
+             ) as created_by_profile,
              (SELECT COUNT(*)::int FROM public.company_memberships cm WHERE cm.company_id = c.id AND cm.status = 'active') as member_count,
              (SELECT COUNT(*)::int FROM public.invitations inv WHERE inv.company_id = c.id AND inv.status = 'pending' AND inv.expires_at > NOW()) as pending_count
       FROM public.companies c

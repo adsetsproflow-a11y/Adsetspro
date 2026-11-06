@@ -39,7 +39,12 @@ export async function GET() {
       `),
       pool.query(`
         SELECT c.id, c.name, c.slug, c.status, c.created_at,
-               json_build_object('full_name', p.full_name, 'email', p.email) as created_by_profile
+               COALESCE(p.phone, c.registrant_phone, c.phone) as phone,
+               json_build_object(
+                 'full_name', COALESCE(p.full_name, c.registrant_name, 'Unknown Applicant'),
+                 'email', COALESCE(p.email, c.registrant_email, 'No email'),
+                 'phone', COALESCE(p.phone, c.registrant_phone, c.phone, null)
+               ) as created_by_profile
         FROM public.companies c
         LEFT JOIN public.profiles p ON p.id = c.created_by
         ORDER BY c.created_at DESC

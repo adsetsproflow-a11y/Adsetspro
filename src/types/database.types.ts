@@ -116,6 +116,10 @@ export interface Database {
           rejected_at: string | null;
           reject_reason: string | null;
           logo_url?: string | null;
+          phone?: string | null;
+          registrant_name?: string | null;
+          registrant_email?: string | null;
+          registrant_phone?: string | null;
           member_limit: number;
           created_at: string;
           updated_at: string;
@@ -131,6 +135,10 @@ export interface Database {
           rejected_at?: string | null;
           reject_reason?: string | null;
           logo_url?: string | null;
+          phone?: string | null;
+          registrant_name?: string | null;
+          registrant_email?: string | null;
+          registrant_phone?: string | null;
           member_limit?: number;
           created_at?: string;
           updated_at?: string;
@@ -146,9 +154,49 @@ export interface Database {
           rejected_at?: string | null;
           reject_reason?: string | null;
           logo_url?: string | null;
+          phone?: string | null;
+          registrant_name?: string | null;
+          registrant_email?: string | null;
+          registrant_phone?: string | null;
           member_limit?: number;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      company_registrations: {
+        Row: {
+          id: string;
+          company_name: string;
+          company_slug: string | null;
+          company_id: string | null;
+          full_name: string;
+          email: string;
+          phone: string;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          company_name: string;
+          company_slug?: string | null;
+          company_id?: string | null;
+          full_name: string;
+          email: string;
+          phone: string;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          company_name?: string;
+          company_slug?: string | null;
+          company_id?: string | null;
+          full_name?: string;
+          email?: string;
+          phone?: string;
+          status?: string;
+          created_at?: string;
         };
         Relationships: [];
       };

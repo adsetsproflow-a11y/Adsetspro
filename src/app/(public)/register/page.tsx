@@ -3,8 +3,20 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Building2, User, Mail, Lock, CheckCircle2, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { registerCompanySchema } from '@/lib/validation';
+import {
+  Building2,
+  User,
+  Mail,
+  Lock,
+  CheckCircle2,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Phone,
+} from 'lucide-react';
+import { registerCompanySchema, isValidIndianPhone } from '@/lib/validation';
 
 export default function RegisterCompanyPage() {
   const router = useRouter();
@@ -12,12 +24,14 @@ export default function RegisterCompanyPage() {
   const [formData, setFormData] = useState({
     companyName: '',
     fullName: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
     termsAccepted: false,
   });
 
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +42,13 @@ export default function RegisterCompanyPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
+    setPhoneTouched(true);
+
+    if (!isValidIndianPhone(formData.phone)) {
+      setErrorMessage('Please enter a valid 10-digit Indian mobile number (e.g., 9876543210).');
+      setIsLoading(false);
+      return;
+    }
 
     const validationResult = registerCompanySchema.safeParse(formData);
     if (!validationResult.success) {
@@ -135,20 +156,68 @@ export default function RegisterCompanyPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    Work Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="jane@acme.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-950/60 border border-zinc-800 rounded-xl text-zinc-100 placeholder:text-zinc-600 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    />
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      Mobile Number
+                    </label>
+                    <span className="text-[10px] text-zinc-500">10-Digit (India)</span>
                   </div>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-3 flex items-center gap-1.5 pointer-events-none text-zinc-400 text-xs font-bold border-r border-zinc-800 pr-2">
+                      <span className="text-sm">🇮🇳</span>
+                      <span>+91</span>
+                    </div>
+                    <input
+                      type="tel"
+                      required
+                      maxLength={10}
+                      value={formData.phone}
+                      onBlur={() => setPhoneTouched(true)}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setFormData({ ...formData, phone: digits });
+                      }}
+                      placeholder="98765 43210"
+                      className={`w-full pl-20 pr-10 py-2.5 bg-zinc-950/60 border rounded-xl text-zinc-100 placeholder:text-zinc-600 text-sm focus:outline-none focus:ring-1 transition-all ${
+                        phoneTouched && formData.phone && !isValidIndianPhone(formData.phone)
+                          ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
+                          : formData.phone && isValidIndianPhone(formData.phone)
+                          ? 'border-emerald-500/60 focus:border-emerald-500 focus:ring-emerald-500'
+                          : 'border-zinc-800 focus:border-indigo-500 focus:ring-indigo-500'
+                      }`}
+                    />
+                    {formData.phone && (
+                      <div className="absolute right-3">
+                        {isValidIndianPhone(formData.phone) ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        ) : phoneTouched ? (
+                          <AlertCircle className="w-4 h-4 text-red-400" />
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  {phoneTouched && formData.phone && !isValidIndianPhone(formData.phone) && (
+                    <p className="text-[10px] text-red-400 mt-1">
+                      Must start with 6, 7, 8, or 9 and be exactly 10 digits
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Work Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="jane@acme.com"
+                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-950/60 border border-zinc-800 rounded-xl text-zinc-100 placeholder:text-zinc-600 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                  />
                 </div>
               </div>
 

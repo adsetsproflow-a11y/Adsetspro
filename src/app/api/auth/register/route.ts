@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminClient } from '@/lib/supabase/admin';
-import { registerCompanySchema } from '@/lib/validation';
+import { registerCompanySchema, cleanIndianPhoneNumber } from '@/lib/validation';
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +15,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const { companyName, fullName, email, password } = validation.data;
+    const { companyName, fullName, phone, email, password } = validation.data;
+    const cleanedDigits = cleanIndianPhoneNumber(phone);
+    const formattedPhone = `+91 ${cleanedDigits}`;
 
     // 2. Check if user email already exists in profiles
     const { data: existingUser } = await adminClient
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
       email_confirm: true, // auto-confirm for administrative creation
       user_metadata: {
         full_name: fullName.trim(),
+        phone: formattedPhone,
       },
     });
 
@@ -69,11 +72,12 @@ export async function POST(request: Request) {
 
     const userId = authUser.user.id;
 
-    // 5. Create Profile Record
+    // 5. Create Profile Record with Phone
     const { error: profileError } = await adminClient.from('profiles').upsert({
       id: userId,
       full_name: fullName.trim(),
       email: email.toLowerCase().trim(),
+      phone: formattedPhone,
       is_super_admin: false,
       account_status: 'active',
     });
@@ -82,7 +86,7 @@ export async function POST(request: Request) {
       console.error('Error creating profile:', profileError);
     }
 
-    // 6. Create Company with status 'pending'
+    // 6. Create Company with status 'pending' and permanent registrant info
     const { data: company, error: companyError } = await adminClient
       .from('companies')
       .insert({
@@ -90,6 +94,10 @@ export async function POST(request: Request) {
         slug: uniqueSlug,
         status: 'pending',
         created_by: userId,
+        phone: formattedPhone,
+        registrant_name: fullName.trim(),
+        registrant_email: email.toLowerCase().trim(),
+        registrant_phone: formattedPhone,
       })
       .select()
       .single();
@@ -100,6 +108,21 @@ export async function POST(request: Request) {
         { error: companyError?.message || 'Failed to initialize organization workspace.' },
         { status: 500 }
       );
+    }
+
+    // 6b. Permanent Archive in company_registrations table (even if company/profile deleted)
+    try {
+      await adminClient.from('company_registrations').insert({
+        company_id: company.id,
+        company_name: companyName.trim(),
+        company_slug: uniqueSlug,
+        full_name: fullName.trim(),
+        email: email.toLowerCase().trim(),
+        phone: formattedPhone,
+        status: 'pending',
+      });
+    } catch (regArchiveErr) {
+      console.error('Error archiving company registration:', regArchiveErr);
     }
 
     // 7. Create Company Membership with role 'COMPANY_ADMIN'
@@ -126,12 +149,14 @@ export async function POST(request: Request) {
         company_id: company.id,
         type: 'company_registration_pending',
         title: 'New Company Pending Approval',
-        body: `${companyName} registered by ${fullName} (${email}) and requires authorization.`,
+        body: `${companyName} registered by ${fullName} (${email}, Phone: ${formattedPhone}) and requires authorization.`,
         payload: {
           company_id: company.id,
           company_name: companyName,
           slug: uniqueSlug,
           creator_id: userId,
+          creator_phone: formattedPhone,
+          phone: formattedPhone,
         },
       }));
 
@@ -149,6 +174,9 @@ export async function POST(request: Request) {
         name: companyName,
         slug: uniqueSlug,
         status: 'pending',
+        registrant_name: fullName.trim(),
+        registrant_email: email.toLowerCase().trim(),
+        registrant_phone: formattedPhone,
       },
     });
 

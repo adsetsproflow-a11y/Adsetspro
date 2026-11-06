@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Mail,
   User,
+  Phone,
   Calendar,
   AlertTriangle,
   X,
@@ -23,9 +24,14 @@ interface PendingCompany {
   slug: string;
   status: string;
   created_at: string;
+  company_phone?: string | null;
+  registrant_phone?: string | null;
+  registrant_name?: string | null;
+  registrant_email?: string | null;
   created_by_profile?: {
     full_name: string;
     email: string;
+    phone?: string | null;
   } | null;
 }
 
@@ -204,8 +210,12 @@ export default function SuperAdminApprovalsPage() {
       ) : (
         <div className="space-y-4">
           {pendingCompanies.map((company) => {
-            const adminName = company.created_by_profile?.full_name || 'Organization Applicant';
-            const adminEmail = company.created_by_profile?.email || 'No email associated';
+            const adminName =
+              company.created_by_profile?.full_name || company.registrant_name || 'Organization Applicant';
+            const adminEmail =
+              company.created_by_profile?.email || company.registrant_email || 'No email associated';
+            const adminPhone =
+              company.created_by_profile?.phone || company.registrant_phone || company.company_phone || null;
             const isProcessing = actionLoadingId === company.id;
 
             return (
@@ -229,14 +239,33 @@ export default function SuperAdminApprovalsPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-zinc-400 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs text-zinc-400 pt-1">
                       <div className="flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                         <span className="text-zinc-200 font-medium truncate">{adminName}</span>
                       </div>
                       <div className="flex items-center gap-1.5 font-mono text-[11px]">
                         <Mail className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                        <span className="text-zinc-300 truncate">{adminEmail}</span>
+                        <a
+                          href={`mailto:${adminEmail}`}
+                          className="text-zinc-300 hover:text-white truncate hover:underline"
+                        >
+                          {adminEmail}
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                        <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        {adminPhone ? (
+                          <a
+                            href={`tel:${adminPhone.replace(/\s+/g, '')}`}
+                            className="text-emerald-400 hover:text-emerald-300 font-bold hover:underline"
+                            title="Call applicant"
+                          >
+                            {adminPhone}
+                          </a>
+                        ) : (
+                          <span className="text-zinc-500 italic">No phone provided</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-zinc-500 shrink-0" />

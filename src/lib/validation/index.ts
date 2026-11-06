@@ -1,5 +1,20 @@
 import { z } from 'zod';
 
+export const cleanIndianPhoneNumber = (val: string): string => {
+  let digits = (val || '').replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+  return digits;
+};
+
+export const isValidIndianPhone = (val: string): boolean => {
+  const cleaned = cleanIndianPhoneNumber(val);
+  return /^[6-9]\d{9}$/.test(cleaned);
+};
+
 export const loginSchema = z.object({
   email: z.string().email('Please enter a valid work email address'),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
@@ -15,6 +30,12 @@ export const registerCompanySchema = z
       .string()
       .min(2, 'Full name must be at least 2 characters')
       .max(80, 'Full name is too long'),
+    phone: z
+      .string()
+      .min(10, 'Please enter a valid 10-digit Indian phone number')
+      .refine((val) => isValidIndianPhone(val), {
+        message: 'Please enter a valid 10-digit Indian mobile number (e.g. 9876543210)',
+      }),
     email: z.string().email('Please enter a valid business email address'),
     password: z
       .string()

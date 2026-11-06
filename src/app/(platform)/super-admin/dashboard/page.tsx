@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   TrendingUp,
   RefreshCw,
+  Phone,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -143,6 +144,7 @@ export default function SuperAdminDashboardPage() {
                 <tr>
                   <th className="py-3.5 px-4">Company</th>
                   <th className="py-3.5 px-4">Slug</th>
+                  <th className="py-3.5 px-4">Admin Contact</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4">Registered Date</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
@@ -151,41 +153,63 @@ export default function SuperAdminDashboardPage() {
               <tbody className="divide-y divide-zinc-800/60">
                 {recentCompanies.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-zinc-500">
+                    <td colSpan={6} className="py-12 text-center text-zinc-500">
                       No registered organizations found.
                     </td>
                   </tr>
                 ) : (
-                  recentCompanies.map((c) => (
-                    <tr key={c.id} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-zinc-200">{c.name}</td>
-                      <td className="py-3 px-4 font-mono text-zinc-400">/c/{c.slug}</td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            c.status === 'approved'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                              : c.status === 'pending'
-                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                              : 'bg-red-500/10 text-red-400 border border-red-500/30'
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-zinc-400">
-                        {new Date(c.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Link
-                          href="/super-admin/companies"
-                          className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
-                        >
-                          Manage
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
+                  recentCompanies.map((c) => {
+                    const adminName = c.created_by_profile?.full_name || 'Admin';
+                    const adminEmail = c.created_by_profile?.email || 'N/A';
+                    const adminPhone = c.phone || c.created_by_profile?.phone || null;
+
+                    return (
+                      <tr key={c.id} className="hover:bg-zinc-800/30 transition-colors">
+                        <td className="py-3 px-4 font-semibold text-zinc-200">{c.name}</td>
+                        <td className="py-3 px-4 font-mono text-zinc-400">/c/{c.slug}</td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="space-y-0.5">
+                            <span className="text-zinc-200 text-xs font-semibold block">{adminName}</span>
+                            <span className="text-zinc-400 text-[11px] font-mono block">{adminEmail}</span>
+                            {adminPhone && (
+                              <a
+                                href={`tel:${adminPhone.replace(/\s+/g, '')}`}
+                                className="font-mono text-emerald-400 hover:text-emerald-300 font-bold text-[10px] inline-flex items-center gap-1 hover:underline"
+                                title="Call applicant"
+                              >
+                                <Phone className="w-2.5 h-2.5" />
+                                <span>{adminPhone}</span>
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              c.status === 'approved'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                : c.status === 'pending'
+                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                                : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-zinc-400">
+                          {new Date(c.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Link
+                            href="/super-admin/companies"
+                            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+                          >
+                            Manage
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
