@@ -509,39 +509,20 @@ html:not(.dark) .recharts-tooltip-item {
 html.dark :is(h1, h2, h3, h4, h5, h6) {
   color: #ffffff;
 }
-html.dark .dark\:text-white {
-  color: #ffffff !important;
-}
-html.dark .dark\:text-zinc-100 {
+html.dark .text-zinc-100 {
   color: #f4f4f5 !important;
 }
-html.dark .dark\:text-zinc-200 {
+html.dark .text-zinc-200 {
   color: #e4e4e7 !important;
 }
-html.dark .dark\:text-zinc-300 {
-  color: #cbd5e1 !important;
+html.dark .text-zinc-300 {
+  color: #d4d4d8 !important;
 }
-html.dark .dark\:text-zinc-400 {
-  color: #94a3b8 !important;
+html.dark .text-zinc-400 {
+  color: #a1a1aa !important;
 }
-html.dark .dark\:text-zinc-500 {
-  color: #64748b !important;
-}
-
-html.dark .text-zinc-100:not([class*="dark:text-"]) {
-  color: #f4f4f5 !important;
-}
-html.dark .text-zinc-200:not([class*="dark:text-"]) {
-  color: #e4e4e7 !important;
-}
-html.dark .text-zinc-300:not([class*="dark:text-"]) {
-  color: #cbd5e1 !important;
-}
-html.dark .text-zinc-400:not([class*="dark:text-"]) {
-  color: #94a3b8 !important;
-}
-html.dark .text-zinc-500:not([class*="dark:text-"]) {
-  color: #94a3b8 !important;
+html.dark .text-zinc-500 {
+  color: #71717a !important;
 }
 html.dark .recharts-text,
 html.dark .recharts-cartesian-axis-tick text,

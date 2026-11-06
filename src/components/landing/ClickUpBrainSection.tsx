@@ -41,111 +41,198 @@ export default function ClickUpBrainSection() {
         >
           <defs>
             <linearGradient id="pcb-trace-purple" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.15" />
-              <stop offset="50%" stopColor="#d946ef" stopOpacity="0.55" />
-              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.15" />
+              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.3" />
+              <stop offset="50%" stopColor="#d946ef" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.3" />
             </linearGradient>
 
             <linearGradient id="pcb-trace-subtle" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.1" />
-              <stop offset="50%" stopColor="#a855f7" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#ec4899" stopOpacity="0.1" />
+              <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.25" />
+              <stop offset="50%" stopColor="#a855f7" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="#ec4899" stopOpacity="0.25" />
             </linearGradient>
 
-            <filter id="via-glow" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+            <linearGradient id="fade-horizontal-right" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+            </linearGradient>
+
+            <linearGradient id="fade-horizontal-left" x1="100%" y1="0%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+            </linearGradient>
+
+            <filter id="via-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
               <feMerge>
+                <feMergeNode in="blur" />
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+
+            {/* Subtle Tech PCB Background Grid */}
+            <pattern id="pcb-grid-pattern" width="48" height="48" patternUnits="userSpaceOnUse">
+              <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(168, 85, 247, 0.05)" strokeWidth="1" />
+            </pattern>
           </defs>
 
+          {/* Background Grid */}
+          <rect width="100%" height="100%" fill="url(#pcb-grid-pattern)" opacity="0.8" />
+
           {/* ===== TOP TITLE FRAMING TRACES ===== */}
-          {/* Top Left Arc Trace */}
+          {/* Top Left Title Trace */}
           <path
-            d="M 280,105 L 360,105 L 400,65 L 530,65"
+            d="M 220,110 L 320,110 L 360,65 L 500,65"
             fill="none"
             stroke="url(#pcb-trace-purple)"
-            strokeWidth="1.5"
+            strokeWidth="1.8"
           />
-          <circle cx="280" cy="105" r="3.5" fill="#a855f7" filter="url(#via-glow)" />
+          <circle cx="220" cy="110" r="4" fill="#a855f7" filter="url(#via-glow)" />
+          <circle cx="220" cy="110" r="1.8" fill="#ffffff" />
 
-          {/* Top Right Arc Trace */}
+          {/* Top Right Title Trace */}
           <path
-            d="M 920,105 L 840,105 L 800,65 L 670,65"
+            d="M 980,110 L 880,110 L 840,65 L 700,65"
             fill="none"
             stroke="url(#pcb-trace-purple)"
-            strokeWidth="1.5"
+            strokeWidth="1.8"
           />
-          <circle cx="920" cy="105" r="3.5" fill="#d946ef" filter="url(#via-glow)" />
+          <circle cx="980" cy="110" r="4" fill="#d946ef" filter="url(#via-glow)" />
+          <circle cx="980" cy="110" r="1.8" fill="#ffffff" />
 
-          {/* ===== LEFT FLANK PARALLEL TRACES ===== */}
-          {/* Track L1 (Outer) */}
+          {/* ===================================================================
+              LEFT FLANK CIRCUIT TRACES (EXACT DESIGN MATCH)
+             =================================================================== */}
+
+          {/* 1. Solid Trace with 45° Branch & Magenta Circular Node (Image 1) */}
+          {/* Vertical Bus Line */}
           <path
-            d="M 40,240 L 90,240 L 120,270 L 120,440 L 80,480 L 40,480"
+            d="M 55,340 L 55,190"
+            fill="none"
+            stroke="#7c3aed"
+            strokeWidth="1.75"
+            strokeOpacity="0.75"
+          />
+          {/* Upper 45° diagonal branch ending in fading horizontal segment */}
+          <path
+            d="M 55,230 L 100,185 L 165,185"
+            fill="none"
+            stroke="url(#fade-horizontal-right)"
+            strokeWidth="1.75"
+          />
+          {/* Lower parallel 45° branch terminating in glowing magenta via dot */}
+          <path
+            d="M 35,305 L 80,260 L 160,260"
             fill="none"
             stroke="url(#pcb-trace-purple)"
-            strokeWidth="1.6"
+            strokeWidth="1.8"
           />
-          <circle cx="40" cy="240" r="3" fill="#a855f7" />
-          <circle cx="40" cy="480" r="3" fill="#a855f7" />
+          <circle cx="160" cy="260" r="4.5" fill="#d946ef" filter="url(#via-glow)" />
+          <circle cx="160" cy="260" r="2" fill="#ffffff" opacity="0.9" />
 
-          {/* Track L2 (Middle) */}
+          {/* 2. Dashed Trace with 45° Riser & Pink Via Node (Image 2) */}
           <path
-            d="M 70,200 L 125,200 L 155,230 L 155,470 L 125,500 L 70,500"
+            d="M 20,380 L 95,380"
+            fill="none"
+            stroke="#a855f7"
+            strokeWidth="1.8"
+            strokeDasharray="7 5"
+            strokeOpacity="0.8"
+          />
+          <circle cx="95" cy="380" r="4" fill="#ec4899" filter="url(#via-glow)" />
+          <circle cx="95" cy="380" r="1.8" fill="#ffffff" />
+          <path
+            d="M 95,380 L 135,340 L 210,340"
+            fill="none"
+            stroke="#ec4899"
+            strokeWidth="1.8"
+            strokeDasharray="7 5"
+            strokeOpacity="0.85"
+          />
+
+          {/* 3. Outer Left Motherboard Contour Bus */}
+          <path
+            d="M 25,140 L 45,140 L 70,165 L 70,490 L 45,515 L 20,515"
             fill="none"
             stroke="url(#pcb-trace-subtle)"
-            strokeWidth="1.4"
+            strokeWidth="1.5"
           />
+          <circle cx="25" cy="140" r="3" fill="#a855f7" />
+          <circle cx="20" cy="515" r="3" fill="#a855f7" />
 
-          {/* Track L3 (Feeding towards Card 1 top) */}
+          {/* ===================================================================
+              RIGHT FLANK CIRCUIT TRACES (SYMMETRICALLY MIRRORED)
+             =================================================================== */}
+
+          {/* 1. Solid Trace with 45° Branch & Magenta Circular Node (Image 1 Mirrored) */}
+          {/* Vertical Bus Line */}
           <path
-            d="M 155,230 L 210,175 L 290,175"
+            d="M 1145,340 L 1145,190"
+            fill="none"
+            stroke="#7c3aed"
+            strokeWidth="1.75"
+            strokeOpacity="0.75"
+          />
+          {/* Upper 45° diagonal branch ending in fading horizontal segment */}
+          <path
+            d="M 1145,230 L 1100,185 L 1035,185"
+            fill="none"
+            stroke="url(#fade-horizontal-left)"
+            strokeWidth="1.75"
+          />
+          {/* Lower parallel 45° branch terminating in glowing magenta via dot */}
+          <path
+            d="M 1165,305 L 1120,260 L 1040,260"
             fill="none"
             stroke="url(#pcb-trace-purple)"
-            strokeWidth="1.4"
+            strokeWidth="1.8"
           />
-          <circle cx="290" cy="175" r="3" fill="#ec4899" filter="url(#via-glow)" />
+          <circle cx="1040" cy="260" r="4.5" fill="#d946ef" filter="url(#via-glow)" />
+          <circle cx="1040" cy="260" r="2" fill="#ffffff" opacity="0.9" />
 
-          {/* ===== RIGHT FLANK PARALLEL TRACES ===== */}
-          {/* Track R1 (Outer) */}
+          {/* 2. Dashed Trace with 45° Riser & Pink Via Node (Image 2 Mirrored) */}
           <path
-            d="M 1160,240 L 1110,240 L 1080,270 L 1080,440 L 1120,480 L 1160,480"
+            d="M 1180,380 L 1105,380"
             fill="none"
-            stroke="url(#pcb-trace-purple)"
-            strokeWidth="1.6"
+            stroke="#a855f7"
+            strokeWidth="1.8"
+            strokeDasharray="7 5"
+            strokeOpacity="0.8"
           />
-          <circle cx="1160" cy="240" r="3" fill="#d946ef" />
-          <circle cx="1160" cy="480" r="3" fill="#d946ef" />
-
-          {/* Track R2 (Middle) */}
+          <circle cx="1105" cy="380" r="4" fill="#ec4899" filter="url(#via-glow)" />
+          <circle cx="1105" cy="380" r="1.8" fill="#ffffff" />
           <path
-            d="M 1130,200 L 1075,200 L 1045,230 L 1045,470 L 1075,500 L 1130,500"
+            d="M 1105,380 L 1065,340 L 990,340"
+            fill="none"
+            stroke="#ec4899"
+            strokeWidth="1.8"
+            strokeDasharray="7 5"
+            strokeOpacity="0.85"
+          />
+
+          {/* 3. Outer Right Motherboard Contour Bus */}
+          <path
+            d="M 1175,140 L 1155,140 L 1130,165 L 1130,490 L 1155,515 L 1180,515"
             fill="none"
             stroke="url(#pcb-trace-subtle)"
-            strokeWidth="1.4"
+            strokeWidth="1.5"
           />
-
-          {/* Track R3 (Feeding towards Card 3 top) */}
-          <path
-            d="M 1045,230 L 990,175 L 910,175"
-            fill="none"
-            stroke="url(#pcb-trace-purple)"
-            strokeWidth="1.4"
-          />
-          <circle cx="910" cy="175" r="3" fill="#a855f7" filter="url(#via-glow)" />
+          <circle cx="1175" cy="140" r="3" fill="#d946ef" />
+          <circle cx="1180" cy="515" r="3" fill="#d946ef" />
 
           {/* ===== BOTTOM INTER-CARD BUS TRACES ===== */}
           <path
-            d="M 340,610 L 460,610 L 490,640 L 710,640 L 740,610 L 860,610"
+            d="M 300,625 L 440,625 L 470,650 L 730,650 L 760,625 L 900,625"
             fill="none"
             stroke="url(#pcb-trace-subtle)"
-            strokeWidth="1.4"
-            strokeDasharray="6 4"
+            strokeWidth="1.6"
+            strokeDasharray="7 5"
           />
-          <circle cx="490" cy="640" r="3" fill="#a855f7" />
-          <circle cx="710" cy="640" r="3" fill="#ec4899" />
+          <circle cx="470" cy="650" r="3.5" fill="#a855f7" filter="url(#via-glow)" />
+          <circle cx="730" cy="650" r="3.5" fill="#ec4899" filter="url(#via-glow)" />
+          <circle cx="300" cy="625" r="3" fill="#a855f7" />
+          <circle cx="900" cy="625" r="3" fill="#d946ef" />
         </svg>
       </div>
 

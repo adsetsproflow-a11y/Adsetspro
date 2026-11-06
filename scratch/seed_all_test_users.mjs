@@ -83,7 +83,7 @@ async function seedTestAccounts() {
     {
       id: '00000000-0000-0000-0000-000000000002',
       email: 'admin@p8-test.com',
-      fullName: 'Harish Kumar',
+      fullName: 'Alice Company Admin',
       role: 'COMPANY_ADMIN',
       isSuperAdmin: false,
       deptRole: null,
@@ -91,7 +91,7 @@ async function seedTestAccounts() {
     {
       id: '00000000-0000-0000-0000-000000000003',
       email: 'depthead@p8-test.com',
-      fullName: 'Praveen Raj',
+      fullName: 'Bob Department Head',
       role: 'DEPARTMENT_HEAD',
       isSuperAdmin: false,
       deptRole: 'head',
@@ -99,7 +99,7 @@ async function seedTestAccounts() {
     {
       id: '00000000-0000-0000-0000-000000000004',
       email: 'employee@p8-test.com',
-      fullName: 'Suriya Prakash',
+      fullName: 'Charlie Team Employee',
       role: 'EMPLOYEE',
       isSuperAdmin: false,
       deptRole: 'member',

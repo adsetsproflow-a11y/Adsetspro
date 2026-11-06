@@ -4,18 +4,16 @@ import React, { useEffect, useRef } from 'react';
 
 interface LaserBeam {
   side: 'left' | 'right';
-  yPercent: number;      // 0 to 100% of height
+  yPercent: number;      // 0 to 100% of height (strictly horizontal straight line)
   baseLength: number;    // px
-  color1: string;        // start color
-  color2: string;        // mid color
+  color1: string;        // start / lead color
+  color2: string;        // trail color
   glowColor: string;     // shadow glow
   thickness: number;     // line thickness
-  waveAmp: number;       // gentle sine wave oscillation
-  waveFreq: number;
-  speed: number;
+  speed: number;         // dash stream speed
   cometProgress: number; // 0 to 1
-  cometSpeed: number;
-  phase: number;
+  cometSpeed: number;    // speed of traveling photon packet
+  streakLength: number;  // length of traveling laser streak
 }
 
 interface ConstellationNode {
@@ -68,190 +66,166 @@ export default function ClickUpSpeedStreaks() {
     );
     observer.observe(canvas);
 
-    // 1. Sleek Laser Speed Beams (ClickUp Exact Neon Palette)
+    // 1. Sleek Straight Horizontal Laser Speed Beams (ClickUp Exact Neon Palette)
     const beams: LaserBeam[] = [
-      // === LEFT WING ===
+      // === LEFT WING (Straight Horizontal Moving Laser Streaks) ===
       {
         side: 'left',
-        yPercent: 15,
-        baseLength: 420,
+        yPercent: 14,
+        baseLength: 460,
         color1: '#f43f5e',
         color2: '#ec4899',
-        glowColor: 'rgba(236, 72, 153, 0.9)',
-        thickness: 2.5,
-        waveAmp: 7,
-        waveFreq: 0.012,
-        speed: 1.6,
+        glowColor: 'rgba(236, 72, 153, 0.95)',
+        thickness: 2.8,
+        speed: 1.8,
         cometProgress: 0.15,
-        cometSpeed: 0.007,
-        phase: 0.2,
+        cometSpeed: 0.0075,
+        streakLength: 190,
       },
       {
         side: 'left',
-        yPercent: 28,
-        baseLength: 510,
+        yPercent: 27,
+        baseLength: 540,
         color1: '#06b6d4',
         color2: '#38bdf8',
         glowColor: 'rgba(6, 182, 212, 0.95)',
-        thickness: 3.2,
-        waveAmp: 10,
-        waveFreq: 0.010,
-        speed: 1.3,
-        cometProgress: 0.6,
-        cometSpeed: 0.0055,
-        phase: 1.1,
+        thickness: 3.5,
+        speed: 2.2,
+        cometProgress: 0.62,
+        cometSpeed: 0.009,
+        streakLength: 240,
       },
       {
         side: 'left',
-        yPercent: 42,
-        baseLength: 560,
+        yPercent: 41,
+        baseLength: 580,
         color1: '#d946ef',
         color2: '#8b5cf6',
         glowColor: 'rgba(217, 70, 239, 0.95)',
-        thickness: 3.5,
-        waveAmp: 9,
-        waveFreq: 0.013,
-        speed: 2.0,
-        cometProgress: 0.3,
-        cometSpeed: 0.008,
-        phase: 2.3,
+        thickness: 3.8,
+        speed: 2.6,
+        cometProgress: 0.35,
+        cometSpeed: 0.0105,
+        streakLength: 260,
       },
       {
         side: 'left',
         yPercent: 55,
-        baseLength: 450,
+        baseLength: 490,
         color1: '#38bdf8',
         color2: '#6366f1',
-        glowColor: 'rgba(56, 189, 248, 0.85)',
-        thickness: 2.2,
-        waveAmp: 6,
-        waveFreq: 0.015,
-        speed: 1.5,
-        cometProgress: 0.85,
-        cometSpeed: 0.006,
-        phase: 3.2,
+        glowColor: 'rgba(56, 189, 248, 0.9)',
+        thickness: 2.5,
+        speed: 1.6,
+        cometProgress: 0.82,
+        cometSpeed: 0.007,
+        streakLength: 210,
       },
       {
         side: 'left',
-        yPercent: 68,
-        baseLength: 480,
+        yPercent: 69,
+        baseLength: 520,
         color1: '#f59e0b',
         color2: '#fb923c',
-        glowColor: 'rgba(245, 158, 11, 0.9)',
-        thickness: 2.8,
-        waveAmp: 8,
-        waveFreq: 0.011,
-        speed: 1.8,
-        cometProgress: 0.45,
-        cometSpeed: 0.0075,
-        phase: 4.1,
+        glowColor: 'rgba(245, 158, 11, 0.95)',
+        thickness: 3.0,
+        speed: 2.0,
+        cometProgress: 0.48,
+        cometSpeed: 0.0085,
+        streakLength: 220,
       },
       {
         side: 'left',
-        yPercent: 82,
-        baseLength: 390,
+        yPercent: 83,
+        baseLength: 440,
         color1: '#8b5cf6',
         color2: '#a855f7',
-        glowColor: 'rgba(139, 92, 246, 0.85)',
-        thickness: 2.2,
-        waveAmp: 9,
-        waveFreq: 0.014,
-        speed: 1.4,
-        cometProgress: 0.7,
-        cometSpeed: 0.005,
-        phase: 5.2,
+        glowColor: 'rgba(139, 92, 246, 0.9)',
+        thickness: 2.4,
+        speed: 1.5,
+        cometProgress: 0.74,
+        cometSpeed: 0.0065,
+        streakLength: 180,
       },
 
-      // === RIGHT WING ===
+      // === RIGHT WING (Straight Horizontal Moving Laser Streaks) ===
       {
         side: 'right',
-        yPercent: 17,
-        baseLength: 430,
+        yPercent: 16,
+        baseLength: 470,
         color1: '#06b6d4',
         color2: '#10b981',
-        glowColor: 'rgba(16, 185, 129, 0.9)',
-        thickness: 2.5,
-        waveAmp: 8,
-        waveFreq: 0.013,
-        speed: 1.5,
-        cometProgress: 0.25,
-        cometSpeed: 0.0065,
-        phase: 0.8,
+        glowColor: 'rgba(16, 185, 129, 0.95)',
+        thickness: 2.8,
+        speed: 1.9,
+        cometProgress: 0.28,
+        cometSpeed: 0.008,
+        streakLength: 200,
       },
       {
         side: 'right',
-        yPercent: 31,
-        baseLength: 530,
+        yPercent: 30,
+        baseLength: 550,
         color1: '#ec4899',
         color2: '#f43f5e',
         glowColor: 'rgba(236, 72, 153, 0.95)',
-        thickness: 3.5,
-        waveAmp: 11,
-        waveFreq: 0.009,
-        speed: 2.1,
-        cometProgress: 0.65,
-        cometSpeed: 0.0085,
-        phase: 1.9,
+        thickness: 3.8,
+        speed: 2.5,
+        cometProgress: 0.68,
+        cometSpeed: 0.010,
+        streakLength: 250,
       },
       {
         side: 'right',
-        yPercent: 45,
-        baseLength: 570,
+        yPercent: 44,
+        baseLength: 590,
         color1: '#c084fc',
         color2: '#8b5cf6',
-        glowColor: 'rgba(192, 132, 252, 0.9)',
-        thickness: 3.0,
-        waveAmp: 9,
-        waveFreq: 0.014,
-        speed: 1.7,
-        cometProgress: 0.15,
-        cometSpeed: 0.007,
-        phase: 3.0,
+        glowColor: 'rgba(192, 132, 252, 0.95)',
+        thickness: 3.2,
+        speed: 2.1,
+        cometProgress: 0.18,
+        cometSpeed: 0.009,
+        streakLength: 240,
       },
       {
         side: 'right',
-        yPercent: 58,
-        baseLength: 440,
+        yPercent: 57,
+        baseLength: 480,
         color1: '#38bdf8',
         color2: '#0ea5e9',
-        glowColor: 'rgba(56, 189, 248, 0.85)',
-        thickness: 2.2,
-        waveAmp: 7,
-        waveFreq: 0.015,
-        speed: 1.4,
-        cometProgress: 0.85,
-        cometSpeed: 0.0055,
-        phase: 4.2,
+        glowColor: 'rgba(56, 189, 248, 0.9)',
+        thickness: 2.4,
+        speed: 1.6,
+        cometProgress: 0.88,
+        cometSpeed: 0.007,
+        streakLength: 200,
       },
       {
         side: 'right',
         yPercent: 71,
-        baseLength: 490,
+        baseLength: 530,
         color1: '#fb923c',
         color2: '#f59e0b',
-        glowColor: 'rgba(251, 146, 60, 0.9)',
-        thickness: 2.8,
-        waveAmp: 9,
-        waveFreq: 0.011,
-        speed: 1.9,
-        cometProgress: 0.4,
-        cometSpeed: 0.0075,
-        phase: 5.3,
+        glowColor: 'rgba(251, 146, 60, 0.95)',
+        thickness: 3.0,
+        speed: 2.3,
+        cometProgress: 0.42,
+        cometSpeed: 0.0095,
+        streakLength: 230,
       },
       {
         side: 'right',
         yPercent: 85,
-        baseLength: 400,
+        baseLength: 450,
         color1: '#d946ef',
         color2: '#ec4899',
-        glowColor: 'rgba(217, 70, 239, 0.85)',
-        thickness: 2.2,
-        waveAmp: 8,
-        waveFreq: 0.013,
-        speed: 1.4,
-        cometProgress: 0.9,
-        cometSpeed: 0.005,
-        phase: 6.1,
+        glowColor: 'rgba(217, 70, 239, 0.9)',
+        thickness: 2.4,
+        speed: 1.5,
+        cometProgress: 0.92,
+        cometSpeed: 0.0065,
+        streakLength: 180,
       },
     ];
 
@@ -484,115 +458,231 @@ export default function ClickUpSpeedStreaks() {
       }
 
       // =====================================================================
-      // 2. DRAW SLEEK HORIZONTAL SPEED LASER BEAMS & PHOTON HEADS
+      // 2. DRAW CRISP STRAIGHT HORIZONTAL MOVING LASER SPEED STREAKS
+      //    (Strictly Straight Horizontal Trajectories - Zero Curves / Waves)
       // =====================================================================
       beams.forEach((beam) => {
         const baseY = (beam.yPercent / 100) * height;
 
-        // Progress photon travel
+        // Progress photon travel smoothly across horizontal line
         beam.cometProgress = (beam.cometProgress + beam.cometSpeed) % 1;
 
         ctx.save();
 
         if (beam.side === 'left') {
-          const startX = leftWindowEdge + 30; // Roots emerge behind the window
+          const startX = leftWindowEdge + 25; // Roots emerge behind the dashboard window
           const endX = Math.max(0, startX - beam.baseLength);
 
-          // Build subtle wave laser path
+          // A. Static Subtle Straight Rail / Channel Track
+          const railGrad = ctx.createLinearGradient(startX, baseY, endX, baseY);
+          railGrad.addColorStop(0, beam.color1);
+          railGrad.addColorStop(0.4, beam.color2);
+          railGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
           ctx.beginPath();
-          const step = 6;
-          for (let x = startX; x >= endX; x -= step) {
-            const dist = startX - x;
-            const waveY = Math.sin(dist * beam.waveFreq + time * beam.speed + beam.phase) * beam.waveAmp;
-            const y = baseY + waveY;
-            if (x === startX) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-
-          // Laser Gradient
-          const grad = ctx.createLinearGradient(startX, baseY, endX, baseY);
-          grad.addColorStop(0, beam.color1);
-          grad.addColorStop(0.5, beam.color2);
-          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = beam.thickness;
+          ctx.moveTo(startX, baseY);
+          ctx.lineTo(endX, baseY);
+          ctx.strokeStyle = railGrad;
+          ctx.lineWidth = Math.max(1, beam.thickness * 0.45);
           ctx.lineCap = 'round';
-          ctx.shadowBlur = 18;
+          ctx.globalAlpha = 0.35;
+          ctx.shadowBlur = 8;
           ctx.shadowColor = beam.glowColor;
           ctx.stroke();
 
-          // Photon Comet Head
-          const cometDist = beam.cometProgress * beam.baseLength;
-          const cometX = startX - cometDist;
-          const cometWaveY = Math.sin(cometDist * beam.waveFreq + time * beam.speed + beam.phase) * beam.waveAmp;
-          const cometY = baseY + cometWaveY;
-
-          // Photon Core
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowBlur = 22;
-          ctx.shadowColor = '#ffffff';
+          // B. High-Speed Straight Animated Dash Stream (Moving Horizontally Left)
           ctx.beginPath();
-          ctx.arc(cometX, cometY, beam.thickness * 1.3, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Photon Corona Glow
-          ctx.fillStyle = beam.color1;
-          ctx.shadowBlur = 26;
+          ctx.moveTo(startX, baseY);
+          ctx.lineTo(endX, baseY);
+          ctx.strokeStyle = railGrad;
+          ctx.lineWidth = beam.thickness * 0.75;
+          ctx.globalAlpha = 0.5;
+          ctx.setLineDash([22, 16]);
+          ctx.lineDashOffset = time * beam.speed * 45;
+          ctx.shadowBlur = 14;
           ctx.shadowColor = beam.glowColor;
-          ctx.beginPath();
-          ctx.arc(cometX, cometY, beam.thickness * 2.2, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 1.0;
+
+          // C. Primary Blazing Straight Laser Streak Packet
+          const travelSpan = beam.baseLength + beam.streakLength;
+          const distMoved = beam.cometProgress * travelSpan;
+          const headX = startX - distMoved + beam.streakLength;
+          const tailX = Math.min(startX, headX + beam.streakLength);
+
+          if (headX < startX + 50 && tailX > endX - 50) {
+            const clampHeadX = Math.max(endX, Math.min(startX, headX));
+            const clampTailX = Math.max(endX, Math.min(startX, tailX));
+
+            if (clampTailX > clampHeadX) {
+              const streakGrad = ctx.createLinearGradient(clampTailX, baseY, clampHeadX, baseY);
+              streakGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+              streakGrad.addColorStop(0.3, beam.color2);
+              streakGrad.addColorStop(0.85, beam.color1);
+              streakGrad.addColorStop(1, '#ffffff');
+
+              ctx.beginPath();
+              ctx.moveTo(clampTailX, baseY);
+              ctx.lineTo(clampHeadX, baseY);
+              ctx.strokeStyle = streakGrad;
+              ctx.lineWidth = beam.thickness;
+              ctx.lineCap = 'round';
+              ctx.shadowBlur = 26;
+              ctx.shadowColor = beam.glowColor;
+              ctx.stroke();
+
+              // High-Intensity Traveling Photon Comet Head
+              if (clampHeadX > endX && clampHeadX < startX) {
+                // Outer Corona Glow
+                ctx.fillStyle = beam.color1;
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = beam.glowColor;
+                ctx.beginPath();
+                ctx.arc(clampHeadX, baseY, beam.thickness * 2.4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ultra-Bright White Photon Core
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(clampHeadX, baseY, beam.thickness * 1.3, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            }
+          }
+
+          // D. Secondary Staggered Straight Streak Packet (Offset 0.5 for continuous flow)
+          const p2 = (beam.cometProgress + 0.52) % 1;
+          const dist2 = p2 * travelSpan;
+          const head2X = startX - dist2 + beam.streakLength;
+          const tail2X = Math.min(startX, head2X + beam.streakLength * 0.7);
+
+          if (head2X < startX && tail2X > endX) {
+            const streak2Grad = ctx.createLinearGradient(tail2X, baseY, head2X, baseY);
+            streak2Grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            streak2Grad.addColorStop(0.5, beam.color2);
+            streak2Grad.addColorStop(1, beam.color1);
+
+            ctx.beginPath();
+            ctx.moveTo(tail2X, baseY);
+            ctx.lineTo(head2X, baseY);
+            ctx.strokeStyle = streak2Grad;
+            ctx.lineWidth = beam.thickness * 0.75;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = beam.glowColor;
+            ctx.stroke();
+          }
+
         } else {
-          // Right Side
-          const startX = rightWindowEdge - 30;
+          // === RIGHT SIDE (Strictly Straight Horizontal Trajectories) ===
+          const startX = rightWindowEdge - 25; // Roots emerge behind the dashboard window
           const endX = Math.min(width, startX + beam.baseLength);
 
-          // Build subtle wave laser path
+          // A. Static Subtle Straight Rail / Channel Track
+          const railGrad = ctx.createLinearGradient(startX, baseY, endX, baseY);
+          railGrad.addColorStop(0, beam.color1);
+          railGrad.addColorStop(0.4, beam.color2);
+          railGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
           ctx.beginPath();
-          const step = 6;
-          for (let x = startX; x <= endX; x += step) {
-            const dist = x - startX;
-            const waveY = Math.sin(dist * beam.waveFreq + time * beam.speed + beam.phase) * beam.waveAmp;
-            const y = baseY + waveY;
-            if (x === startX) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-
-          // Laser Gradient
-          const grad = ctx.createLinearGradient(startX, baseY, endX, baseY);
-          grad.addColorStop(0, beam.color1);
-          grad.addColorStop(0.5, beam.color2);
-          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = beam.thickness;
+          ctx.moveTo(startX, baseY);
+          ctx.lineTo(endX, baseY);
+          ctx.strokeStyle = railGrad;
+          ctx.lineWidth = Math.max(1, beam.thickness * 0.45);
           ctx.lineCap = 'round';
-          ctx.shadowBlur = 18;
+          ctx.globalAlpha = 0.35;
+          ctx.shadowBlur = 8;
           ctx.shadowColor = beam.glowColor;
           ctx.stroke();
 
-          // Photon Comet Head
-          const cometDist = beam.cometProgress * beam.baseLength;
-          const cometX = startX + cometDist;
-          const cometWaveY = Math.sin(cometDist * beam.waveFreq + time * beam.speed + beam.phase) * beam.waveAmp;
-          const cometY = baseY + cometWaveY;
-
-          // Photon Core
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowBlur = 22;
-          ctx.shadowColor = '#ffffff';
+          // B. High-Speed Straight Animated Dash Stream (Moving Horizontally Right)
           ctx.beginPath();
-          ctx.arc(cometX, cometY, beam.thickness * 1.3, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Photon Corona Glow
-          ctx.fillStyle = beam.color1;
-          ctx.shadowBlur = 26;
+          ctx.moveTo(startX, baseY);
+          ctx.lineTo(endX, baseY);
+          ctx.strokeStyle = railGrad;
+          ctx.lineWidth = beam.thickness * 0.75;
+          ctx.globalAlpha = 0.5;
+          ctx.setLineDash([22, 16]);
+          ctx.lineDashOffset = -time * beam.speed * 45;
+          ctx.shadowBlur = 14;
           ctx.shadowColor = beam.glowColor;
-          ctx.beginPath();
-          ctx.arc(cometX, cometY, beam.thickness * 2.2, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 1.0;
+
+          // C. Primary Blazing Straight Laser Streak Packet
+          const travelSpan = beam.baseLength + beam.streakLength;
+          const distMoved = beam.cometProgress * travelSpan;
+          const headX = startX + distMoved - beam.streakLength;
+          const tailX = Math.max(startX, headX - beam.streakLength);
+
+          if (headX > startX - 50 && tailX < endX + 50) {
+            const clampHeadX = Math.min(endX, Math.max(startX, headX));
+            const clampTailX = Math.min(endX, Math.max(startX, tailX));
+
+            if (clampHeadX > clampTailX) {
+              const streakGrad = ctx.createLinearGradient(clampTailX, baseY, clampHeadX, baseY);
+              streakGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+              streakGrad.addColorStop(0.3, beam.color2);
+              streakGrad.addColorStop(0.85, beam.color1);
+              streakGrad.addColorStop(1, '#ffffff');
+
+              ctx.beginPath();
+              ctx.moveTo(clampTailX, baseY);
+              ctx.lineTo(clampHeadX, baseY);
+              ctx.strokeStyle = streakGrad;
+              ctx.lineWidth = beam.thickness;
+              ctx.lineCap = 'round';
+              ctx.shadowBlur = 26;
+              ctx.shadowColor = beam.glowColor;
+              ctx.stroke();
+
+              // High-Intensity Traveling Photon Comet Head
+              if (clampHeadX > startX && clampHeadX < endX) {
+                // Outer Corona Glow
+                ctx.fillStyle = beam.color1;
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = beam.glowColor;
+                ctx.beginPath();
+                ctx.arc(clampHeadX, baseY, beam.thickness * 2.4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ultra-Bright White Photon Core
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(clampHeadX, baseY, beam.thickness * 1.3, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            }
+          }
+
+          // D. Secondary Staggered Straight Streak Packet (Offset 0.5 for continuous flow)
+          const p2 = (beam.cometProgress + 0.52) % 1;
+          const dist2 = p2 * travelSpan;
+          const head2X = startX + dist2 - beam.streakLength;
+          const tail2X = Math.max(startX, head2X - beam.streakLength * 0.7);
+
+          if (head2X > startX && tail2X < endX) {
+            const streak2Grad = ctx.createLinearGradient(tail2X, baseY, head2X, baseY);
+            streak2Grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            streak2Grad.addColorStop(0.5, beam.color2);
+            streak2Grad.addColorStop(1, beam.color1);
+
+            ctx.beginPath();
+            ctx.moveTo(tail2X, baseY);
+            ctx.lineTo(head2X, baseY);
+            ctx.strokeStyle = streak2Grad;
+            ctx.lineWidth = beam.thickness * 0.75;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = beam.glowColor;
+            ctx.stroke();
+          }
         }
 
         ctx.restore();
