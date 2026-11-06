@@ -27,7 +27,7 @@ const DEMO_FALLBACK_ACCOUNTS: Record<
   'admin@p8-test.com': {
     id: '00000000-0000-0000-0000-000000000002',
     email: 'admin@p8-test.com',
-    full_name: 'Alice Company Admin',
+    full_name: 'Harish Kumar',
     is_super_admin: false,
     role: 'COMPANY_ADMIN',
     companySlug: 'p8-test-org',
@@ -36,7 +36,7 @@ const DEMO_FALLBACK_ACCOUNTS: Record<
   'depthead@p8-test.com': {
     id: '00000000-0000-0000-0000-000000000003',
     email: 'depthead@p8-test.com',
-    full_name: 'Bob Department Head',
+    full_name: 'Praveen Raj',
     is_super_admin: false,
     role: 'DEPARTMENT_HEAD',
     companySlug: 'p8-test-org',
@@ -45,7 +45,7 @@ const DEMO_FALLBACK_ACCOUNTS: Record<
   'employee@p8-test.com': {
     id: '00000000-0000-0000-0000-000000000004',
     email: 'employee@p8-test.com',
-    full_name: 'Charlie Team Employee',
+    full_name: 'Suriya Prakash',
     is_super_admin: false,
     role: 'EMPLOYEE',
     companySlug: 'p8-test-org',
@@ -99,7 +99,7 @@ const DEMO_FALLBACK_ACCOUNTS: Record<
   'emp-b-test@adsetsproflow.com': {
     id: 'abe0e701-d557-4899-afd4-f4e9ce3b2b14',
     email: 'emp-b-test@adsetsproflow.com',
-    full_name: 'Employee Bob Designer',
+    full_name: 'Karthik Raja',
     is_super_admin: false,
     role: 'EMPLOYEE',
     companySlug: 'p8-test-org',
