@@ -645,63 +645,63 @@ export default function WorkspaceDashboardPage() {
         {/* Lifecycle Phase Step Badges */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* Phase 1: Assigned */}
-          <div className="p-3 rounded-xl bg-purple-50/50 dark:bg-zinc-950/60 border border-purple-200 dark:border-purple-500/20 hover:border-purple-400 dark:hover:border-purple-500/40 transition-colors space-y-1">
+          <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/30 hover:border-purple-400 dark:hover:border-purple-400/50 transition-colors space-y-1">
             <div className="flex items-center justify-between text-purple-700 dark:text-purple-300 text-[11px] font-bold uppercase tracking-wider">
               <span>1. Assigned</span>
               <span className="w-2 h-2 rounded-full bg-purple-500 dark:bg-purple-400"></span>
             </div>
             <p className="text-2xl font-black text-zinc-900 dark:text-white">{lifecycle.assigned}</p>
-            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Ready for pickup</p>
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">Ready for pickup</p>
           </div>
 
           {/* Phase 2: In Progress */}
-          <div className="p-3 rounded-xl bg-sky-50/50 dark:bg-zinc-950/60 border border-sky-200 dark:border-sky-500/20 hover:border-sky-400 dark:hover:border-sky-500/40 transition-colors space-y-1">
+          <div className="p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-500/30 hover:border-sky-400 dark:hover:border-sky-400/50 transition-colors space-y-1">
             <div className="flex items-center justify-between text-sky-700 dark:text-sky-300 text-[11px] font-bold uppercase tracking-wider">
               <span>2. In Progress</span>
               <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400"></span>
             </div>
             <p className="text-2xl font-black text-zinc-900 dark:text-white">{lifecycle.in_progress}</p>
-            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Active execution</p>
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">Active execution</p>
           </div>
 
           {/* Phase 3: Under Review */}
-          <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-zinc-950/60 border border-amber-200 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-500/40 transition-colors space-y-1">
+          <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/30 hover:border-amber-400 dark:hover:border-amber-400/50 transition-colors space-y-1">
             <div className="flex items-center justify-between text-amber-700 dark:text-amber-300 text-[11px] font-bold uppercase tracking-wider">
               <span>3. In Review</span>
               <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400"></span>
             </div>
-            <p className="text-2xl font-black text-amber-600 dark:text-amber-300">{lifecycle.submitted_for_review}</p>
-            <p className="text-[10px] text-amber-700/80 dark:text-amber-400/70">Awaiting sign-off</p>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{lifecycle.submitted_for_review}</p>
+            <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 font-medium">Awaiting sign-off</p>
           </div>
 
           {/* Phase 4: Revision Required */}
-          <div className="p-3 rounded-xl bg-orange-50/50 dark:bg-zinc-950/60 border border-orange-200 dark:border-orange-500/20 hover:border-orange-400 dark:hover:border-orange-500/40 transition-colors space-y-1">
+          <div className="p-3 rounded-xl bg-orange-50/70 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-500/30 hover:border-orange-400 dark:hover:border-orange-400/50 transition-colors space-y-1">
             <div className="flex items-center justify-between text-orange-700 dark:text-orange-300 text-[11px] font-bold uppercase tracking-wider">
               <span>4. In Revision</span>
               <span className="w-2 h-2 rounded-full bg-orange-500 dark:bg-orange-400"></span>
             </div>
             <p className="text-2xl font-black text-zinc-900 dark:text-white">{lifecycle.revision_required}</p>
-            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Feedback returned</p>
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">Feedback returned</p>
           </div>
 
           {/* Phase 5: Approved Deliverable */}
-          <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-zinc-950/60 border border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/40 transition-colors space-y-1">
+          <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/30 hover:border-emerald-400 dark:hover:border-emerald-400/50 transition-colors space-y-1">
             <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-300 text-[11px] font-bold uppercase tracking-wider">
               <span>5. Approved</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
             </div>
             <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{lifecycle.approved}</p>
-            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Accepted outputs</p>
+            <p className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">Accepted outputs</p>
           </div>
 
           {/* Bottleneck Alert: Overdue & Blocked */}
-          <div className="p-3 rounded-xl bg-rose-50/50 dark:bg-zinc-950/60 border border-rose-200 dark:border-rose-500/20 hover:border-rose-400 dark:hover:border-rose-500/40 transition-colors space-y-1">
+          <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-500/30 hover:border-rose-400 dark:hover:border-rose-400/50 transition-colors space-y-1">
             <div className="flex items-center justify-between text-rose-700 dark:text-rose-300 text-[11px] font-bold uppercase tracking-wider">
               <span>Escalation</span>
               <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
             </div>
             <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{lifecycle.overdue}</p>
-            <p className="text-[10px] text-rose-700/80 dark:text-rose-300/80">Overdue deadlines</p>
+            <p className="text-[11px] text-rose-700/90 dark:text-rose-300/90 font-medium">Overdue deadlines</p>
           </div>
         </div>
 
@@ -753,63 +753,63 @@ export default function WorkspaceDashboardPage() {
       {/* ROW 1: Primary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Employees */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-indigo-950/40 dark:via-zinc-900/60 dark:to-zinc-900/80 border border-indigo-200 dark:border-indigo-500/20 space-y-2 relative overflow-hidden group hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all shadow-sm dark:shadow-none">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-b dark:from-zinc-900/95 dark:to-[#0b101b] border border-indigo-200 dark:border-indigo-500/30 hover:border-indigo-400 dark:hover:border-indigo-500/60 transition-all shadow-sm dark:shadow-lg dark:shadow-indigo-500/5 space-y-2 relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
               Total Employees
             </span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/15 border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <p className="text-3xl font-black text-zinc-900 dark:text-white">{kpis.totalEmployees}</p>
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Active company staff</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">Active company staff</p>
         </div>
 
         {/* Total Departments */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-cyan-950/40 dark:via-zinc-900/60 dark:to-zinc-900/80 border border-cyan-200 dark:border-cyan-500/20 space-y-2 relative overflow-hidden group hover:border-cyan-400 dark:hover:border-cyan-500/40 transition-all shadow-sm dark:shadow-none">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-b dark:from-zinc-900/95 dark:to-[#0b101b] border border-cyan-200 dark:border-cyan-500/30 hover:border-cyan-400 dark:hover:border-cyan-500/60 transition-all shadow-sm dark:shadow-lg dark:shadow-cyan-500/5 space-y-2 relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-300">
+            <span className="text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400">
               Total Departments
             </span>
-            <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-500/15 border border-cyan-200 dark:border-cyan-500/30 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
               <Building className="w-4 h-4" />
             </div>
           </div>
           <p className="text-3xl font-black text-zinc-900 dark:text-white">{kpis.totalDepartments}</p>
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Active divisions</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">Active divisions</p>
         </div>
 
         {/* Active Projects */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-emerald-950/40 dark:via-zinc-900/60 dark:to-zinc-900/80 border border-emerald-200 dark:border-emerald-500/20 space-y-2 relative overflow-hidden group hover:border-emerald-400 dark:hover:border-emerald-500/40 transition-all shadow-sm dark:shadow-none">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-b dark:from-zinc-900/95 dark:to-[#0b101b] border border-emerald-200 dark:border-emerald-500/30 hover:border-emerald-400 dark:hover:border-emerald-500/60 transition-all shadow-sm dark:shadow-lg dark:shadow-emerald-500/5 space-y-2 relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
               Active Projects
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <Briefcase className="w-4 h-4" />
             </div>
           </div>
           <p className="text-3xl font-black text-zinc-900 dark:text-white">{kpis.activeProjects}</p>
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">In-flight initiatives</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">In-flight initiatives</p>
         </div>
 
         {/* Tasks Awaiting Review */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-amber-950/40 dark:via-zinc-900/60 dark:to-zinc-900/80 border border-amber-200 dark:border-amber-500/30 space-y-2 relative overflow-hidden group hover:border-amber-400 dark:hover:border-amber-500/50 transition-all shadow-sm dark:shadow-none">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-b dark:from-zinc-900/95 dark:to-[#0b101b] border border-amber-200 dark:border-amber-500/40 hover:border-amber-400 dark:hover:border-amber-500/70 transition-all shadow-sm dark:shadow-lg dark:shadow-amber-500/5 space-y-2 relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
               Awaiting Review
             </span>
-            <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-black text-amber-600 dark:text-amber-300">{kpis.tasksAwaitingReview}</p>
+          <p className="text-3xl font-black text-amber-600 dark:text-amber-400">{kpis.tasksAwaitingReview}</p>
           <Link
             href={`/c/${companySlug}/review`}
-            className="text-[11px] text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-semibold inline-flex items-center gap-1"
+            className="text-xs text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 font-semibold inline-flex items-center gap-1 transition-colors"
           >
-            Review Queue <ArrowUpRight className="w-3 h-3" />
+            Review Queue <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
@@ -817,17 +817,17 @@ export default function WorkspaceDashboardPage() {
       {/* ROW 2: Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Overdue Tasks */}
-        <div className="p-5 rounded-2xl bg-red-50/60 dark:bg-gradient-to-br dark:from-red-950/50 dark:to-red-900/20 border-2 border-red-300 dark:border-red-500/40 space-y-2 relative shadow-sm dark:shadow-lg dark:shadow-red-500/5">
+        <div className="p-5 rounded-2xl bg-red-50/60 dark:bg-gradient-to-b dark:from-red-950/30 dark:to-[#0b101b] border-2 border-red-300 dark:border-red-500/40 space-y-2 relative shadow-sm dark:shadow-lg dark:shadow-red-500/10">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-300">Overdue Tasks</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-400">Overdue Tasks</span>
             <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 animate-pulse" />
           </div>
           <p className="text-3xl font-black text-red-600 dark:text-red-400">{kpis.overdueTasks}</p>
-          <p className="text-[11px] text-red-700/80 dark:text-red-300/80">Requires escalation</p>
+          <p className="text-xs text-red-700/90 dark:text-red-300 font-medium">Requires escalation</p>
         </div>
 
         {/* In Progress Tasks */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 space-y-2 shadow-sm dark:shadow-none">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-b dark:from-zinc-900/95 dark:to-[#0b101b] border border-zinc-200 dark:border-sky-500/30 hover:dark:border-sky-500/60 space-y-2 shadow-sm dark:shadow-lg dark:shadow-sky-500/5 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400">
               In Progress
@@ -835,11 +835,11 @@ export default function WorkspaceDashboardPage() {
             <Clock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
           </div>
           <p className="text-3xl font-black text-zinc-900 dark:text-white">{kpis.inProgressTasks}</p>
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Actively being worked</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">Actively being worked</p>
         </div>
 
         {/* Approved This Month */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 space-y-2 shadow-sm dark:shadow-none">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-b dark:from-zinc-900/95 dark:to-[#0b101b] border border-zinc-200 dark:border-emerald-500/30 hover:dark:border-emerald-500/60 space-y-2 shadow-sm dark:shadow-lg dark:shadow-emerald-500/5 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
               Approved This Month
@@ -847,11 +847,11 @@ export default function WorkspaceDashboardPage() {
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{kpis.approvedThisMonth}</p>
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Accepted deliverables</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">Accepted deliverables</p>
         </div>
 
         {/* Upcoming Deadlines (Next 7 days) */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 space-y-2 shadow-sm dark:shadow-none">
+        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-b dark:from-zinc-900/95 dark:to-[#0b101b] border border-zinc-200 dark:border-purple-500/30 hover:dark:border-purple-500/60 space-y-2 shadow-sm dark:shadow-lg dark:shadow-purple-500/5 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">
               Upcoming Deadlines
@@ -859,12 +859,12 @@ export default function WorkspaceDashboardPage() {
             <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           </div>
           <p className="text-3xl font-black text-purple-700 dark:text-purple-300">{kpis.upcomingDeadlines}</p>
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Due within next 7 days</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">Due within next 7 days</p>
         </div>
       </div>
 
       {/* SCALABLE EMPLOYEE WORKLOAD & LIFECYCLE SECTION (SCALES TO 50-100+ EMPLOYEES) */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 space-y-6 shadow-sm dark:shadow-xl">
+      <div className="p-6 rounded-2xl bg-white dark:bg-[#0d131f] border border-zinc-200 dark:border-zinc-800/80 space-y-6 shadow-sm dark:shadow-xl">
         {/* Header & View Mode Switcher */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
@@ -940,16 +940,16 @@ export default function WorkspaceDashboardPage() {
               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                 selectedStatusFilter === 'overloaded'
                   ? 'bg-rose-500/20 border-rose-500/60 ring-1 ring-rose-500/50'
-                  : 'bg-zinc-950/50 border-zinc-800 hover:border-zinc-700'
+                  : 'bg-zinc-50 dark:bg-zinc-950/70 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
-              <div className="flex items-center justify-between text-rose-400 text-[11px] font-semibold">
+              <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 text-[11px] font-semibold">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-rose-500"></span> Overloaded
                 </span>
-                <span className="font-mono text-[10px] text-zinc-500">&gt; 7 tasks</span>
+                <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">&gt; 7 tasks</span>
               </div>
-              <p className="text-xl font-black text-white mt-1">{capacityCounts.overloaded}</p>
+              <p className="text-xl font-black text-zinc-900 dark:text-white mt-1">{capacityCounts.overloaded}</p>
             </button>
 
             <button
@@ -957,16 +957,16 @@ export default function WorkspaceDashboardPage() {
               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                 selectedStatusFilter === 'balanced'
                   ? 'bg-emerald-500/20 border-emerald-500/60 ring-1 ring-emerald-500/50'
-                  : 'bg-zinc-950/50 border-zinc-800 hover:border-zinc-700'
+                  : 'bg-zinc-50 dark:bg-zinc-950/70 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
-              <div className="flex items-center justify-between text-emerald-400 text-[11px] font-semibold">
+              <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Balanced
                 </span>
-                <span className="font-mono text-[10px] text-zinc-500">3-7 tasks</span>
+                <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">3-7 tasks</span>
               </div>
-              <p className="text-xl font-black text-white mt-1">{capacityCounts.balanced}</p>
+              <p className="text-xl font-black text-zinc-900 dark:text-white mt-1">{capacityCounts.balanced}</p>
             </button>
 
             <button
@@ -974,16 +974,16 @@ export default function WorkspaceDashboardPage() {
               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                 selectedStatusFilter === 'available'
                   ? 'bg-sky-500/20 border-sky-500/60 ring-1 ring-sky-500/50'
-                  : 'bg-zinc-950/50 border-zinc-800 hover:border-zinc-700'
+                  : 'bg-zinc-50 dark:bg-zinc-950/70 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
-              <div className="flex items-center justify-between text-sky-400 text-[11px] font-semibold">
+              <div className="flex items-center justify-between text-sky-600 dark:text-sky-400 text-[11px] font-semibold">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-sky-500"></span> Available
                 </span>
-                <span className="font-mono text-[10px] text-zinc-500">&lt; 3 tasks</span>
+                <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">&lt; 3 tasks</span>
               </div>
-              <p className="text-xl font-black text-white mt-1">{capacityCounts.available}</p>
+              <p className="text-xl font-black text-zinc-900 dark:text-white mt-1">{capacityCounts.available}</p>
             </button>
 
             <button
@@ -991,16 +991,16 @@ export default function WorkspaceDashboardPage() {
               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                 selectedStatusFilter === 'overdue'
                   ? 'bg-amber-500/20 border-amber-500/60 ring-1 ring-amber-500/50'
-                  : 'bg-zinc-950/50 border-zinc-800 hover:border-zinc-700'
+                  : 'bg-zinc-50 dark:bg-zinc-950/70 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
-              <div className="flex items-center justify-between text-amber-400 text-[11px] font-semibold">
+              <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 text-[11px] font-semibold">
                 <span className="flex items-center gap-1.5">
-                  <AlertTriangle className="w-3 h-3 text-amber-400" /> Overdue Risk
+                  <AlertTriangle className="w-3 h-3 text-amber-500 dark:text-amber-400" /> Overdue Risk
                 </span>
-                <span className="font-mono text-[10px] text-zinc-500">Has Overdue</span>
+                <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">Has Overdue</span>
               </div>
-              <p className="text-xl font-black text-amber-300 mt-1">{capacityCounts.withOverdue}</p>
+              <p className="text-xl font-black text-zinc-900 dark:text-amber-300 mt-1">{capacityCounts.withOverdue}</p>
             </button>
           </div>
         )}

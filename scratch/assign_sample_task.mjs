@@ -21,7 +21,7 @@ async function run() {
   const client = new Client({ connectionString: getDbUrl(), ssl: { rejectUnauthorized: false } });
   await client.connect();
 
-  const empId = '00000000-0000-0000-0000-000000000004'; // Charlie Team Employee
+  const empId = '00000000-0000-0000-0000-000000000004'; // Suriya Prakash (Employee)
   const taskId = '53ed3fe0-305b-4928-b07b-0552114de8c6'; // Logo Vector Package
 
   const check = await client.query('SELECT id FROM public.task_assignments WHERE task_id = $1 AND employee_id = $2', [taskId, empId]);

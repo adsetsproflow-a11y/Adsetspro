@@ -1,139 +1,466 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+
+interface LaserBeam {
+  side: 'left' | 'right';
+  baseYPercent: number; // 0 - 100% of container height
+  length: number;       // length in px
+  color1: string;       // start neon color
+  color2: string;       // mid / end neon color
+  glowColor: string;    // shadow glow color
+  thickness: number;    // line thickness (px)
+  waveAmp: number;      // wave oscillation amplitude (px)
+  waveFreq: number;     // wave frequency
+  speed: number;        // wave oscillation speed
+  cometSpeed: number;   // comet head travel speed
+  cometProgress: number;// 0 - 1
+  phase: number;
+}
 
 export default function ClickUpSpeedStreaks() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let isVisible = true;
+    let time = 0;
+
+    // Handle high DPI screens
+    const handleResize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    // Pause when scrolled off screen for zero CPU usage
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isVisible = entries[0]?.isIntersecting ?? true;
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(canvas);
+
+    // ClickUp Laser Beams configuration (exact neon palette and horizontal wave flow)
+    const beams: LaserBeam[] = [
+      // === LEFT WING ===
+      {
+        side: 'left',
+        baseYPercent: 16,
+        length: 380,
+        color1: '#f43f5e',
+        color2: '#ec4899',
+        glowColor: 'rgba(236, 72, 153, 0.9)',
+        thickness: 2.5,
+        waveAmp: 9,
+        waveFreq: 0.015,
+        speed: 1.8,
+        cometSpeed: 0.007,
+        cometProgress: 0.1,
+        phase: 0.2,
+      },
+      {
+        side: 'left',
+        baseYPercent: 28,
+        length: 460,
+        color1: '#06b6d4',
+        color2: '#38bdf8',
+        glowColor: 'rgba(6, 182, 212, 0.95)',
+        thickness: 3,
+        waveAmp: 13,
+        waveFreq: 0.012,
+        speed: 1.4,
+        cometSpeed: 0.0055,
+        cometProgress: 0.55,
+        phase: 1.1,
+      },
+      {
+        side: 'left',
+        baseYPercent: 42,
+        length: 520,
+        color1: '#d946ef',
+        color2: '#8b5cf6',
+        glowColor: 'rgba(217, 70, 239, 0.9)',
+        thickness: 3.5,
+        waveAmp: 11,
+        waveFreq: 0.014,
+        speed: 2.1,
+        cometSpeed: 0.008,
+        cometProgress: 0.3,
+        phase: 2.4,
+      },
+      {
+        side: 'left',
+        baseYPercent: 55,
+        length: 420,
+        color1: '#38bdf8',
+        color2: '#6366f1',
+        glowColor: 'rgba(56, 189, 248, 0.85)',
+        thickness: 2,
+        waveAmp: 8,
+        waveFreq: 0.018,
+        speed: 1.6,
+        cometSpeed: 0.006,
+        cometProgress: 0.8,
+        phase: 3.2,
+      },
+      {
+        side: 'left',
+        baseYPercent: 68,
+        length: 440,
+        color1: '#f59e0b',
+        color2: '#fb923c',
+        glowColor: 'rgba(245, 158, 11, 0.9)',
+        thickness: 2.5,
+        waveAmp: 10,
+        waveFreq: 0.013,
+        speed: 1.9,
+        cometSpeed: 0.0075,
+        cometProgress: 0.45,
+        phase: 4.0,
+      },
+      {
+        side: 'left',
+        baseYPercent: 82,
+        length: 360,
+        color1: '#8b5cf6',
+        color2: '#a855f7',
+        glowColor: 'rgba(139, 92, 246, 0.85)',
+        thickness: 2,
+        waveAmp: 12,
+        waveFreq: 0.016,
+        speed: 1.5,
+        cometSpeed: 0.005,
+        cometProgress: 0.7,
+        phase: 5.1,
+      },
+
+      // === RIGHT WING ===
+      {
+        side: 'right',
+        baseYPercent: 18,
+        length: 400,
+        color1: '#06b6d4',
+        color2: '#10b981',
+        glowColor: 'rgba(16, 185, 129, 0.9)',
+        thickness: 2.5,
+        waveAmp: 10,
+        waveFreq: 0.014,
+        speed: 1.6,
+        cometSpeed: 0.0065,
+        cometProgress: 0.25,
+        phase: 0.8,
+      },
+      {
+        side: 'right',
+        baseYPercent: 32,
+        length: 490,
+        color1: '#ec4899',
+        color2: '#f43f5e',
+        glowColor: 'rgba(236, 72, 153, 0.95)',
+        thickness: 3.5,
+        waveAmp: 14,
+        waveFreq: 0.011,
+        speed: 2.2,
+        cometSpeed: 0.0085,
+        cometProgress: 0.65,
+        phase: 1.9,
+      },
+      {
+        side: 'right',
+        baseYPercent: 46,
+        length: 530,
+        color1: '#c084fc',
+        color2: '#8b5cf6',
+        glowColor: 'rgba(192, 132, 252, 0.9)',
+        thickness: 3,
+        waveAmp: 11,
+        waveFreq: 0.015,
+        speed: 1.7,
+        cometSpeed: 0.007,
+        cometProgress: 0.15,
+        phase: 3.0,
+      },
+      {
+        side: 'right',
+        baseYPercent: 58,
+        length: 430,
+        color1: '#38bdf8',
+        color2: '#0ea5e9',
+        glowColor: 'rgba(56, 189, 248, 0.85)',
+        thickness: 2,
+        waveAmp: 9,
+        waveFreq: 0.017,
+        speed: 1.5,
+        cometSpeed: 0.0055,
+        cometProgress: 0.85,
+        phase: 4.2,
+      },
+      {
+        side: 'right',
+        baseYPercent: 72,
+        length: 450,
+        color1: '#fb923c',
+        color2: '#f59e0b',
+        glowColor: 'rgba(251, 146, 60, 0.9)',
+        thickness: 2.5,
+        waveAmp: 12,
+        waveFreq: 0.013,
+        speed: 2.0,
+        cometSpeed: 0.0075,
+        cometProgress: 0.4,
+        phase: 5.3,
+      },
+      {
+        side: 'right',
+        baseYPercent: 86,
+        length: 370,
+        color1: '#d946ef',
+        color2: '#ec4899',
+        glowColor: 'rgba(217, 70, 239, 0.85)',
+        thickness: 2,
+        waveAmp: 10,
+        waveFreq: 0.016,
+        speed: 1.4,
+        cometSpeed: 0.005,
+        cometProgress: 0.9,
+        phase: 6.1,
+      },
+    ];
+
+    // Cosmic floating star dust
+    const stars = Array.from({ length: 28 }, (_, i) => ({
+      side: i % 2 === 0 ? 'left' : 'right',
+      xRatio: Math.random() * 0.9,
+      yRatio: 0.1 + Math.random() * 0.8,
+      size: 1 + Math.random() * 2,
+      speed: 0.3 + Math.random() * 0.7,
+      baseAlpha: 0.3 + Math.random() * 0.7,
+      blinkRate: 1.5 + Math.random() * 2.5,
+    }));
+
+    const render = () => {
+      if (!isVisible) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      time += 0.02;
+
+      // Accurately calculate the central preview window boundaries inside the canvas
+      // The preview window is centered with max-width 1152px (max-w-6xl)
+      const windowWidth = Math.min(width * 0.76, 1152);
+      const leftWindowEdge = Math.max(80, (width - windowWidth) / 2);
+      const rightWindowEdge = Math.min(width - 80, (width + windowWidth) / 2);
+
+      // 1. Draw Star Dust
+      stars.forEach((star) => {
+        const x =
+          star.side === 'left'
+            ? star.xRatio * leftWindowEdge
+            : rightWindowEdge + star.xRatio * (width - rightWindowEdge);
+        const yOffset = Math.sin(time * star.blinkRate + star.xRatio * 10) * 6;
+        const y = star.yRatio * height + yOffset;
+        const alpha = Math.max(0, Math.min(1, star.baseAlpha + Math.sin(time * star.blinkRate) * 0.3));
+
+        ctx.save();
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x, y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 2. Draw Flowing Laser Waves & Stream Beams
+      beams.forEach((beam) => {
+        const baseY = (beam.baseYPercent / 100) * height;
+
+        // Animate comet progress (waves continuously flow like warp speed)
+        beam.cometProgress = (beam.cometProgress + beam.cometSpeed) % 1;
+
+        ctx.save();
+
+        if (beam.side === 'left') {
+          // Left Side: Stream flows from behind the window (leftWindowEdge) towards outer left edge
+          const startX = leftWindowEdge + 40;
+          const endX = Math.max(0, startX - beam.length);
+
+          // Build undulating sine wave path
+          ctx.beginPath();
+          const step = 6;
+          for (let x = startX; x >= endX; x -= step) {
+            const distFromWindow = startX - x;
+            // Sine wave formula: combines two frequencies for natural fluid wave movement
+            const waveY =
+              Math.sin(distFromWindow * beam.waveFreq + time * beam.speed + beam.phase) * beam.waveAmp +
+              Math.cos(distFromWindow * (beam.waveFreq * 0.6) - time * (beam.speed * 0.5)) * (beam.waveAmp * 0.4);
+
+            const currY = baseY + waveY;
+            if (x === startX) {
+              ctx.moveTo(x, currY);
+            } else {
+              ctx.lineTo(x, currY);
+            }
+          }
+
+          // Glowing laser gradient (fades to transparent at outer edge)
+          const grad = ctx.createLinearGradient(startX, baseY, endX, baseY);
+          grad.addColorStop(0, beam.color1);
+          grad.addColorStop(0.5, beam.color2);
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = beam.thickness;
+          ctx.lineCap = 'round';
+          ctx.shadowBlur = 18;
+          ctx.shadowColor = beam.glowColor;
+          ctx.stroke();
+
+          // Luminous Comet Photon traveling along the wave
+          const cometDist = beam.cometProgress * beam.length;
+          const cometX = startX - cometDist;
+          const cometWaveY =
+            Math.sin(cometDist * beam.waveFreq + time * beam.speed + beam.phase) * beam.waveAmp +
+            Math.cos(cometDist * (beam.waveFreq * 0.6) - time * (beam.speed * 0.5)) * (beam.waveAmp * 0.4);
+          const cometY = baseY + cometWaveY;
+
+          // Photon head
+          ctx.shadowBlur = 22;
+          ctx.shadowColor = '#ffffff';
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cometX, cometY, beam.thickness * 1.3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Photon outer corona aura
+          ctx.shadowBlur = 30;
+          ctx.shadowColor = beam.glowColor;
+          ctx.fillStyle = beam.color1;
+          ctx.beginPath();
+          ctx.arc(cometX, cometY, beam.thickness * 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Right Side: Stream flows from behind the window (rightWindowEdge) towards outer right edge
+          const startX = rightWindowEdge - 40;
+          const endX = Math.min(width, startX + beam.length);
+
+          // Build undulating sine wave path
+          ctx.beginPath();
+          const step = 6;
+          for (let x = startX; x <= endX; x += step) {
+            const distFromWindow = x - startX;
+            // Sine wave formula: combines two frequencies for natural fluid wave movement
+            const waveY =
+              Math.sin(distFromWindow * beam.waveFreq + time * beam.speed + beam.phase) * beam.waveAmp +
+              Math.cos(distFromWindow * (beam.waveFreq * 0.6) - time * (beam.speed * 0.5)) * (beam.waveAmp * 0.4);
+
+            const currY = baseY + waveY;
+            if (x === startX) {
+              ctx.moveTo(x, currY);
+            } else {
+              ctx.lineTo(x, currY);
+            }
+          }
+
+          // Glowing laser gradient (fades to transparent at outer edge)
+          const grad = ctx.createLinearGradient(startX, baseY, endX, baseY);
+          grad.addColorStop(0, beam.color1);
+          grad.addColorStop(0.5, beam.color2);
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = beam.thickness;
+          ctx.lineCap = 'round';
+          ctx.shadowBlur = 18;
+          ctx.shadowColor = beam.glowColor;
+          ctx.stroke();
+
+          // Luminous Comet Photon traveling along the wave
+          const cometDist = beam.cometProgress * beam.length;
+          const cometX = startX + cometDist;
+          const cometWaveY =
+            Math.sin(cometDist * beam.waveFreq + time * beam.speed + beam.phase) * beam.waveAmp +
+            Math.cos(cometDist * (beam.waveFreq * 0.6) - time * (beam.speed * 0.5)) * (beam.waveAmp * 0.4);
+          const cometY = baseY + cometWaveY;
+
+          // Photon head
+          ctx.shadowBlur = 22;
+          ctx.shadowColor = '#ffffff';
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cometX, cometY, beam.thickness * 1.3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Photon outer corona aura
+          ctx.shadowBlur = 30;
+          ctx.shadowColor = beam.glowColor;
+          ctx.fillStyle = beam.color1;
+          ctx.beginPath();
+          ctx.arc(cometX, cometY, beam.thickness * 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      });
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
   return (
     <div
       aria-hidden="true"
-      className="absolute inset-0 -inset-x-12 sm:-inset-x-24 md:-inset-x-44 lg:-inset-x-64 pointer-events-none overflow-visible select-none -z-10"
+      className="absolute inset-0 -inset-x-16 sm:-inset-x-28 md:-inset-x-48 lg:-inset-x-72 -inset-y-12 sm:-inset-y-16 pointer-events-none overflow-visible select-none -z-10"
     >
       {/* =====================================================================
-          1. WIDE AMBIENT COSMIC NEON BACKDROPS (BREATHING GLOWS)
+          1. WIDE COSMIC NEON AURA GLOWS (SMOOTH BREATHING AMBIENCE)
          ===================================================================== */}
-      {/* Left Ambient Aura */}
-      <div className="absolute top-1/2 -translate-y-1/2 left-0 w-[350px] sm:w-[500px] h-[300px] sm:h-[420px] bg-gradient-to-r from-indigo-600/35 via-purple-600/20 to-transparent rounded-full blur-[70px] sm:blur-[90px] animate-cosmic-aura" />
+      {/* Left Cosmic Wing Aura */}
+      <div className="absolute top-1/2 -translate-y-1/2 left-0 w-[420px] sm:w-[600px] h-[340px] sm:h-[480px] bg-gradient-to-r from-pink-600/30 via-purple-600/20 to-transparent rounded-full blur-[80px] sm:blur-[110px] animate-cosmic-aura" />
 
-      {/* Right Ambient Aura */}
-      <div className="absolute top-1/2 -translate-y-1/2 right-0 w-[350px] sm:w-[500px] h-[300px] sm:h-[420px] bg-gradient-to-l from-pink-600/35 via-purple-600/20 to-transparent rounded-full blur-[70px] sm:blur-[90px] animate-cosmic-aura" style={{ animationDelay: '2s' }} />
+      {/* Right Cosmic Wing Aura */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 right-0 w-[420px] sm:w-[600px] h-[340px] sm:h-[480px] bg-gradient-to-l from-cyan-600/30 via-indigo-600/20 to-transparent rounded-full blur-[80px] sm:blur-[110px] animate-cosmic-aura"
+        style={{ animationDelay: '2.5s' }}
+      />
 
-      {/* Top Center Radiant Crown Glow */}
-      <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-[400px] sm:w-[700px] h-[140px] bg-gradient-to-b from-fuchsia-500/25 via-indigo-500/15 to-transparent rounded-full blur-[55px]" />
+      {/* Top Radiant Laser Crown */}
+      <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[500px] sm:w-[800px] h-[160px] bg-gradient-to-b from-fuchsia-500/25 via-indigo-500/15 to-transparent rounded-full blur-[60px]" />
 
       {/* =====================================================================
-          2. LEFT WING: HORIZONTAL SPEED STREAKS & LASER TRAILS
+          2. 60FPS FLUID CANVAS SINE WAVES & LASER STREAMS
          ===================================================================== */}
-      <div className="absolute inset-y-0 left-0 w-1/2 overflow-visible">
-        {/* Streak L1: Neon Violet / Magenta (Top 14%) */}
-        <div
-          className="absolute top-[14%] right-[92%] h-[2px] w-48 sm:w-72 md:w-96 rounded-full bg-gradient-to-l from-purple-400 via-pink-500 to-transparent shadow-[0_0_16px_#ec4899] animate-streak-left-fast"
-        >
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-pink-200 shadow-[0_0_8px_#ec4899]" />
-        </div>
-
-        {/* Streak L2: Cyan / Electric Blue Laser (Top 26%) */}
-        <div
-          className="absolute top-[26%] right-[88%] h-[2.5px] w-60 sm:w-88 md:w-[440px] rounded-full bg-gradient-to-l from-cyan-300 via-sky-500 to-transparent shadow-[0_0_18px_#06b6d4] animate-streak-left-slow"
-        >
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-cyan-100 shadow-[0_0_12px_#38bdf8]" />
-        </div>
-
-        {/* Streak L3: Ultra-Intense Fuchsia / Purple Beam (Top 38%) */}
-        <div
-          className="absolute top-[38%] right-[94%] h-[3px] w-72 sm:w-96 md:w-[500px] rounded-full bg-gradient-to-l from-fuchsia-400 via-purple-600 to-transparent shadow-[0_0_24px_#d946ef] animate-streak-left-fast"
-          style={{ animationDelay: '0.4s' }}
-        >
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-fuchsia-200 shadow-[0_0_14px_#f43f5e]" />
-        </div>
-
-        {/* Streak L4: Fine Electric Sky Needle (Top 52%) */}
-        <div
-          className="absolute top-[52%] right-[90%] h-[1.5px] w-52 sm:w-80 md:w-96 rounded-full bg-gradient-to-l from-sky-400 via-indigo-500 to-transparent shadow-[0_0_14px_#38bdf8] animate-streak-left-slow"
-          style={{ animationDelay: '1.2s' }}
-        />
-
-        {/* Streak L5: Warm Amber / Rose Streak (Top 66%) */}
-        <div
-          className="absolute top-[66%] right-[93%] h-[2.5px] w-64 sm:w-84 md:w-[420px] rounded-full bg-gradient-to-l from-rose-400 via-amber-500 to-transparent shadow-[0_0_18px_#f43f5e] animate-streak-left-fast"
-          style={{ animationDelay: '0.8s' }}
-        >
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-amber-100 shadow-[0_0_10px_#f59e0b]" />
-        </div>
-
-        {/* Streak L6: Deep Indigo Cosmic Ray (Top 80%) */}
-        <div
-          className="absolute top-[80%] right-[89%] h-[2px] w-44 sm:w-64 md:w-80 rounded-full bg-gradient-to-l from-indigo-400 via-purple-600 to-transparent shadow-[0_0_14px_#818cf8] animate-streak-left-slow"
-          style={{ animationDelay: '1.5s' }}
-        />
-
-        {/* Floating Space Warp Particle 1 */}
-        <div
-          className="absolute top-[32%] right-[85%] w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#ffffff] animate-particle-left"
-        />
-        {/* Floating Space Warp Particle 2 */}
-        <div
-          className="absolute top-[60%] right-[87%] w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_10px_#38bdf8] animate-particle-left"
-          style={{ animationDelay: '1.4s' }}
-        />
-      </div>
-
-      {/* =====================================================================
-          3. RIGHT WING: HORIZONTAL SPEED STREAKS & LASER TRAILS
-         ===================================================================== */}
-      <div className="absolute inset-y-0 right-0 w-1/2 overflow-visible">
-        {/* Streak R1: Cyan / Emerald Beam (Top 16%) */}
-        <div
-          className="absolute top-[16%] left-[91%] h-[2px] w-52 sm:w-76 md:w-96 rounded-full bg-gradient-to-r from-cyan-400 via-emerald-400 to-transparent shadow-[0_0_16px_#10b981] animate-streak-right-fast"
-        >
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-emerald-100 shadow-[0_0_8px_#10b981]" />
-        </div>
-
-        {/* Streak R2: Neon Pink / Magenta Streak (Top 30%) */}
-        <div
-          className="absolute top-[30%] left-[88%] h-[2.5px] w-64 sm:w-96 md:w-[460px] rounded-full bg-gradient-to-r from-pink-400 via-fuchsia-600 to-transparent shadow-[0_0_20px_#ec4899] animate-streak-right-slow"
-          style={{ animationDelay: '0.3s' }}
-        >
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-pink-100 shadow-[0_0_12px_#ec4899]" />
-        </div>
-
-        {/* Streak R3: Radiant Violet / Purple Laser (Top 44%) */}
-        <div
-          className="absolute top-[44%] left-[93%] h-[3px] w-72 sm:w-96 md:w-[500px] rounded-full bg-gradient-to-r from-purple-400 via-indigo-600 to-transparent shadow-[0_0_24px_#a855f7] animate-streak-right-fast"
-          style={{ animationDelay: '0.7s' }}
-        >
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-purple-100 shadow-[0_0_14px_#a855f7]" />
-        </div>
-
-        {/* Streak R4: Electric Sky Laser (Top 58%) */}
-        <div
-          className="absolute top-[58%] left-[89%] h-[1.5px] w-48 sm:w-72 md:w-[380px] rounded-full bg-gradient-to-r from-sky-400 via-cyan-500 to-transparent shadow-[0_0_14px_#0ea5e9] animate-streak-right-slow"
-          style={{ animationDelay: '1.1s' }}
-        />
-
-        {/* Streak R5: Warm Amber / Rose Streak (Top 72%) */}
-        <div
-          className="absolute top-[72%] left-[92%] h-[2.5px] w-60 sm:w-84 md:w-[420px] rounded-full bg-gradient-to-r from-amber-400 via-rose-500 to-transparent shadow-[0_0_18px_#f59e0b] animate-streak-right-fast"
-          style={{ animationDelay: '0.5s' }}
-        >
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-amber-100 shadow-[0_0_10px_#f59e0b]" />
-        </div>
-
-        {/* Streak R6: Indigo / Violet Flow (Top 85%) */}
-        <div
-          className="absolute top-[85%] left-[90%] h-[2px] w-44 sm:w-64 md:w-80 rounded-full bg-gradient-to-r from-indigo-500 via-purple-600 to-transparent shadow-[0_0_14px_#6366f1] animate-streak-right-slow"
-          style={{ animationDelay: '1.6s' }}
-        />
-
-        {/* Floating Space Warp Particle 1 */}
-        <div
-          className="absolute top-[36%] left-[86%] w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_#ffffff] animate-particle-right"
-        />
-        {/* Floating Space Warp Particle 2 */}
-        <div
-          className="absolute top-[64%] left-[88%] w-1.5 h-1.5 rounded-full bg-pink-300 shadow-[0_0_10px_#ec4899] animate-particle-right"
-          style={{ animationDelay: '1.3s' }}
-        />
-      </div>
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full block pointer-events-none"
+      />
     </div>
   );
 }
