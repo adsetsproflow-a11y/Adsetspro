@@ -63,6 +63,7 @@ import {
 import AiHolographicSides from '@/components/landing/AiHolographicSides';
 
 import ClickUpSpeedStreaks from '@/components/landing/ClickUpSpeedStreaks';
+import MagneticHeroCore from '@/components/landing/MagneticHeroCore';
 
 import ClickUpBrainSection from '@/components/landing/ClickUpBrainSection';
 
@@ -712,7 +713,7 @@ export default function HomePage() {
 
            ===================================================================== */}
 
-        <div className="mt-12 max-w-6xl mx-auto relative group px-4 sm:px-6 lg:px-8">
+        <div className="mt-12 relative group">
 
           {/* ClickUp-style Laser Speed Streaks & Cosmic Energy Trails (Left & Right Wings) */}
 
@@ -720,13 +721,11 @@ export default function HomePage() {
 
 
 
-          {/* Glowing Ambient Behind Preview */}
+          {/* Magnetic Hero Core Wrapper: 3D Orbit Rings, Particle Ribbon Flux, Tilt & Frame */}
 
-          <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-cyan-500/20 to-purple-500/20 rounded-3xl blur-2xl -z-10 transform group-hover:scale-102 transition-transform duration-500 opacity-70 dark:opacity-100" />
+          <MagneticHeroCore>
 
-
-
-          {/* Browser Window Chrome with Neon Glow Border Pulse */}
+            {/* Browser Window Chrome with Neon Glow Border Pulse */}
 
           <div className="neon-border-pulse rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-zinc-800/90 bg-white/90 dark:bg-zinc-950/90 shadow-2xl overflow-hidden backdrop-blur-xl">
 
@@ -837,6 +836,8 @@ export default function HomePage() {
             </div>
 
           </div>
+
+          </MagneticHeroCore>
 
         </div>
 
