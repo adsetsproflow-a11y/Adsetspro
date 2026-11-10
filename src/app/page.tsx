@@ -32,6 +32,7 @@ import {
 import AiHolographicSides from '@/components/landing/AiHolographicSides';
 import ClickUpSpeedStreaks from '@/components/landing/ClickUpSpeedStreaks';
 import ClickUpBrainSection from '@/components/landing/ClickUpBrainSection';
+import AiInteractiveFeaturesShowcase from '@/components/landing/AiInteractiveFeaturesShowcase';
 
 // High-performance dynamic code splitting for below-the-fold & non-critical interactive widgets
 const AiNeuralCanvas = dynamic(() => import('@/components/landing/AiNeuralCanvas'), {
@@ -292,11 +293,11 @@ export default function HomePage() {
       {/* =========================================================================
           HERO SECTION
          ========================================================================= */}
-      <section className="relative z-10 pt-14 pb-20 px-4 sm:px-6 lg:px-8 text-center overflow-hidden">
+      <section className="relative z-10 pt-14 pb-20 text-center overflow-hidden w-full">
         {/* Interactive Neural Synapse Particle Network Background */}
         <AiNeuralCanvas particleCount={50} className="opacity-70 dark:opacity-85" />
 
-        <div className="max-w-4xl mx-auto space-y-7 relative z-10">
+        <div className="max-w-4xl mx-auto space-y-7 relative z-10 px-4 sm:px-6 lg:px-8">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-xs font-semibold shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
@@ -357,7 +358,7 @@ export default function HomePage() {
         {/* =====================================================================
             Reference Image: Tool Dashboard (Hero Showcase with ClickUp-style Speed Streaks)
            ===================================================================== */}
-        <div className="mt-12 max-w-6xl mx-auto relative group">
+        <div className="mt-12 max-w-6xl mx-auto relative group px-4 sm:px-6 lg:px-8">
           {/* ClickUp-style Laser Speed Streaks & Cosmic Energy Trails (Left & Right Wings) */}
           <ClickUpSpeedStreaks />
 
@@ -760,181 +761,8 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Reference Image Showcase */}
-        <div className="mb-14 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl overflow-hidden relative group">
-          <div className="relative aspect-[21/9] w-full bg-slate-950 overflow-hidden">
-            <img
-              src="/images/ai_growth_features.jpg"
-              alt="AI-Powered Features Showcase"
-              className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
-            />
-          </div>
-        </div>
-
-        {/* 4 Feature Cards Grid with Live AI Micro-Demonstrations */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* 1. AI Assistance */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/20 transform hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                <Sparkles className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  1. AI Assistance
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed mt-1">
-                  Get smart suggestions, automate routine work, and complete tasks faster with AI.
-                </p>
-              </div>
-
-              {/* Live AI Interactive Micro-Widget */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800 text-[11px] font-mono space-y-1.5 overflow-hidden relative">
-                <div className="animate-laser-scan opacity-40" />
-                <div className="text-slate-400 dark:text-zinc-500 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                  <span>Synthesizing Sprint Scope...</span>
-                </div>
-                <div className="text-slate-800 dark:text-zinc-200 font-bold flex items-center gap-1">
-                  <span className="text-indigo-500">✨</span>
-                  <span>4 subtasks &amp; test criteria created</span>
-                </div>
-              </div>
-            </div>
-            <div className="pt-5">
-              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 group-hover:gap-2 transition-all">
-                <span>Enhance Descriptions</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-
-          {/* 2. Team Chat */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-purple-400 dark:hover:border-purple-500 shadow-sm hover:shadow-2xl hover:shadow-purple-500/20 transform hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300">
-                <MessageSquare className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  2. Team Chat
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed mt-1">
-                  Communicate instantly, share updates, and keep your team connected in one place.
-                </p>
-              </div>
-
-              {/* Live Chat Bubbles & Animated Typing Indicator */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800 text-[11px] space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400 font-bold text-[9px] flex items-center justify-center">
-                    JD
-                  </div>
-                  <div className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 shadow-2xs text-[10px]">
-                    Stripe webhooks deployed 🚀
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pl-7 text-[10px] text-slate-400 dark:text-zinc-500">
-                  <span className="flex items-center gap-1 font-mono">
-                    <span>AI Copilot typing</span>
-                    <span className="inline-flex gap-0.5 ml-1">
-                      <span className="w-1 h-1 rounded-full bg-purple-500 animate-typing-1" />
-                      <span className="w-1 h-1 rounded-full bg-purple-500 animate-typing-2" />
-                      <span className="w-1 h-1 rounded-full bg-purple-500 animate-typing-3" />
-                    </span>
-                  </span>
-                  <span className="text-emerald-500 font-bold">100% Sync</span>
-                </div>
-              </div>
-            </div>
-            <div className="pt-5">
-              <span className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1 group-hover:gap-2 transition-all">
-                <span>Direct &amp; Group Channels</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-
-          {/* 3. Smart Analytics */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-cyan-400 dark:hover:border-cyan-500 shadow-sm hover:shadow-2xl hover:shadow-cyan-500/20 transform hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                <BarChart3 className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  3. Smart Analytics
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed mt-1">
-                  Track project performance, monitor progress, and make data-driven decisions.
-                </p>
-              </div>
-
-              {/* Live Animated Chart Bars */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800 text-[11px] space-y-2">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-500 dark:text-zinc-400 font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping" />
-                    Velocity Velocity
-                  </span>
-                  <span className="font-bold font-mono text-cyan-600 dark:text-cyan-400">+34.8% Faster</span>
-                </div>
-                <div className="h-9 flex items-end justify-between gap-1.5 px-1 pb-1">
-                  <div className="flex-1 bg-cyan-500/20 rounded-md h-[40%] transition-all" />
-                  <div className="flex-1 bg-cyan-500/40 rounded-md h-[65%] transition-all" />
-                  <div className="flex-1 bg-cyan-500/60 rounded-md h-[55%] transition-all" />
-                  <div className="flex-1 bg-gradient-to-t from-cyan-500 to-indigo-500 rounded-md h-[95%] animate-pulse" />
-                </div>
-              </div>
-            </div>
-            <div className="pt-5">
-              <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1 group-hover:gap-2 transition-all">
-                <span>Velocity &amp; Telemetry</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-
-          {/* 4. Smart Task Management */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-emerald-400 dark:hover:border-emerald-500 shadow-sm hover:shadow-2xl hover:shadow-emerald-500/20 transform hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
-            <div className="space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  4. Smart Task Management
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed mt-1">
-                  Organize tasks, set priorities, assign responsibilities, and meet deadlines with ease.
-                </p>
-              </div>
-
-              {/* Live Kanban Urgency Task & Progress Shimmer */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800 text-[11px] space-y-2">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="font-bold text-slate-800 dark:text-zinc-200">Landing V2 Launch</span>
-                  <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono font-bold text-[9px] flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                    Due in 45m
-                  </span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                  <div
-                    className="animate-progress-shimmer bg-gradient-to-r from-emerald-500 to-cyan-500 h-full rounded-full transition-all duration-500"
-                    style={{ width: '85%' }}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="pt-5">
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 group-hover:gap-2 transition-all">
-                <span>Auto Schedulers</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </div>
-          </div>
-        </div>
+        {/* Interactive Split Feature Showcase (Click on Left -> Display on Right) */}
+        <AiInteractiveFeaturesShowcase />
       </section>
 
       {/* =========================================================================
