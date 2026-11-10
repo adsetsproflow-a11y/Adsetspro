@@ -911,7 +911,7 @@ export default function WorkspaceDashboardPage() {
             </div>
 
             {/* Total member pill */}
-            <span className="text-xs bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 px-3 py-1.5 rounded-xl font-medium">
+            <span className="text-xs bg-slate-100 dark:bg-zinc-800/80 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700/60 px-3 py-1.5 rounded-xl font-medium">
               {totalEmployees} {totalEmployees === 1 ? 'Member' : 'Members'}
             </span>
 
@@ -1183,7 +1183,7 @@ export default function WorkspaceDashboardPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-400 text-center italic py-2 px-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+            <p className="text-[11px] text-slate-600 dark:text-zinc-400 text-center italic py-2 px-3 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800">
               💡 Tip: Click on any employee's bar to inspect their full assigned task breakdown.
             </p>
           </div>
@@ -1194,7 +1194,7 @@ export default function WorkspaceDashboardPage() {
               <div
                 key={emp.employee_id}
                 onClick={() => setSelectedEmployee(emp)}
-                className="p-4 rounded-xl bg-zinc-50/70 dark:bg-zinc-950/70 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all space-y-3 cursor-pointer group hover:bg-zinc-100/70 dark:hover:bg-zinc-950 shadow-sm dark:shadow-md"
+                className="p-4 rounded-xl bg-slate-50/70 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition-all space-y-3 cursor-pointer group hover:bg-slate-100/70 dark:hover:bg-zinc-950 shadow-sm dark:shadow-md"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -1242,19 +1242,19 @@ export default function WorkspaceDashboardPage() {
 
                 {/* Lifecycle counts row */}
                 <div className="grid grid-cols-4 gap-1.5 text-center pt-1 border-t border-zinc-200 dark:border-zinc-800/80 text-[11px]">
-                  <div className="p-1 rounded bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-transparent">
+                  <div className="p-1 rounded bg-slate-100 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-transparent">
                     <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Done</p>
                     <p className="font-bold text-emerald-600 dark:text-emerald-400">{emp.completed}</p>
                   </div>
-                  <div className="p-1 rounded bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-transparent">
+                  <div className="p-1 rounded bg-slate-100 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-transparent">
                     <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Active</p>
                     <p className="font-bold text-sky-600 dark:text-sky-400">{emp.in_progress}</p>
                   </div>
-                  <div className="p-1 rounded bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-transparent">
+                  <div className="p-1 rounded bg-slate-100 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-transparent">
                     <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Review</p>
                     <p className="font-bold text-amber-600 dark:text-amber-400">{emp.under_review}</p>
                   </div>
-                  <div className="p-1 rounded bg-zinc-100 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-transparent">
+                  <div className="p-1 rounded bg-slate-100 dark:bg-zinc-900/60 border border-slate-200/60 dark:border-transparent">
                     <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Overdue</p>
                     <p className="font-bold text-rose-600 dark:text-rose-400">{emp.overdue}</p>
                   </div>
@@ -1532,24 +1532,24 @@ export default function WorkspaceDashboardPage() {
           </div>
           <Link
             href={`/c/${companySlug}/tasks`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/70 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 text-xs text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white font-semibold transition-all self-start sm:self-auto shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-800/70 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700/60 hover:border-slate-300 dark:hover:border-zinc-600 text-xs text-slate-700 dark:text-zinc-200 hover:text-slate-900 dark:hover:text-white font-semibold transition-all self-start sm:self-auto shadow-sm"
           >
             <span>All Tasks</span>
             <ExternalLink className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
           </Link>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-950/40">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/40">
           <table className="w-full text-left text-xs min-w-[760px] border-collapse">
-            <thead className="text-[11px] text-zinc-600 dark:text-zinc-400 uppercase tracking-wider font-semibold bg-zinc-100/80 dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800/80">
+            <thead className="text-[11px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-[#111624] text-slate-700 dark:text-zinc-300 border-b border-slate-200 dark:border-zinc-800/80">
               <tr>
-                <th className="py-3 px-4 font-semibold">Task</th>
-                <th className="py-3 px-4 font-semibold">Department</th>
-                <th className="py-3 px-4 font-semibold">Assignee</th>
-                <th className="py-3 px-4 font-semibold">Priority</th>
-                <th className="py-3 px-4 font-semibold">Status</th>
-                <th className="py-3 px-4 font-semibold text-right">Deadline</th>
-                <th className="py-3 px-4 font-semibold text-center w-16">Action</th>
+                <th className="py-3.5 px-4 font-bold text-slate-700 dark:text-zinc-300">Task</th>
+                <th className="py-3.5 px-4 font-bold text-slate-700 dark:text-zinc-300">Department</th>
+                <th className="py-3.5 px-4 font-bold text-slate-700 dark:text-zinc-300">Assignee</th>
+                <th className="py-3.5 px-4 font-bold text-slate-700 dark:text-zinc-300">Priority</th>
+                <th className="py-3.5 px-4 font-bold text-slate-700 dark:text-zinc-300">Status</th>
+                <th className="py-3.5 px-4 font-bold text-slate-700 dark:text-zinc-300 text-right">Deadline</th>
+                <th className="py-3.5 px-4 font-bold text-slate-700 dark:text-zinc-300 text-center w-16">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60 text-zinc-700 dark:text-zinc-300">
