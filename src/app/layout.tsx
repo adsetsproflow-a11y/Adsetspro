@@ -26,21 +26,31 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const theme = localStorage.getItem('saas_pm_theme') || 'light';
-                const accent = localStorage.getItem('saas_pm_accent') || 'indigo';
-                const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                if (isDark) {
+                const isHomePage = window.location.pathname === '/';
+                if (isHomePage) {
+                  // Home page is strictly locked to dark mode
                   document.documentElement.classList.add('dark');
                   document.documentElement.classList.remove('light');
                   document.documentElement.setAttribute('data-theme', 'dark');
                   document.documentElement.style.colorScheme = 'dark';
                 } else {
-                  document.documentElement.classList.remove('dark');
-                  document.documentElement.classList.add('light');
-                  document.documentElement.setAttribute('data-theme', 'light');
-                  document.documentElement.style.colorScheme = 'light';
+                  // All other workspace & app pages respect user's light/dark mode preference
+                  const theme = localStorage.getItem('saas_pm_theme') || 'light';
+                  const accent = localStorage.getItem('saas_pm_accent') || 'indigo';
+                  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                  if (isDark) {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.style.colorScheme = 'light';
+                  }
+                  document.documentElement.setAttribute('data-accent', accent);
                 }
-                document.documentElement.setAttribute('data-accent', accent);
               } catch (_) {}
             `,
           }}

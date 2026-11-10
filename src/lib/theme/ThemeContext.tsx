@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useTransition } from 'react';
+import { usePathname } from 'next/navigation';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type AccentColor = 'indigo' | 'emerald' | 'violet' | 'rose' | 'amber' | 'cyan';
@@ -36,6 +37,9 @@ const THEME_STORAGE_KEY = 'saas_pm_theme';
 const ACCENT_STORAGE_KEY = 'saas_pm_accent';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
+
   // Default is LIGHT mode and INDIGO accent as requested
   const [theme, setThemeState] = useState<ThemeMode>('light');
   const [accent, setAccentState] = useState<AccentColor>('indigo');
@@ -48,7 +52,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
-    if (resolved === 'dark') {
+    // Home page is strictly locked to dark mode ("home page maatum dark mode la irukkatum")
+    const onHome = typeof window !== 'undefined' ? window.location.pathname === '/' : isHomePage;
+    const effectiveTheme = onHome ? 'dark' : resolved;
+
+    if (effectiveTheme === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
       root.setAttribute('data-theme', 'dark');
@@ -80,11 +88,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
 
       setResolvedTheme(initialResolved);
-      applyThemeToDOM(initialResolved, storedAccent);
+
+      // On home page, lock to dark; everywhere else, apply stored theme
+      if (pathname === '/') {
+        applyThemeToDOM('dark', storedAccent);
+      } else {
+        applyThemeToDOM(initialResolved, storedAccent);
+      }
     } catch {}
 
     setMounted(true);
   }, []);
+
+  // React to pathname route changes (switching between home page and workspace/app pages)
+  useEffect(() => {
+    if (!mounted) return;
+    if (pathname === '/') {
+      applyThemeToDOM('dark', accent);
+    } else {
+      applyThemeToDOM(resolvedTheme, accent);
+    }
+  }, [pathname, mounted, resolvedTheme, accent]);
 
   // Listen to system preference changes when in 'system' mode
   useEffect(() => {
@@ -156,7 +180,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     setResolvedTheme(resolved);
-    applyThemeToDOM(resolved, accent);
+
+    // If currently on home page, keep home page dark; if in workspace or other pages, apply immediately
+    if (pathname === '/') {
+      applyThemeToDOM('dark', accent);
+    } else {
+      applyThemeToDOM(resolved, accent);
+    }
 
     try {
       window.dispatchEvent(
@@ -173,7 +203,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(ACCENT_STORAGE_KEY, newAccent);
     } catch {}
 
-    applyThemeToDOM(resolvedTheme, newAccent);
+    applyThemeToDOM(pathname === '/' ? 'dark' : resolvedTheme, newAccent);
 
     try {
       window.dispatchEvent(
@@ -195,7 +225,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       value={{
         theme,
         accent,
-        resolvedTheme,
+        resolvedTheme: isHomePage ? 'dark' : resolvedTheme,
         setTheme,
         setAccent,
         toggleTheme,

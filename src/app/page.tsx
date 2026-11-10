@@ -29,7 +29,6 @@ import {
   Loader2,
   Briefcase,
 } from 'lucide-react';
-import ThemeToggle from '@/components/common/ThemeToggle';
 import AiHolographicSides from '@/components/landing/AiHolographicSides';
 import ClickUpSpeedStreaks from '@/components/landing/ClickUpSpeedStreaks';
 import ClickUpBrainSection from '@/components/landing/ClickUpBrainSection';
@@ -184,7 +183,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#070b14] bg-grid-pattern text-slate-900 dark:text-zinc-100 flex flex-col justify-between relative overflow-x-hidden transition-colors duration-300 font-sans">
+    <div className="dark min-h-screen bg-[#070b14] bg-grid-pattern text-zinc-100 flex flex-col justify-between relative overflow-x-hidden font-sans">
       {/* Pinned Futuristic AI Holographic HUD Side Panels (Desktop) */}
       <AiHolographicSides />
 
@@ -193,19 +192,19 @@ export default function HomePage() {
       <div className="fixed top-0 right-0 w-1 sm:w-1.5 h-full bg-gradient-to-b from-cyan-500/0 via-cyan-500/35 to-indigo-500/0 animate-light-beam pointer-events-none z-30" style={{ animationDelay: '4s' }} />
 
       {/* Floating Ambient Glowing Blobs on Sides */}
-      <div className="fixed -top-40 -left-40 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-600/15 rounded-full blur-[130px] pointer-events-none animate-blob-slow z-0" />
-      <div className="fixed top-1/3 -right-40 w-96 h-96 bg-cyan-500/10 dark:bg-cyan-600/15 rounded-full blur-[130px] pointer-events-none animate-blob-reverse z-0" />
-      <div className="fixed -bottom-40 left-1/4 w-96 h-96 bg-purple-500/10 dark:bg-purple-600/15 rounded-full blur-[130px] pointer-events-none animate-blob-slow z-0" style={{ animationDelay: '7s' }} />
+      <div className="fixed -top-40 -left-40 w-96 h-96 bg-indigo-600/15 rounded-full blur-[130px] pointer-events-none animate-blob-slow z-0" />
+      <div className="fixed top-1/3 -right-40 w-96 h-96 bg-cyan-600/15 rounded-full blur-[130px] pointer-events-none animate-blob-reverse z-0" />
+      <div className="fixed -bottom-40 left-1/4 w-96 h-96 bg-purple-600/15 rounded-full blur-[130px] pointer-events-none animate-blob-slow z-0" style={{ animationDelay: '7s' }} />
 
       {/* Dynamic Background Ambient Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-indigo-500/10 via-purple-500/5 to-transparent dark:from-indigo-600/15 dark:via-purple-600/10 dark:to-transparent rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-[1400px] right-0 w-[500px] h-[500px] bg-cyan-500/10 dark:bg-cyan-600/10 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute top-[2800px] left-0 w-[500px] h-[500px] bg-indigo-500/10 dark:bg-indigo-600/10 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-indigo-600/15 via-purple-600/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-[1400px] right-0 w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-[2800px] left-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[160px] pointer-events-none" />
 
       {/* =========================================================================
-          Sticky Glassmorphic Header Navigation
+          Sticky Glassmorphic Header Navigation (Strictly Dark Mode)
          ========================================================================= */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-[#070b14]/80 backdrop-blur-xl px-4 sm:px-8 py-3.5 transition-colors">
+      <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-[#070b14]/85 backdrop-blur-xl px-4 sm:px-8 py-3.5 transition-colors">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Logo & Brand Name */}
           <Link href="/" className="flex items-center gap-2.5 group">
@@ -213,47 +212,45 @@ export default function HomePage() {
               <Layers className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">
-                Adsetspro<span className="text-indigo-600 dark:text-indigo-400">flow</span>
+              <span className="font-extrabold text-base tracking-tight text-white">
+                Adsetspro<span className="text-indigo-400">flow</span>
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium tracking-wider uppercase -mt-0.5">
+              <span className="text-[10px] text-zinc-400 font-medium tracking-wider uppercase -mt-0.5">
                 Startup OS
               </span>
             </div>
           </Link>
 
           {/* Center Navigation Links (Hidden on mobile) */}
-          <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-slate-600 dark:text-zinc-300">
-            <a href="#features" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
+          <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-zinc-300">
+            <a href="#features" className="hover:text-white transition-colors">
               Manage Projects
             </a>
-            <a href="#planning" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
+            <a href="#planning" className="hover:text-white transition-colors">
               Plan Smarter
             </a>
-            <a href="#ai-features" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
+            <a href="#ai-features" className="hover:text-white transition-colors">
               AI Features
             </a>
-            <a href="#faqs" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
+            <a href="#faqs" className="hover:text-white transition-colors">
               FAQs
             </a>
           </nav>
 
-          {/* Action Cluster */}
+          {/* Action Cluster (Landing locked to Dark Mode; theme toggle available inside Workspaces) */}
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <ThemeToggle />
-
             {currentUser ? (
               <>
                 <Link
                   href={dashboardUrl}
-                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-800 dark:text-zinc-200 transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                  className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-200 transition-colors inline-flex items-center gap-1.5 shadow-xs"
                 >
-                  <LayoutDashboard className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <LayoutDashboard className="w-3.5 h-3.5 text-indigo-400" />
                   <span className="hidden sm:inline">My Workspace</span>
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors inline-flex items-center gap-1 cursor-pointer"
                   title="Sign Out"
                 >
                   <LogOut className="w-3.5 h-3.5" />
