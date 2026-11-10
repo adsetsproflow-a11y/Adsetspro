@@ -6,6 +6,15 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://adsetsproflow.com'),
   title: 'Adsetspro Flow - Multi-Tenant SaaS Platform & Project Suite',
   description: 'Adsetspro Flow - Multi-Tenant SaaS Project Management with Web Audio Alarms, WebP Studio, Gamified Leaderboard, and Dynamic Tenant Isolation',
+  icons: {
+    icon: [
+      { url: '/images/adsetspro-logo.webp', type: 'image/webp' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/images/adsetspro-logo.webp',
+  },
 };
 
 export default function RootLayout({
