@@ -157,13 +157,13 @@ export default function GlobalSearch({ companySlug }: GlobalSearchProps) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-zinc-200 text-xs transition-all cursor-pointer group shadow-inner"
+        className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 text-xs transition-all cursor-pointer group shadow-inner"
         title="Quick Search (Ctrl + K)"
       >
         <Search className="w-3.5 h-3.5 text-zinc-500 group-hover:text-indigo-400 transition-colors" />
         <span className="hidden sm:inline font-medium">Search workspace...</span>
         <span className="sm:hidden font-medium">Search...</span>
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-950 border border-zinc-800 text-zinc-400">
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-zinc-400">
           <span className="text-[9px]">Ctrl</span> K
         </kbd>
       </button>
@@ -172,11 +172,11 @@ export default function GlobalSearch({ companySlug }: GlobalSearchProps) {
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
           <div
-            className="w-full max-w-2xl bg-zinc-950/95 border border-zinc-800/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-150"
+            className="w-full max-w-2xl bg-white dark:bg-zinc-950/95 border border-slate-200 dark:border-zinc-800/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Search Input Bar */}
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-800/80 bg-zinc-900/50">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200 dark:border-zinc-800/80 bg-slate-50 dark:bg-zinc-900/50">
               <Search className="w-5 h-5 text-indigo-400 shrink-0" />
               <input
                 ref={inputRef}

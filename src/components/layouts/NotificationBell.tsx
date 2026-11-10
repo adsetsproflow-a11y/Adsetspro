@@ -290,7 +290,7 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
             fetchLatestNotifications();
           }
         }}
-        className="relative p-2.5 rounded-2xl bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 text-zinc-300 hover:text-white transition-all cursor-pointer shadow-md"
+        className="relative p-2.5 rounded-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/80 hover:border-slate-300 dark:hover:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer shadow-sm"
         title="Notifications"
         aria-label="View notifications"
       >
@@ -304,11 +304,11 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
 
       {/* DROPDOWN NOTIFICATIONS PANEL */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl bg-zinc-950/95 border border-zinc-800/90 shadow-2xl backdrop-blur-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl bg-white dark:bg-zinc-950/95 border border-slate-200 dark:border-zinc-800/90 shadow-2xl backdrop-blur-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Header */}
-          <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between">
+          <div className="p-4 border-b border-slate-200 dark:border-zinc-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-transparent">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
+              <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Notifications
               </span>
               {unreadCount > 0 && (
@@ -322,7 +322,7 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="text-[11px] font-semibold text-zinc-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                  className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Mark read</span>
@@ -376,7 +376,7 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
                         {formatTimeAgo(notif.created_at)}
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
+                    <p className="text-[11px] text-slate-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                       {notif.body}
                     </p>
                   </div>
@@ -432,7 +432,7 @@ export default function NotificationBell({ companySlug }: NotificationBellProps)
             </div>
             <div className="space-y-1 min-w-0 flex-1">
               <span className="text-xs font-bold text-white block">{toast.title}</span>
-              <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
+              <p className="text-[11px] text-slate-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                 {toast.body}
               </p>
               {toast.roomId && (
