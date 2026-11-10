@@ -673,35 +673,7 @@ export default function HomePage() {
 
 
 
-          {/* Trust Highlights */}
 
-          <div className="pt-3 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 dark:text-zinc-400 font-medium">
-
-            <div className="flex items-center gap-1.5">
-
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-
-              <span>Free 14-day trial</span>
-
-            </div>
-
-            <div className="flex items-center gap-1.5">
-
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-
-              <span>No credit card required</span>
-
-            </div>
-
-            <div className="flex items-center gap-1.5">
-
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-
-              <span>Instant setup in 60 seconds</span>
-
-            </div>
-
-          </div>
 
         </div>
 
@@ -1791,35 +1763,7 @@ export default function HomePage() {
 
 
 
-              {/* Micro-Trust Highlights */}
 
-              <div className="pt-2 flex flex-wrap items-center justify-center gap-6 text-xs text-zinc-400 font-medium">
-
-                <span className="flex items-center gap-1.5">
-
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-
-                  Free 14-day trial
-
-                </span>
-
-                <span className="flex items-center gap-1.5">
-
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-
-                  No credit card required
-
-                </span>
-
-                <span className="flex items-center gap-1.5">
-
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-
-                  Instant setup in 60s
-
-                </span>
-
-              </div>
 
             </div>
 
