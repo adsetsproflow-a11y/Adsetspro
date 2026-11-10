@@ -3,55 +3,47 @@
 import React, { useEffect, useRef } from 'react';
 
 // =============================================================================
-// HIGH-VELOCITY LASER SPEED STREAKS & OPTICAL LENS FLARE ENGINE
-// Faithful to the reference video: Straight horizontal laser conduits,
-// high-speed photon comets, horizontal anamorphic lens flares, and quantum sparks.
+// HYPERDRIVE LASER SPEED STREAKS & OPTICAL ANAMORPHIC FLARES
+// Faithful 1:1 implementation of the reference video:
+// Dynamic horizontal laser speed beams with motion blur, blinding photon heads,
+// anamorphic horizontal light flares, and floating cosmic stardust.
 // =============================================================================
 
-interface LaserTrack {
+interface SpeedStreak {
   id: number;
   side: 'left' | 'right';
-  yPercent: number;          // vertical position percentage
-  trackColor: string;
-  glowColor: string;
-  speedMultiplier: number;
-  hasFlare: boolean;         // whether this track hosts an anamorphic lens flare
-  flareOffset: number;       // horizontal offset ratio for lens flare
-  flareColor: string;
+  yRatio: number;          // 0.1 to 0.9 vertical position
+  headX: number;           // current X position of streak head
+  speed: number;           // velocity in px/frame (fast motion)
+  length: number;          // length of streaming light tail (120px to 450px)
+  thickness: number;       // 1.5px to 4.0px
+  color: string;           // primary plasma color
+  glowColor: string;       // intense shadow bloom
+  coreColor: string;       // blinding white core
+  faintTrackAlpha: number; // opacity of subtle persistent track wake
 }
 
-interface PhotonComet {
-  id: number;
-  trackId: number;
+interface AnamorphicFlare {
   side: 'left' | 'right';
-  x: number;                 // current X position
-  speed: number;             // px per frame
-  tailLength: number;        // length of streaming light tail
-  headRadius: number;
-  color1: string;            // head / primary glow
-  color2: string;            // mid-body
+  yRatio: number;
+  xOffsetRatio: number;    // position along the wing
+  width: number;           // horizontal span of the flare sheet (300px - 550px)
+  color: string;
   glowColor: string;
+  pulsePhase: number;
+  pulseSpeed: number;
 }
 
-interface QuantumSpark {
-  x: number;
-  y: number;
+interface StardustParticle {
+  xRatio: number;          // 0 to 1 across full canvas width
+  yRatio: number;          // 0 to 1 across canvas height
   vx: number;
   vy: number;
-  life: number;
-  maxLife: number;
-  color: string;
-  size: number;
-}
-
-interface AmbientStar {
-  xRatio: number;
-  yRatio: number;
   radius: number;
   color: string;
   glowColor: string;
-  phase: number;
-  speed: number;
+  twinklePhase: number;
+  twinkleSpeed: number;
 }
 
 export default function ClickUpSpeedStreaks() {
@@ -87,211 +79,138 @@ export default function ClickUpSpeedStreaks() {
     observer.observe(canvas);
 
     // =========================================================================
-    // 1. STRAIGHT HORIZONTAL LASER TRACK DEFINITIONS
-    //    Left wing: Cool Ice-Cyan, Electric Blue & Silver
-    //    Right wing: Neon Hot-Pink, Electric Violet & Warm Golden Amber
+    // 1. COLOR PALETTES MATCHING REFERENCE VIDEO
+    //    Left Wing: Cool Ice-Cyan, Electric Silver-Blue, Royal Violet
+    //    Right Wing: Neon Hot-Pink, Vibrant Magenta, Warm Golden-Amber
     // =========================================================================
-    const tracks: LaserTrack[] = [
-      // Left Flank Tracks
-      {
-        id: 1,
-        side: 'left',
-        yPercent: 18,
-        trackColor: 'rgba(56, 189, 248, 0.22)',
-        glowColor: 'rgba(56, 189, 248, 0.8)',
-        speedMultiplier: 1.1,
-        hasFlare: false,
-        flareOffset: 0.5,
-        flareColor: '#38bdf8',
-      },
-      {
-        id: 2,
-        side: 'left',
-        yPercent: 34,
-        trackColor: 'rgba(99, 102, 241, 0.25)',
-        glowColor: 'rgba(99, 102, 241, 0.85)',
-        speedMultiplier: 0.95,
-        hasFlare: false,
-        flareOffset: 0.65,
-        flareColor: '#818cf8',
-      },
-      {
-        id: 3,
-        side: 'left',
-        yPercent: 50, // Central major anamorphic flare line
-        trackColor: 'rgba(0, 240, 255, 0.35)',
-        glowColor: 'rgba(0, 240, 255, 0.95)',
-        speedMultiplier: 1.25,
-        hasFlare: true,
-        flareOffset: 0.45,
-        flareColor: '#00f0ff',
-      },
-      {
-        id: 4,
-        side: 'left',
-        yPercent: 66,
-        trackColor: 'rgba(56, 189, 248, 0.25)',
-        glowColor: 'rgba(56, 189, 248, 0.8)',
-        speedMultiplier: 1.05,
-        hasFlare: false,
-        flareOffset: 0.3,
-        flareColor: '#38bdf8',
-      },
-      {
-        id: 5,
-        side: 'left',
-        yPercent: 82,
-        trackColor: 'rgba(129, 140, 248, 0.22)',
-        glowColor: 'rgba(129, 140, 248, 0.8)',
-        speedMultiplier: 0.9,
-        hasFlare: false,
-        flareOffset: 0.7,
-        flareColor: '#818cf8',
-      },
+    const leftPalettes = [
+      { color: '#00f0ff', glow: 'rgba(0, 240, 255, 0.95)' }, // Ice Cyan
+      { color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.95)' }, // Electric Blue
+      { color: '#818cf8', glow: 'rgba(129, 140, 248, 0.9)' }, // Violet Blue
+      { color: '#c084fc', glow: 'rgba(192, 132, 252, 0.9)' }, // Light Purple
+      { color: '#ffffff', glow: 'rgba(255, 255, 255, 0.95)' }, // Blinding Silver-White
+    ];
 
-      // Right Flank Tracks
-      {
-        id: 6,
+    const rightPalettes = [
+      { color: '#ec4899', glow: 'rgba(236, 72, 153, 0.95)' }, // Hot Pink
+      { color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.95)' },  // Rose Magenta
+      { color: '#d946ef', glow: 'rgba(217, 70, 239, 0.95)' }, // Electric Fuchsia
+      { color: '#f59e0b', glow: 'rgba(245, 158, 11, 0.95)' }, // Warm Golden Amber
+      { color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.95)' }, // Radiant Gold
+    ];
+
+    // =========================================================================
+    // 2. DYNAMIC SPEED STREAKS (12 LEFT, 12 RIGHT)
+    //    Organically distributed across vertical levels with varied speeds & lengths
+    // =========================================================================
+    const streaks: SpeedStreak[] = [];
+
+    // Left Wing Speed Streaks (Streaming towards the window)
+    const leftYLevels = [0.12, 0.20, 0.28, 0.36, 0.44, 0.50, 0.58, 0.65, 0.72, 0.80, 0.88, 0.94];
+    leftYLevels.forEach((y, i) => {
+      const palette = leftPalettes[i % leftPalettes.length];
+      const isMajor = i === 4 || i === 5 || i === 7; // primary active beams
+      streaks.push({
+        id: i,
+        side: 'left',
+        yRatio: y,
+        headX: Math.random() * 800,
+        speed: (isMajor ? 9.5 : 6.5) + Math.random() * 6.0, // 6.5 to 15.5 px/frame
+        length: isMajor ? 280 + Math.random() * 180 : 160 + Math.random() * 140,
+        thickness: isMajor ? 2.8 + Math.random() * 0.8 : 1.6 + Math.random() * 0.6,
+        color: palette.color,
+        glowColor: palette.glow,
+        coreColor: '#ffffff',
+        faintTrackAlpha: isMajor ? 0.28 : 0.14,
+      });
+    });
+
+    // Right Wing Speed Streaks (Streaming outward from the window)
+    const rightYLevels = [0.14, 0.22, 0.30, 0.38, 0.46, 0.54, 0.62, 0.70, 0.78, 0.84, 0.90, 0.95];
+    rightYLevels.forEach((y, i) => {
+      const palette = rightPalettes[i % rightPalettes.length];
+      const isMajor = i === 5 || i === 6 || i === 8; // golden amber & pink major beams
+      streaks.push({
+        id: i + 20,
         side: 'right',
-        yPercent: 18,
-        trackColor: 'rgba(236, 72, 153, 0.25)',
-        glowColor: 'rgba(236, 72, 153, 0.85)',
-        speedMultiplier: 1.05,
-        hasFlare: false,
-        flareOffset: 0.6,
-        flareColor: '#ec4899',
+        yRatio: y,
+        headX: Math.random() * 800,
+        speed: (isMajor ? 9.5 : 6.5) + Math.random() * 6.0,
+        length: isMajor ? 280 + Math.random() * 180 : 160 + Math.random() * 140,
+        thickness: isMajor ? 2.8 + Math.random() * 0.8 : 1.6 + Math.random() * 0.6,
+        color: palette.color,
+        glowColor: palette.glow,
+        coreColor: '#ffffff',
+        faintTrackAlpha: isMajor ? 0.28 : 0.14,
+      });
+    });
+
+    // =========================================================================
+    // 3. ANAMORPHIC HORIZONTAL OPTICAL LENS FLARES (KEY FEATURE FROM VIDEO)
+    //    Left: Ice Cyan / Electric Blue Anamorphic Sheet (Middle Height)
+    //    Right: Warm Golden Amber / Hot Pink Anamorphic Sheet (Lower Middle)
+    // =========================================================================
+    const flares: AnamorphicFlare[] = [
+      {
+        side: 'left',
+        yRatio: 0.48, // Matches the prominent central horizontal flare on the left
+        xOffsetRatio: 0.52,
+        width: 440,
+        color: '#00f0ff',
+        glowColor: 'rgba(0, 240, 255, 0.95)',
+        pulsePhase: 0,
+        pulseSpeed: 1.8,
       },
       {
-        id: 7,
-        side: 'right',
-        yPercent: 34,
-        trackColor: 'rgba(168, 85, 247, 0.25)',
-        glowColor: 'rgba(168, 85, 247, 0.85)',
-        speedMultiplier: 0.9,
-        hasFlare: false,
-        flareOffset: 0.35,
-        flareColor: '#c084fc',
+        side: 'left',
+        yRatio: 0.72,
+        xOffsetRatio: 0.38,
+        width: 320,
+        color: '#818cf8',
+        glowColor: 'rgba(129, 140, 248, 0.85)',
+        pulsePhase: 2.1,
+        pulseSpeed: 2.2,
       },
       {
-        id: 8,
         side: 'right',
-        yPercent: 50,
-        trackColor: 'rgba(236, 72, 153, 0.35)',
-        glowColor: 'rgba(236, 72, 153, 0.95)',
-        speedMultiplier: 1.2,
-        hasFlare: false,
-        flareOffset: 0.5,
-        flareColor: '#ec4899',
-      },
-      {
-        id: 9,
-        side: 'right',
-        yPercent: 66, // Warm golden-amber flare line as in reference video
-        trackColor: 'rgba(245, 158, 11, 0.35)',
+        yRatio: 0.62, // Matches the iconic warm amber horizontal flare in the video
+        xOffsetRatio: 0.48,
+        width: 460,
+        color: '#f59e0b',
         glowColor: 'rgba(245, 158, 11, 0.95)',
-        speedMultiplier: 1.15,
-        hasFlare: true,
-        flareOffset: 0.55,
-        flareColor: '#f59e0b',
+        pulsePhase: 1.2,
+        pulseSpeed: 1.9,
       },
       {
-        id: 10,
         side: 'right',
-        yPercent: 82,
-        trackColor: 'rgba(244, 63, 94, 0.25)',
-        glowColor: 'rgba(244, 63, 94, 0.8)',
-        speedMultiplier: 0.95,
-        hasFlare: false,
-        flareOffset: 0.4,
-        flareColor: '#f43f5e',
+        yRatio: 0.36,
+        xOffsetRatio: 0.60,
+        width: 340,
+        color: '#ec4899',
+        glowColor: 'rgba(236, 72, 153, 0.9)',
+        pulsePhase: 3.4,
+        pulseSpeed: 2.0,
       },
     ];
 
     // =========================================================================
-    // 2. HIGH-SPEED PHOTON COMETS STREAMING ALONG THE TRACKS
+    // 4. FLOATING COSMIC STARDUST PARTICLES (BACKGROUND DEPTH)
     // =========================================================================
-    const comets: PhotonComet[] = [];
-
-    // Left comets (2 comets per track with staggered initial X positions)
-    tracks
-      .filter((t) => t.side === 'left')
-      .forEach((t) => {
-        // Comet 1
-        comets.push({
-          id: t.id * 10 + 1,
-          trackId: t.id,
-          side: 'left',
-          x: Math.random() * 600,
-          speed: (6.0 + Math.random() * 4.5) * t.speedMultiplier,
-          tailLength: 200 + Math.random() * 180,
-          headRadius: 3.5,
-          color1: '#00f0ff',
-          color2: '#38bdf8',
-          glowColor: 'rgba(0, 240, 255, 0.95)',
-        });
-        // Comet 2 (Staggered offset)
-        comets.push({
-          id: t.id * 10 + 2,
-          trackId: t.id,
-          side: 'left',
-          x: -150 - Math.random() * 300,
-          speed: (7.5 + Math.random() * 4.0) * t.speedMultiplier,
-          tailLength: 240 + Math.random() * 200,
-          headRadius: 4.0,
-          color1: '#ffffff',
-          color2: '#6366f1',
-          glowColor: 'rgba(99, 102, 241, 0.95)',
-        });
-      });
-
-    // Right comets (2 comets per track streaming outward)
-    tracks
-      .filter((t) => t.side === 'right')
-      .forEach((t) => {
-        const isAmberTrack = t.id === 9;
-        comets.push({
-          id: t.id * 10 + 1,
-          trackId: t.id,
-          side: 'right',
-          x: Math.random() * 600,
-          speed: (6.0 + Math.random() * 4.5) * t.speedMultiplier,
-          tailLength: 200 + Math.random() * 180,
-          headRadius: 3.5,
-          color1: isAmberTrack ? '#fbbf24' : '#ec4899',
-          color2: isAmberTrack ? '#f59e0b' : '#d946ef',
-          glowColor: isAmberTrack ? 'rgba(245, 158, 11, 0.95)' : 'rgba(236, 72, 153, 0.95)',
-        });
-        comets.push({
-          id: t.id * 10 + 2,
-          trackId: t.id,
-          side: 'right',
-          x: -150 - Math.random() * 300,
-          speed: (7.5 + Math.random() * 4.0) * t.speedMultiplier,
-          tailLength: 240 + Math.random() * 200,
-          headRadius: 4.0,
-          color1: '#ffffff',
-          color2: isAmberTrack ? '#f59e0b' : '#c084fc',
-          glowColor: isAmberTrack ? 'rgba(245, 158, 11, 0.95)' : 'rgba(192, 132, 252, 0.95)',
-        });
-      });
-
-    // Quantum sparks shedding from photon comets
-    const sparks: QuantumSpark[] = [];
-
-    // Ambient twinkling stars
-    const starColors = ['#ffffff', '#38bdf8', '#c084fc', '#ec4899', '#f59e0b'];
-    const ambientStars: AmbientStar[] = Array.from({ length: 42 }, (_, i) => ({
+    const particleColors = ['#ffffff', '#00f0ff', '#38bdf8', '#ec4899', '#f59e0b', '#c084fc'];
+    const stardust: StardustParticle[] = Array.from({ length: 48 }, (_, i) => ({
       xRatio: Math.random(),
       yRatio: 0.05 + Math.random() * 0.9,
-      radius: 0.9 + Math.random() * 1.3,
-      color: starColors[i % starColors.length],
-      glowColor: starColors[i % starColors.length],
-      phase: Math.random() * Math.PI * 2,
-      speed: 1.5 + Math.random() * 2.5,
+      vx: (Math.random() - 0.5) * 0.0006,
+      vy: (Math.random() - 0.5) * 0.0006,
+      radius: 0.8 + Math.random() * 1.2,
+      color: particleColors[i % particleColors.length],
+      glowColor: particleColors[i % particleColors.length],
+      twinklePhase: Math.random() * Math.PI * 2,
+      twinkleSpeed: 1.2 + Math.random() * 2.2,
     }));
 
     // =========================================================================
-    // 3. MAIN 60FPS FLUID RENDERING LOOP
+    // 5. MAIN 60FPS FLUID RENDERING LOOP
     // =========================================================================
     const render = () => {
       if (!isVisible) {
@@ -313,267 +232,240 @@ export default function ClickUpSpeedStreaks() {
       const cardRight = cardLeft + maxCardWidth;
 
       // =====================================================================
-      // A. SUBTLE STARRY SKY PARTICLES (BACKGROUND DEPTH)
+      // A. RENDER FLOATING COSMIC STARDUST (SUBTLE AMBIENCE)
       // =====================================================================
-      ambientStars.forEach((star) => {
-        const px = star.xRatio * width;
-        const py = star.yRatio * height;
+      stardust.forEach((p) => {
+        p.xRatio += p.vx;
+        p.yRatio += p.vy;
+        if (p.xRatio < 0.01 || p.xRatio > 0.99) p.vx *= -1;
+        if (p.yRatio < 0.04 || p.yRatio > 0.96) p.vy *= -1;
 
-        // Don't render behind opaque dashboard
-        if (px > cardLeft + 20 && px < cardRight - 20) return;
+        const px = p.xRatio * width;
+        const py = p.yRatio * height;
 
-        const pulse = Math.sin(time * star.speed + star.phase) * 0.35 + 0.65;
+        // Don't render behind opaque dashboard card
+        if (px > cardLeft + 15 && px < cardRight - 15) return;
+
+        const pulse = Math.sin(time * p.twinkleSpeed + p.twinklePhase) * 0.35 + 0.65;
         ctx.save();
-        ctx.fillStyle = star.color;
+        ctx.fillStyle = p.color;
         ctx.shadowBlur = 8;
-        ctx.shadowColor = star.glowColor;
+        ctx.shadowColor = p.glowColor;
         ctx.globalAlpha = pulse * 0.75;
         ctx.beginPath();
-        ctx.arc(px, py, star.radius, 0, Math.PI * 2);
+        ctx.arc(px, py, p.radius, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       });
 
       // =====================================================================
-      // B. STRAIGHT HORIZONTAL LASER TRACKS & OPTICAL LENS FLARES
+      // B. RENDER PERSISTENT SUBTLE LASER BASELINE TRACKS (CINEMATIC DEPTH)
       // =====================================================================
-      tracks.forEach((track) => {
-        const y = (track.yPercent / 100) * height;
+      streaks.forEach((streak) => {
+        const y = streak.yRatio * height;
+        const startX = streak.side === 'left' ? 0 : cardRight;
+        const endX = streak.side === 'left' ? cardLeft : width;
 
-        let startX = 0;
-        let endX = cardLeft;
-
-        if (track.side === 'right') {
-          startX = cardRight;
-          endX = width;
-        }
-
-        // 1. Draw crisp baseline laser conduit
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(startX, y);
         ctx.lineTo(endX, y);
-        ctx.strokeStyle = track.trackColor;
-        ctx.lineWidth = 1.2;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = track.glowColor;
+        ctx.strokeStyle = streak.color;
+        ctx.lineWidth = 1.0;
+        ctx.globalAlpha = streak.faintTrackAlpha;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = streak.glowColor;
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // =====================================================================
+      // C. RENDER ANAMORPHIC HORIZONTAL OPTICAL LENS FLARES (HOLLYWOOD FLARE)
+      // =====================================================================
+      flares.forEach((flare) => {
+        const y = flare.yRatio * height;
+        const wingSpan = flare.side === 'left' ? cardLeft : (width - cardRight);
+        const flareCenter = flare.side === 'left'
+          ? wingSpan * flare.xOffsetRatio
+          : cardRight + wingSpan * flare.xOffsetRatio;
+
+        const pulse = Math.sin(time * flare.pulseSpeed + flare.pulsePhase) * 0.25 + 0.75;
+        const halfW = (flare.width / 2) * pulse;
+
+        ctx.save();
+
+        // 1. Extended Horizontal Anamorphic Ray (Soft Outer Gradient)
+        const rayGrad = ctx.createLinearGradient(flareCenter - halfW, y, flareCenter + halfW, y);
+        rayGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        rayGrad.addColorStop(0.25, flare.glowColor);
+        rayGrad.addColorStop(0.5, '#ffffff');
+        rayGrad.addColorStop(0.75, flare.glowColor);
+        rayGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.beginPath();
+        ctx.moveTo(flareCenter - halfW, y);
+        ctx.lineTo(flareCenter + halfW, y);
+        ctx.strokeStyle = rayGrad;
+        ctx.lineWidth = 3.2 * pulse;
+        ctx.shadowBlur = 35;
+        ctx.shadowColor = flare.glowColor;
+        ctx.globalAlpha = 0.9 * pulse;
         ctx.stroke();
 
-        // 2. Anamorphic Horizontal Optical Lens Flare (Central Feature from Video)
-        if (track.hasFlare) {
-          const flareX = startX + (endX - startX) * track.flareOffset;
-          const flarePulse = Math.sin(time * 3 + track.id) * 0.2 + 0.8;
+        // 2. Central Blinding Optical Ellipse Core
+        ctx.beginPath();
+        ctx.ellipse(flareCenter, y, 32 * pulse, 3.5 * pulse, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 24;
+        ctx.shadowColor = '#ffffff';
+        ctx.globalAlpha = 1.0;
+        ctx.fill();
 
-          // Extended Horizontal Light Bar (Anamorphic Streak)
-          const beamGrad = ctx.createLinearGradient(
-            flareX - 160,
-            y,
-            flareX + 160,
-            y
-          );
-          beamGrad.addColorStop(0, 'rgba(0,0,0,0)');
-          beamGrad.addColorStop(0.3, track.flareColor);
-          beamGrad.addColorStop(0.5, '#ffffff');
-          beamGrad.addColorStop(0.7, track.flareColor);
-          beamGrad.addColorStop(1, 'rgba(0,0,0,0)');
-
-          ctx.beginPath();
-          ctx.moveTo(flareX - 180, y);
-          ctx.lineTo(flareX + 180, y);
-          ctx.strokeStyle = beamGrad;
-          ctx.lineWidth = 2.8 * flarePulse;
-          ctx.shadowBlur = 32;
-          ctx.shadowColor = track.glowColor;
-          ctx.stroke();
-
-          // Intense Blinding Optical Center Ellipse
-          ctx.beginPath();
-          ctx.ellipse(flareX, y, 28 * flarePulse, 3.2 * flarePulse, 0, 0, Math.PI * 2);
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowBlur = 28;
-          ctx.shadowColor = '#ffffff';
-          ctx.fill();
-
-          // Outer Plasma Halo
-          ctx.beginPath();
-          ctx.arc(flareX, y, 10 * flarePulse, 0, Math.PI * 2);
-          ctx.fillStyle = track.flareColor;
-          ctx.shadowBlur = 24;
-          ctx.shadowColor = track.glowColor;
-          ctx.globalAlpha = 0.65;
-          ctx.fill();
-        }
+        // 3. Radiant Optical Halo
+        ctx.beginPath();
+        ctx.arc(flareCenter, y, 12 * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = flare.color;
+        ctx.shadowBlur = 28;
+        ctx.shadowColor = flare.glowColor;
+        ctx.globalAlpha = 0.65 * pulse;
+        ctx.fill();
 
         ctx.restore();
       });
 
       // =====================================================================
-      // C. HIGH-SPEED PHOTON COMETS STREAMING ALONG THE TRACKS
+      // D. RENDER HIGH-SPEED STREAMING LASER SPEED STREAKS WITH MOTION BLUR
       // =====================================================================
-      comets.forEach((comet) => {
-        const track = tracks.find((t) => t.id === comet.trackId);
-        if (!track) return;
+      streaks.forEach((streak) => {
+        const y = streak.yRatio * height;
 
-        const y = (track.yPercent / 100) * height;
+        if (streak.side === 'left') {
+          // Left Wing: Streams from far left (0) into cardLeft
+          streak.headX += streak.speed;
 
-        if (comet.side === 'left') {
-          // Left wing: comets rush from screen edge (0) towards cardLeft
-          comet.x += comet.speed;
-
-          // When head reaches card left edge, loop back to left screen edge
-          if (comet.x - comet.tailLength > cardLeft) {
-            comet.x = -Math.random() * 150;
-            comet.speed = (6.0 + Math.random() * 5.5) * track.speedMultiplier;
-            comet.tailLength = 200 + Math.random() * 200;
+          // When streak exits to the card edge, loop back smoothly
+          if (streak.headX - streak.length > cardLeft) {
+            streak.headX = -Math.random() * 120;
+            streak.speed = 6.5 + Math.random() * 8.5;
+            streak.length = 200 + Math.random() * 240;
           }
 
-          const headX = Math.min(cardLeft, comet.x);
-          const tailX = Math.max(0, comet.x - comet.tailLength);
+          const headX = Math.min(cardLeft, streak.headX);
+          const tailX = Math.max(0, streak.headX - streak.length);
 
           if (headX > tailX && headX > 0) {
-            // Draw streaming plasma tail (Linear Gradient from transparent to white head)
             ctx.save();
+
+            // Dynamic Motion Blur Gradient from transparent tail to blazing white head
             const grad = ctx.createLinearGradient(tailX, y, headX, y);
             grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            grad.addColorStop(0.35, comet.color2);
-            grad.addColorStop(0.85, comet.color1);
+            grad.addColorStop(0.4, streak.color);
+            grad.addColorStop(0.85, streak.color);
             grad.addColorStop(1, '#ffffff');
 
+            // 1. Outer Glowing Plasma Streak
             ctx.beginPath();
             ctx.moveTo(tailX, y);
             ctx.lineTo(headX, y);
             ctx.strokeStyle = grad;
-            ctx.lineWidth = 2.4;
+            ctx.lineWidth = streak.thickness * 1.8;
             ctx.lineCap = 'round';
-            ctx.shadowBlur = 22;
-            ctx.shadowColor = comet.glowColor;
+            ctx.shadowBlur = 24;
+            ctx.shadowColor = streak.glowColor;
             ctx.stroke();
 
-            // White-hot photon head
+            // 2. Razor-Sharp White-Hot Core
+            ctx.beginPath();
+            ctx.moveTo(tailX + (headX - tailX) * 0.35, y);
+            ctx.lineTo(headX, y);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = Math.max(1.2, streak.thickness * 0.65);
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffffff';
+            ctx.stroke();
+
+            // 3. Blinding Photon Flare Head
             if (headX < cardLeft) {
-              // Outer plasma corona
+              // Outer glow circle
               ctx.beginPath();
-              ctx.arc(headX, y, comet.headRadius * 1.8, 0, Math.PI * 2);
-              ctx.fillStyle = comet.color1;
+              ctx.arc(headX, y, streak.thickness * 2.2, 0, Math.PI * 2);
+              ctx.fillStyle = streak.color;
               ctx.shadowBlur = 24;
-              ctx.shadowColor = comet.glowColor;
+              ctx.shadowColor = streak.glowColor;
               ctx.fill();
 
               // Blinding white center
               ctx.beginPath();
-              ctx.arc(headX, y, comet.headRadius, 0, Math.PI * 2);
+              ctx.arc(headX, y, streak.thickness * 1.1, 0, Math.PI * 2);
               ctx.fillStyle = '#ffffff';
               ctx.shadowBlur = 14;
               ctx.shadowColor = '#ffffff';
               ctx.fill();
-
-              // Shed occasional quantum sparks
-              if (Math.random() < 0.35 && sparks.length < 50) {
-                sparks.push({
-                  x: headX,
-                  y,
-                  vx: -comet.speed * 0.3 + (Math.random() - 0.5) * 1.5,
-                  vy: (Math.random() - 0.5) * 2,
-                  life: 1,
-                  maxLife: 16,
-                  color: comet.color1,
-                  size: 1.4,
-                });
-              }
             }
+
             ctx.restore();
           }
         } else {
-          // Right wing: comets rush from cardRight outward to screen edge (width)
-          comet.x += comet.speed;
+          // Right Wing: Streams from cardRight outward to screen width
+          streak.headX += streak.speed;
 
-          if (comet.x - comet.tailLength > width) {
-            comet.x = cardRight;
-            comet.speed = (6.0 + Math.random() * 5.5) * track.speedMultiplier;
-            comet.tailLength = 200 + Math.random() * 200;
+          if (streak.headX - streak.length > width) {
+            streak.headX = cardRight;
+            streak.speed = 6.5 + Math.random() * 8.5;
+            streak.length = 200 + Math.random() * 240;
           }
 
-          const headX = Math.min(width, comet.x);
-          const tailX = Math.max(cardRight, comet.x - comet.tailLength);
+          const headX = Math.min(width, streak.headX);
+          const tailX = Math.max(cardRight, streak.headX - streak.length);
 
           if (headX > tailX && headX > cardRight) {
             ctx.save();
+
             const grad = ctx.createLinearGradient(tailX, y, headX, y);
             grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            grad.addColorStop(0.35, comet.color2);
-            grad.addColorStop(0.85, comet.color1);
+            grad.addColorStop(0.4, streak.color);
+            grad.addColorStop(0.85, streak.color);
             grad.addColorStop(1, '#ffffff');
 
             ctx.beginPath();
             ctx.moveTo(tailX, y);
             ctx.lineTo(headX, y);
             ctx.strokeStyle = grad;
-            ctx.lineWidth = 2.4;
+            ctx.lineWidth = streak.thickness * 1.8;
             ctx.lineCap = 'round';
-            ctx.shadowBlur = 22;
-            ctx.shadowColor = comet.glowColor;
+            ctx.shadowBlur = 24;
+            ctx.shadowColor = streak.glowColor;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(tailX + (headX - tailX) * 0.35, y);
+            ctx.lineTo(headX, y);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = Math.max(1.2, streak.thickness * 0.65);
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffffff';
             ctx.stroke();
 
             if (headX < width) {
               ctx.beginPath();
-              ctx.arc(headX, y, comet.headRadius * 1.8, 0, Math.PI * 2);
-              ctx.fillStyle = comet.color1;
+              ctx.arc(headX, y, streak.thickness * 2.2, 0, Math.PI * 2);
+              ctx.fillStyle = streak.color;
               ctx.shadowBlur = 24;
-              ctx.shadowColor = comet.glowColor;
+              ctx.shadowColor = streak.glowColor;
               ctx.fill();
 
               ctx.beginPath();
-              ctx.arc(headX, y, comet.headRadius, 0, Math.PI * 2);
+              ctx.arc(headX, y, streak.thickness * 1.1, 0, Math.PI * 2);
               ctx.fillStyle = '#ffffff';
               ctx.shadowBlur = 14;
               ctx.shadowColor = '#ffffff';
               ctx.fill();
-
-              if (Math.random() < 0.35 && sparks.length < 50) {
-                sparks.push({
-                  x: headX,
-                  y,
-                  vx: -comet.speed * 0.3 + (Math.random() - 0.5) * 1.5,
-                  vy: (Math.random() - 0.5) * 2,
-                  life: 1,
-                  maxLife: 16,
-                  color: comet.color1,
-                  size: 1.4,
-                });
-              }
             }
+
             ctx.restore();
           }
         }
       });
-
-      // =====================================================================
-      // D. DYNAMIC QUANTUM SPARKS
-      // =====================================================================
-      for (let s = sparks.length - 1; s >= 0; s--) {
-        const p = sparks[s];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vx *= 0.94;
-        p.vy *= 0.94;
-        p.life++;
-
-        if (p.life >= p.maxLife) {
-          sparks.splice(s, 1);
-          continue;
-        }
-
-        const alpha = 1 - p.life / p.maxLife;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = p.color;
-        ctx.globalAlpha = alpha;
-        ctx.fill();
-        ctx.restore();
-      }
 
       animationFrameId = requestAnimationFrame(render);
     };
@@ -593,9 +485,9 @@ export default function ClickUpSpeedStreaks() {
       className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-screen h-[720px] pointer-events-none overflow-hidden select-none -z-10"
     >
       {/* Ambient Cosmic Wing Auras spanning wide */}
-      <div className="absolute top-1/2 -translate-y-1/2 left-0 w-[550px] lg:w-[850px] h-[500px] bg-gradient-to-r from-cyan-600/20 via-indigo-600/12 to-transparent rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/2 -translate-y-1/2 right-0 w-[550px] lg:w-[850px] h-[500px] bg-gradient-to-l from-pink-600/20 via-purple-600/12 to-transparent rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[900px] h-[260px] bg-gradient-to-b from-indigo-500/12 via-cyan-500/08 to-transparent rounded-full blur-[110px] pointer-events-none" />
+      <div className="absolute top-1/2 -translate-y-1/2 left-0 w-[550px] lg:w-[850px] h-[500px] bg-gradient-to-r from-cyan-600/22 via-indigo-600/14 to-transparent rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/2 -translate-y-1/2 right-0 w-[550px] lg:w-[850px] h-[500px] bg-gradient-to-l from-pink-600/22 via-purple-600/14 to-transparent rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-[900px] h-[260px] bg-gradient-to-b from-indigo-500/14 via-cyan-500/08 to-transparent rounded-full blur-[110px] pointer-events-none" />
 
       {/* 60FPS Full-Screen Laser Speed Canvas Engine */}
       <canvas
