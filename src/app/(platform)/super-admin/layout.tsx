@@ -95,8 +95,12 @@ export default function SuperAdminLayout({
       {/* Mobile Top Header */}
       <header className="md:hidden flex items-center justify-between p-4 bg-zinc-950 border-b border-zinc-800 relative z-50">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-600 to-red-600 flex items-center justify-center text-white">
-            <Layers className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
+            <img
+              src="/images/adsetspro-logo-128.webp"
+              alt="Adsetspro Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <h2 className="font-black text-xs text-white">Adsetspro Flow</h2>
@@ -126,8 +130,12 @@ export default function SuperAdminLayout({
           {/* Brand Header */}
           <div className="hidden md:block px-2 space-y-1">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-red-600 flex items-center justify-center text-white shadow-lg shadow-red-500/20">
-                <Layers className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-cyan-500/20 shrink-0 flex items-center justify-center">
+                <img
+                  src="/images/adsetspro-logo.webp"
+                  alt="Adsetspro Flow Logo"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div className="min-w-0">
                 <h2 className="font-black text-sm tracking-tight text-white truncate">

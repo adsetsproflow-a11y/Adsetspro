@@ -77,8 +77,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-zinc-900/60 backdrop-blur-2xl border border-zinc-800/80 rounded-3xl p-8 shadow-2xl relative z-10 space-y-6">
         {/* Brand header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white shadow-lg shadow-indigo-500/25 mb-2">
-            <Shield className="w-7 h-7" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-cyan-500/25 mb-3">
+            <img
+              src="/images/adsetspro-logo.webp"
+              alt="Adsetspro Flow Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Welcome back</h1>
           <p className="text-sm text-zinc-400">Sign in to your enterprise workspace</p>

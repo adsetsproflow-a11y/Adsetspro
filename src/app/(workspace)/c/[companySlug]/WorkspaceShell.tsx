@@ -205,8 +205,12 @@ export default function WorkspaceShell({
               className="w-8 h-8 rounded-lg object-cover border border-zinc-700/50 shrink-0"
             />
           ) : (
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-bold shrink-0">
-              <Layers className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
+              <img
+                src="/images/adsetspro-logo-128.webp"
+                alt="Adsetspro Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
           )}
           <div>
@@ -251,8 +255,12 @@ export default function WorkspaceShell({
                   className="w-10 h-10 rounded-xl object-cover shadow-lg border border-zinc-700/60 shrink-0"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 font-bold shrink-0">
-                  <Layers className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-cyan-500/20 shrink-0 flex items-center justify-center">
+                  <img
+                    src="/images/adsetspro-logo.webp"
+                    alt="Adsetspro Logo"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               )}
               <div className="min-w-0">

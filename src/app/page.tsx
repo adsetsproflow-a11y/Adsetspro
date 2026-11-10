@@ -208,12 +208,16 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Logo & Brand Name */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform duration-200">
-              <Layers className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shadow-md shadow-cyan-500/25 group-hover:scale-105 transition-transform duration-200 shrink-0">
+              <img
+                src="/images/adsetspro-logo.webp"
+                alt="Adsetspro Flow Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-white">
-                Adsetspro<span className="text-indigo-400">flow</span>
+                Adsetspro<span className="text-cyan-400">flow</span>
               </span>
               <span className="text-[10px] text-zinc-400 font-medium tracking-wider uppercase -mt-0.5">
                 Startup OS
@@ -1106,14 +1110,18 @@ export default function HomePage() {
             {/* Col 1: Brand & Mission (Spans 2 cols on lg) */}
             <div className="lg:col-span-2 space-y-5">
               <Link href="/" className="inline-flex items-center gap-2.5 group">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition-transform duration-200">
-                  <Layers className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-lg shadow-cyan-500/25 group-hover:scale-105 transition-transform duration-200 shrink-0">
+                  <img
+                    src="/images/adsetspro-logo.webp"
+                    alt="Adsetspro Flow Logo"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
-                    Adsetspro<span className="text-indigo-600 dark:text-indigo-400">flow</span>
+                  <span className="font-extrabold text-lg tracking-tight text-white">
+                    Adsetspro<span className="text-cyan-400">flow</span>
                   </span>
-                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium tracking-wider uppercase -mt-0.5">
+                  <span className="text-[10px] text-zinc-400 font-medium tracking-wider uppercase -mt-0.5">
                     Startup Project Management OS
                   </span>
                 </div>
