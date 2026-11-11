@@ -33,6 +33,9 @@ import {
   Eye,
   Check,
   Pencil,
+  Globe,
+  Link2,
+  Copy,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 
@@ -784,14 +787,28 @@ export default function EmployeeTaskDetailPage() {
                             </span>
                           </div>
                         ) : (
-                          /* Non-image Document Header */
-                          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800/60">
-                            <div className="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
-                              <FileText className="w-5 h-5" />
+                          /* Non-image Document or Link Header */
+                          <div className={`flex items-center gap-2.5 p-2.5 rounded-xl border ${
+                            att.file_type === 'link' || (att.storage_path && (att.storage_path.startsWith('http://') || att.storage_path.startsWith('https://')))
+                              ? 'bg-cyan-500/10 border-cyan-500/20'
+                              : 'bg-zinc-900/60 border-zinc-800/60'
+                          }`}>
+                            <div className={`p-2.5 rounded-lg shrink-0 ${
+                              att.file_type === 'link' || (att.storage_path && (att.storage_path.startsWith('http://') || att.storage_path.startsWith('https://')))
+                                ? 'bg-cyan-500/20 text-cyan-400'
+                                : 'bg-indigo-500/10 text-indigo-400'
+                            }`}>
+                              {att.file_type === 'link' || (att.storage_path && (att.storage_path.startsWith('http://') || att.storage_path.startsWith('https://'))) ? (
+                                <Globe className="w-5 h-5" />
+                              ) : (
+                                <FileText className="w-5 h-5" />
+                              )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <span className="text-[10px] font-mono uppercase text-zinc-500 block">
-                                {att.file_type || 'DOCUMENT'}
+                                {att.file_type === 'link' || (att.storage_path && (att.storage_path.startsWith('http://') || att.storage_path.startsWith('https://')))
+                                  ? 'DELIVERABLE LINK'
+                                  : att.file_type || 'DOCUMENT'}
                               </span>
                               <span className="text-xs font-bold text-white truncate block">
                                 {att.file_name}
@@ -806,8 +823,12 @@ export default function EmployeeTaskDetailPage() {
                             {att.file_name}
                           </span>
                           <span className="text-[10px] text-zinc-500 block">
-                            {(att.file_size / (1024 * 1024)).toFixed(2)} MB • {att.uploader_name} •{' '}
-                            {formatDate(att.created_at, 'short')}
+                            {att.file_type === 'link' || (att.storage_path && (att.storage_path.startsWith('http://') || att.storage_path.startsWith('https://'))) ? (
+                              <span className="text-cyan-400 font-mono">Deliverable URL</span>
+                            ) : (
+                              <span>{(att.file_size / (1024 * 1024)).toFixed(2)} MB</span>
+                            )}
+                            {' '}• {att.uploader_name} • {formatDate(att.created_at, 'short')}
                           </span>
                         </div>
                       </div>
@@ -834,15 +855,28 @@ export default function EmployeeTaskDetailPage() {
                             </button>
                           )}
 
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadAttachment(att)}
-                            className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
-                            title="Download Deliverable"
-                          >
-                            <Download className="w-3.5 h-3.5 text-sky-400" />
-                            <span>Download</span>
-                          </button>
+                          {att.file_type === 'link' || (att.storage_path && (att.storage_path.startsWith('http://') || att.storage_path.startsWith('https://')) && !isImg) ? (
+                            <a
+                              href={att.storage_path}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 hover:text-white text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer border border-cyan-500/30"
+                              title="Open Deliverable Link"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Open Link</span>
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadAttachment(att)}
+                              className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[11px] font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                              title="Download Deliverable"
+                            >
+                              <Download className="w-3.5 h-3.5 text-sky-400" />
+                              <span>Download</span>
+                            </button>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-1">

@@ -29,6 +29,84 @@ export type AccountStatus = 'active' | 'suspended' | 'deactivated';
 export interface Database {
   public: {
     Tables: {
+      contact_submissions: {
+        Row: {
+          id: string;
+          full_name: string;
+          email: string;
+          phone: string;
+          company_name: string | null;
+          message: string | null;
+          status: string;
+          ip_address: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          full_name: string;
+          email: string;
+          phone: string;
+          company_name?: string | null;
+          message?: string | null;
+          status?: string;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          full_name?: string;
+          email?: string;
+          phone?: string;
+          company_name?: string | null;
+          message?: string | null;
+          status?: string;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      pricing_submissions: {
+        Row: {
+          id: string;
+          full_name: string;
+          email: string;
+          phone: string;
+          company_name: string | null;
+          plan_name: string;
+          team_size: string | null;
+          message: string | null;
+          status: string;
+          ip_address: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          full_name: string;
+          email: string;
+          phone: string;
+          company_name?: string | null;
+          plan_name?: string;
+          team_size?: string | null;
+          message?: string | null;
+          status?: string;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          full_name?: string;
+          email?: string;
+          phone?: string;
+          company_name?: string | null;
+          plan_name?: string;
+          team_size?: string | null;
+          message?: string | null;
+          status?: string;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       demo_leads: {
         Row: {
           id: string;

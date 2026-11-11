@@ -294,6 +294,8 @@ export default function LandingClosing({ faqs, onBookDemo }: LandingClosingProps
               <div className="space-y-4">
                 <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-900 dark:text-zinc-200">Resources</h3>
                 <ul className="space-y-3">
+                  <li><Link href="/pricing" className={linkCls}>Plans &amp; Pricing</Link></li>
+                  <li><Link href="/contact" className={linkCls}>Contact Enterprise</Link></li>
                   <li><a href="#faqs" className={linkCls}>Frequently Asked Questions</a></li>
                   <li><Link href="/login" className={linkCls}>Sign In to Workspace</Link></li>
                 </ul>

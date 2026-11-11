@@ -22,6 +22,8 @@ import {
   Shield,
   Layers,
   Lock,
+  Tag,
+  CreditCard,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 
@@ -39,6 +41,30 @@ interface DemoLead {
   expires_at?: string | null;
 }
 
+interface ContactSubmission {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  company_name: string | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+}
+
+interface PricingSubmission {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  company_name: string | null;
+  plan_name: string;
+  team_size: string | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+}
+
 interface CompanyRegistration {
   id: string;
   company_name: string;
@@ -54,8 +80,10 @@ interface CompanyRegistration {
 }
 
 export default function SuperAdminEnquiriesPage() {
-  const [activeTab, setActiveTab] = useState<'registrations' | 'leads'>('registrations');
+  const [activeTab, setActiveTab] = useState<'registrations' | 'leads' | 'contact' | 'pricing'>('registrations');
   const [leads, setLeads] = useState<DemoLead[]>([]);
+  const [contactSubmissions, setContactSubmissions] = useState<ContactSubmission[]>([]);
+  const [pricingSubmissions, setPricingSubmissions] = useState<PricingSubmission[]>([]);
   const [registrations, setRegistrations] = useState<CompanyRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,6 +105,44 @@ export default function SuperAdminEnquiriesPage() {
       }
     } catch (err) {
       console.error('Failed to fetch company registrations:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchContactSubmissions = async () => {
+    setIsLoading(true);
+    try {
+      const q = new URLSearchParams();
+      if (searchQuery.trim()) q.set('search', searchQuery.trim());
+      if (statusFilter !== 'all') q.set('status', statusFilter);
+
+      const res = await fetch(`/api/contact?${q.toString()}`);
+      const data = await res.json();
+      if (data.success) {
+        setContactSubmissions(data.submissions || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch contact submissions:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchPricingSubmissions = async () => {
+    setIsLoading(true);
+    try {
+      const q = new URLSearchParams();
+      if (searchQuery.trim()) q.set('search', searchQuery.trim());
+      if (statusFilter !== 'all') q.set('status', statusFilter);
+
+      const res = await fetch(`/api/pricing?${q.toString()}`);
+      const data = await res.json();
+      if (data.success) {
+        setPricingSubmissions(data.submissions || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch pricing submissions:', err);
     } finally {
       setIsLoading(false);
     }
@@ -104,8 +170,12 @@ export default function SuperAdminEnquiriesPage() {
   useEffect(() => {
     if (activeTab === 'registrations') {
       fetchRegistrations();
-    } else {
+    } else if (activeTab === 'leads') {
       fetchLeads();
+    } else if (activeTab === 'contact') {
+      fetchContactSubmissions();
+    } else {
+      fetchPricingSubmissions();
     }
   }, [activeTab, statusFilter]);
 
@@ -113,8 +183,12 @@ export default function SuperAdminEnquiriesPage() {
     e.preventDefault();
     if (activeTab === 'registrations') {
       fetchRegistrations();
-    } else {
+    } else if (activeTab === 'leads') {
       fetchLeads();
+    } else if (activeTab === 'contact') {
+      fetchContactSubmissions();
+    } else {
+      fetchPricingSubmissions();
     }
   };
 
@@ -202,6 +276,116 @@ export default function SuperAdminEnquiriesPage() {
     }
   };
 
+  const handleContactStatusChange = async (subId: string, newStatus: string) => {
+    setIsUpdatingId(subId);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: subId, status: newStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setContactSubmissions((prev) =>
+          prev.map((c) => (c.id === subId ? { ...c, status: newStatus } : c))
+        );
+      }
+    } catch (err) {
+      console.error('Error updating contact status:', err);
+    } finally {
+      setIsUpdatingId(null);
+    }
+  };
+
+  const handleDeleteContactSubmission = async (subId: string) => {
+    if (!confirm('Are you sure you want to delete this contact enquiry?')) return;
+    try {
+      const res = await fetch(`/api/contact?id=${subId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setContactSubmissions((prev) => prev.filter((c) => c.id !== subId));
+      } else {
+        alert(data.error || 'Failed to delete contact submission');
+      }
+    } catch (err) {
+      console.error('Error deleting contact submission:', err);
+    }
+  };
+
+  const handleDeleteAllContactSubmissions = async () => {
+    if (!confirm('Are you sure you want to delete ALL contact enquiries? This action cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/contact?all=true', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setContactSubmissions([]);
+      } else {
+        alert(data.error || 'Failed to delete all contact submissions');
+      }
+    } catch (err) {
+      console.error('Error deleting all contact submissions:', err);
+    }
+  };
+
+  const handlePricingStatusChange = async (subId: string, newStatus: string) => {
+    setIsUpdatingId(subId);
+    try {
+      const res = await fetch('/api/pricing', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: subId, status: newStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPricingSubmissions((prev) =>
+          prev.map((p) => (p.id === subId ? { ...p, status: newStatus } : p))
+        );
+      }
+    } catch (err) {
+      console.error('Error updating pricing status:', err);
+    } finally {
+      setIsUpdatingId(null);
+    }
+  };
+
+  const handleDeletePricingSubmission = async (subId: string) => {
+    if (!confirm('Are you sure you want to delete this pricing inquiry?')) return;
+    try {
+      const res = await fetch(`/api/pricing?id=${subId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPricingSubmissions((prev) => prev.filter((p) => p.id !== subId));
+      } else {
+        alert(data.error || 'Failed to delete pricing inquiry');
+      }
+    } catch (err) {
+      console.error('Error deleting pricing inquiry:', err);
+    }
+  };
+
+  const handleDeleteAllPricingSubmissions = async () => {
+    if (!confirm('Are you sure you want to delete ALL pricing inquiries? This action cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/pricing?all=true', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPricingSubmissions([]);
+      } else {
+        alert(data.error || 'Failed to delete all pricing inquiries');
+      }
+    } catch (err) {
+      console.error('Error deleting all pricing inquiries:', err);
+    }
+  };
+
   const handleDeleteAllRegistrations = async () => {
     if (!confirm('Are you sure you want to delete ALL company registration archive records? This action cannot be undone.')) return;
     try {
@@ -247,6 +431,50 @@ export default function SuperAdminEnquiriesPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    } else if (activeTab === 'contact') {
+      if (contactSubmissions.length === 0) return;
+      const headers = ['Full Name', 'Email', 'Phone', 'Company Name', 'Message', 'Status', 'Submitted At'];
+      const rows = contactSubmissions.map((c) => [
+        `"${c.full_name}"`,
+        `"${c.email}"`,
+        `"${c.phone}"`,
+        `"${c.company_name || 'N/A'}"`,
+        `"${(c.message || '').replace(/"/g, '""')}"`,
+        `"${c.status || 'new'}"`,
+        `"${new Date(c.created_at).toLocaleString()}"`,
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `Contact_Submissions_${new Date().toISOString().substring(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else if (activeTab === 'pricing') {
+      if (pricingSubmissions.length === 0) return;
+      const headers = ['Full Name', 'Email', 'Phone', 'Company Name', 'Plan Name', 'Team Size', 'Requirements', 'Status', 'Submitted At'];
+      const rows = pricingSubmissions.map((p) => [
+        `"${p.full_name}"`,
+        `"${p.email}"`,
+        `"${p.phone}"`,
+        `"${p.company_name || 'N/A'}"`,
+        `"${p.plan_name}"`,
+        `"${p.team_size || 'N/A'}"`,
+        `"${(p.message || '').replace(/"/g, '""')}"`,
+        `"${p.status || 'new'}"`,
+        `"${new Date(p.created_at).toLocaleString()}"`,
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `Pricing_Inquiries_${new Date().toISOString().substring(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } else {
       if (leads.length === 0) return;
       const headers = ['Full Name', 'Email', 'Phone', 'Company Name', 'Requested Role', 'Status', 'Created At', 'IP Address'];
@@ -272,6 +500,13 @@ export default function SuperAdminEnquiriesPage() {
     }
   };
 
+  const getRecordCount = () => {
+    if (activeTab === 'registrations') return registrations.length;
+    if (activeTab === 'leads') return leads.length;
+    if (activeTab === 'contact') return contactSubmissions.length;
+    return pricingSubmissions.length;
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 font-sans">
       {/* Top Header */}
@@ -279,20 +514,20 @@ export default function SuperAdminEnquiriesPage() {
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
             <Shield className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Audited User Acquisition & Directory</span>
+            <span>Audited User Acquisition &amp; Directory</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            User Requests & Registrations
+            User Requests &amp; Registrations
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400">
-            Authoritative registry of company applicants and demo leads with verified Indian phone numbers.
+            Authoritative registry of company applicants, demo leads, contact submissions, and pricing requests with verified 10-digit Indian numbers.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
             onClick={exportToCSV}
-            disabled={activeTab === 'registrations' ? registrations.length === 0 : leads.length === 0}
+            disabled={getRecordCount() === 0}
             className="px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold inline-flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
           >
             <Download className="w-4 h-4 text-emerald-400" />
@@ -300,7 +535,12 @@ export default function SuperAdminEnquiriesPage() {
           </button>
 
           <button
-            onClick={() => (activeTab === 'registrations' ? fetchRegistrations() : fetchLeads())}
+            onClick={() => {
+              if (activeTab === 'registrations') fetchRegistrations();
+              else if (activeTab === 'leads') fetchLeads();
+              else if (activeTab === 'contact') fetchContactSubmissions();
+              else fetchPricingSubmissions();
+            }}
             className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold inline-flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
             title="Refresh Inquiries"
           >
@@ -308,11 +548,16 @@ export default function SuperAdminEnquiriesPage() {
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
-          {(activeTab === 'registrations' ? registrations.length > 0 : leads.length > 0) && (
+          {getRecordCount() > 0 && (
             <button
-              onClick={activeTab === 'registrations' ? handleDeleteAllRegistrations : handleDeleteAllLeads}
+              onClick={() => {
+                if (activeTab === 'registrations') handleDeleteAllRegistrations();
+                else if (activeTab === 'leads') handleDeleteAllLeads();
+                else if (activeTab === 'contact') handleDeleteAllContactSubmissions();
+                else handleDeleteAllPricingSubmissions();
+              }}
               className="px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 text-red-400 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              title={activeTab === 'registrations' ? 'Delete all company registration records' : 'Delete all demo enquiries'}
+              title="Delete all records in current tab"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Delete All</span>
@@ -322,7 +567,7 @@ export default function SuperAdminEnquiriesPage() {
       </div>
 
       {/* Mode / Tabs Switcher */}
-      <div className="flex items-center gap-2 p-1.5 bg-zinc-950/80 border border-zinc-800/80 rounded-2xl w-fit">
+      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-zinc-950/80 border border-zinc-800/80 rounded-2xl w-fit">
         <button
           type="button"
           onClick={() => {
@@ -362,19 +607,69 @@ export default function SuperAdminEnquiriesPage() {
             {leads.length}
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('contact');
+            setSearchQuery('');
+            setStatusFilter('all');
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'contact'
+              ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+          }`}
+        >
+          <Mail className="w-3.5 h-3.5" />
+          <span>Contact Enquiries</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-mono">
+            {contactSubmissions.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('pricing');
+            setSearchQuery('');
+            setStatusFilter('all');
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'pricing'
+              ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-md'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+          }`}
+        >
+          <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Pricing Inquiries</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-mono">
+            {pricingSubmissions.length}
+          </span>
+        </button>
       </div>
 
       {/* KPI Stats Overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-zinc-950/70 border border-zinc-800 shadow-md space-y-1">
           <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-            {activeTab === 'registrations' ? 'Company Registrations' : 'Total Leads'}
+            {activeTab === 'registrations'
+              ? 'Total Registrations'
+              : activeTab === 'leads'
+              ? 'Total Leads'
+              : activeTab === 'contact'
+              ? 'Total Contact Forms'
+              : 'Total Pricing Quotes'}
           </span>
-          <p className="text-2xl font-black text-white">
-            {activeTab === 'registrations' ? registrations.length : leads.length}
-          </p>
+          <p className="text-2xl font-black text-white">{getRecordCount()}</p>
           <p className="text-[10px] text-zinc-500">
-            {activeTab === 'registrations' ? 'Permanent archive records' : 'All demo inquiries'}
+            {activeTab === 'registrations'
+              ? 'Permanent archive records'
+              : activeTab === 'leads'
+              ? 'All demo inquiries'
+              : activeTab === 'contact'
+              ? 'Submitted from /contact'
+              : 'Submitted from /pricing'}
           </p>
         </div>
 
@@ -414,7 +709,11 @@ export default function SuperAdminEnquiriesPage() {
             placeholder={
               activeTab === 'registrations'
                 ? 'Search by company name, applicant, email, or phone...'
-                : 'Search demo inquiries by name, email, phone, or company...'
+                : activeTab === 'leads'
+                ? 'Search demo inquiries by name, email, phone, or company...'
+                : activeTab === 'contact'
+                ? 'Search contact inquiries by name, email, phone...'
+                : 'Search pricing inquiries by name, company, plan, or phone...'
             }
             className="w-full pl-10 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
           />
@@ -428,22 +727,23 @@ export default function SuperAdminEnquiriesPage() {
             className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
           >
             <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            {activeTab === 'leads' && (
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            {activeTab === 'pricing' && <option value="quoted">Quoted</option>}
+            {activeTab === 'registrations' && (
               <>
-                <option value="new">New</option>
-                <option value="contacted">Contacted</option>
-                <option value="qualified">Qualified</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
               </>
             )}
           </select>
         </div>
       </div>
 
-      {/* Main Content Table */}
-      {activeTab === 'registrations' ? (
+      {/* 1. Registrations Table */}
+      {activeTab === 'registrations' && (
         <div className="p-5 sm:p-6 rounded-3xl bg-zinc-950/80 border border-zinc-800 shadow-xl space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
             <div>
@@ -479,7 +779,6 @@ export default function SuperAdminEnquiriesPage() {
                     const rawDigits = reg.phone.replace(/\D/g, '');
                     return (
                       <tr key={reg.id} className="hover:bg-zinc-900/40 transition-colors">
-                        {/* Company Name & Slug */}
                         <td className="py-3.5 pl-2">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0">
@@ -487,28 +786,19 @@ export default function SuperAdminEnquiriesPage() {
                             </div>
                             <div className="min-w-0">
                               <p className="font-bold text-white truncate">{reg.company_name}</p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                {reg.company_slug && (
-                                  <span className="font-mono text-[10px] text-zinc-400">
-                                    /c/{reg.company_slug}
-                                  </span>
-                                )}
-                                {!reg.is_company_active && (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                    Workspace Purged
-                                  </span>
-                                )}
-                              </div>
+                              {reg.company_slug && (
+                                <p className="text-[11px] text-zinc-500 font-mono">
+                                  /c/{reg.company_slug}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </td>
 
-                        {/* Applicant Name */}
-                        <td className="py-3.5">
-                          <span className="font-semibold text-zinc-200">{reg.full_name}</span>
+                        <td className="py-3.5 text-zinc-300 font-medium">
+                          {reg.full_name}
                         </td>
 
-                        {/* Email */}
                         <td className="py-3.5">
                           <div className="flex items-center gap-2">
                             <a
@@ -520,7 +810,7 @@ export default function SuperAdminEnquiriesPage() {
                             <button
                               type="button"
                               onClick={() => copyToClipboard(reg.email, `reg_email_${reg.id}`)}
-                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                               title="Copy Email"
                             >
                               {copiedId === `reg_email_${reg.id}` ? (
@@ -532,21 +822,18 @@ export default function SuperAdminEnquiriesPage() {
                           </div>
                         </td>
 
-                        {/* Phone */}
                         <td className="py-3.5">
                           <div className="flex items-center gap-2">
                             <a
-                              href={`tel:${reg.phone.replace(/\s+/g, '')}`}
-                              className="font-mono text-emerald-400 font-bold hover:underline text-[11px] flex items-center gap-1"
-                              title="Call applicant"
+                              href={`tel:${reg.phone}`}
+                              className="font-mono text-emerald-400 hover:text-emerald-300 transition-colors font-semibold text-[11px]"
                             >
-                              <Phone className="w-3 h-3 text-emerald-400" />
-                              <span>{reg.phone}</span>
+                              +91 {reg.phone}
                             </a>
                             <button
                               type="button"
                               onClick={() => copyToClipboard(reg.phone, `reg_phone_${reg.id}`)}
-                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                               title="Copy Phone"
                             >
                               {copiedId === `reg_phone_${reg.id}` ? (
@@ -558,44 +845,42 @@ export default function SuperAdminEnquiriesPage() {
                           </div>
                         </td>
 
-                        {/* Status */}
                         <td className="py-3.5">
                           <span
-                            className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               reg.status === 'approved'
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                : reg.status === 'pending'
-                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                                : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                : reg.status === 'rejected'
+                                ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                : reg.status === 'suspended'
+                                ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                             }`}
                           >
                             {reg.status}
                           </span>
                         </td>
 
-                        {/* Registered At */}
                         <td className="py-3.5 text-zinc-400 font-mono text-[11px]">
                           {formatDate(reg.created_at, 'medium')}
                         </td>
 
-                        {/* Actions */}
                         <td className="py-3.5 text-right pr-2">
-                          <div className="flex items-center justify-end gap-2">
-                            {rawDigits.length >= 10 && (
-                              <a
-                                href={`https://wa.me/${rawDigits}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-[10px] font-bold inline-flex items-center gap-1 transition-colors"
-                                title="Message on WhatsApp"
-                              >
-                                <MessageSquare className="w-3 h-3" />
-                                <span>WhatsApp</span>
-                              </a>
-                            )}
+                          <div className="inline-flex items-center gap-2">
                             <a
-                              href={`tel:${reg.phone.replace(/\s+/g, '')}`}
-                              className="px-2 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 text-[10px] font-bold inline-flex items-center gap-1 transition-colors"
+                              href={`https://wa.me/${rawDigits}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[11px] font-bold inline-flex items-center gap-1 transition-colors border border-emerald-500/30"
+                              title="Chat on WhatsApp"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              <span>WhatsApp</span>
+                            </a>
+                            <a
+                              href={`tel:${reg.phone}`}
+                              className="px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-[11px] font-bold inline-flex items-center gap-1 transition-colors border border-indigo-500/30"
+                              title="Direct Phone Call"
                             >
                               <Phone className="w-3 h-3" />
                               <span>Call</span>
@@ -624,9 +909,26 @@ export default function SuperAdminEnquiriesPage() {
             </table>
           </div>
         </div>
-      ) : (
-        /* Demo Leads Table */
+      )}
+
+      {/* 2. Demo Sandbox Leads Table */}
+      {activeTab === 'leads' && (
         <div className="p-5 sm:p-6 rounded-3xl bg-zinc-950/80 border border-zinc-800 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-indigo-400" />
+                <span>Demo Sandbox Leads</span>
+              </h3>
+              <p className="text-[11px] text-zinc-400">
+                Prospects who unlocked the 7-day interactive demo with 10-digit phone verification.
+              </p>
+            </div>
+            <span className="text-xs font-mono text-zinc-500">
+              {leads.length} lead{leads.length === 1 ? '' : 's'}
+            </span>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -646,7 +948,6 @@ export default function SuperAdminEnquiriesPage() {
                     const rawPhoneDigits = lead.phone.replace(/\D/g, '');
                     return (
                       <tr key={lead.id} className="hover:bg-zinc-900/40 transition-colors">
-                        {/* Name & Company */}
                         <td className="py-3.5 pl-2 max-w-xs">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white font-black text-xs flex items-center justify-center shrink-0">
@@ -662,7 +963,6 @@ export default function SuperAdminEnquiriesPage() {
                           </div>
                         </td>
 
-                        {/* Email */}
                         <td className="py-3.5">
                           <div className="flex items-center gap-2">
                             <a
@@ -674,7 +974,7 @@ export default function SuperAdminEnquiriesPage() {
                             <button
                               type="button"
                               onClick={() => copyToClipboard(lead.email, `email_${lead.id}`)}
-                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                               title="Copy Email"
                             >
                               {copiedId === `email_${lead.id}` ? (
@@ -684,12 +984,8 @@ export default function SuperAdminEnquiriesPage() {
                               )}
                             </button>
                           </div>
-                          <span className="inline-block mt-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded">
-                            Valid Email
-                          </span>
                         </td>
 
-                        {/* Phone */}
                         <td className="py-3.5">
                           <div className="flex items-center gap-2">
                             <a
@@ -701,7 +997,7 @@ export default function SuperAdminEnquiriesPage() {
                             <button
                               type="button"
                               onClick={() => copyToClipboard(lead.phone, `phone_${lead.id}`)}
-                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                               title="Copy Phone"
                             >
                               {copiedId === `phone_${lead.id}` ? (
@@ -725,14 +1021,12 @@ export default function SuperAdminEnquiriesPage() {
                           </div>
                         </td>
 
-                        {/* Requested Demo Role */}
                         <td className="py-3.5">
                           <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
                             {lead.unlocked_role || 'All Roles'}
                           </span>
                         </td>
 
-                        {/* Submitted At & 7-Day Trial Status */}
                         <td className="py-3.5 text-zinc-400 font-mono text-[11px]">
                           <div>{formatDate(lead.created_at, 'medium')}</div>
                           {(() => {
@@ -757,7 +1051,6 @@ export default function SuperAdminEnquiriesPage() {
                           })()}
                         </td>
 
-                        {/* Status Selector */}
                         <td className="py-3.5 text-center">
                           <select
                             value={lead.status || 'new'}
@@ -777,7 +1070,6 @@ export default function SuperAdminEnquiriesPage() {
                           </select>
                         </td>
 
-                        {/* Actions */}
                         <td className="py-3.5 text-right pr-2">
                           <button
                             type="button"
@@ -795,6 +1087,369 @@ export default function SuperAdminEnquiriesPage() {
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-xs text-zinc-500">
                       No demo enquiries found matching your search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Contact Submissions Table */}
+      {activeTab === 'contact' && (
+        <div className="bg-zinc-950/70 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl backdrop-blur-sm space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Mail className="w-4 h-4 text-cyan-400" />
+                <span>Contact Submissions (/contact)</span>
+              </h2>
+              <p className="text-xs text-zinc-400">
+                Inquiries and requirements sent by enterprise visitors with verified 10-digit mobile numbers.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-zinc-900 border border-zinc-800 text-zinc-300">
+              {contactSubmissions.length} submissions
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-zinc-800 text-zinc-500 uppercase font-semibold text-[10px] tracking-wider">
+                  <th className="pb-3 pl-2">Prospect / Contact</th>
+                  <th className="pb-3">Email Address</th>
+                  <th className="pb-3">Phone Number</th>
+                  <th className="pb-3">Company</th>
+                  <th className="pb-3">Requirement / Message</th>
+                  <th className="pb-3">Submitted At</th>
+                  <th className="pb-3 text-center">Status</th>
+                  <th className="pb-3 text-right pr-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-900">
+                {contactSubmissions && contactSubmissions.length > 0 ? (
+                  contactSubmissions.map((sub) => {
+                    const rawDigits = sub.phone.replace(/\D/g, '');
+                    return (
+                      <tr key={sub.id} className="hover:bg-zinc-900/40 transition-colors">
+                        <td className="py-3.5 pl-2 max-w-xs">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-500 text-white font-black text-xs flex items-center justify-center shrink-0">
+                              {sub.full_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-white truncate">{sub.full_name}</p>
+                              <span className="inline-block mt-0.5 text-[9px] font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.2 rounded">
+                                Contact Lead
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5">
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`mailto:${sub.email}`}
+                              className="font-mono text-indigo-400 hover:text-indigo-300 hover:underline text-[11px]"
+                            >
+                              {sub.email}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(sub.email, `contact_email_${sub.id}`)}
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                              title="Copy Email"
+                            >
+                              {copiedId === `contact_email_${sub.id}` ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5">
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`tel:${sub.phone}`}
+                              className="font-mono text-zinc-200 font-semibold hover:text-indigo-400 transition-colors text-[11px]"
+                            >
+                              {sub.phone}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(sub.phone, `contact_phone_${sub.id}`)}
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                              title="Copy Phone"
+                            >
+                              {copiedId === `contact_phone_${sub.id}` ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                            {rawDigits.length >= 10 && (
+                              <a
+                                href={`https://wa.me/${rawDigits}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-[10px] font-bold inline-flex items-center gap-1 transition-colors"
+                                title="Message on WhatsApp"
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                <span>WhatsApp</span>
+                              </a>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 text-zinc-300 text-xs">
+                          {sub.company_name || <span className="text-zinc-600 italic">Not specified</span>}
+                        </td>
+
+                        <td className="py-3.5 max-w-sm">
+                          <div
+                            className="text-zinc-300 text-xs line-clamp-2 bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/80"
+                            title={sub.message || ''}
+                          >
+                            {sub.message || <span className="text-zinc-600 italic">No message provided</span>}
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 text-zinc-400 font-mono text-[11px] whitespace-nowrap">
+                          {formatDate(sub.created_at, 'medium')}
+                        </td>
+
+                        <td className="py-3.5 text-center">
+                          <select
+                            value={sub.status || 'new'}
+                            disabled={isUpdatingId === sub.id}
+                            onChange={(e) => handleContactStatusChange(sub.id, e.target.value)}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider border cursor-pointer focus:outline-none ${
+                              sub.status === 'contacted'
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                : sub.status === 'qualified'
+                                ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
+                                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                            }`}
+                          >
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="qualified">Qualified</option>
+                          </select>
+                        </td>
+
+                        <td className="py-3.5 text-right pr-2">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteContactSubmission(sub.id)}
+                              className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                              title="Delete Contact Enquiry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-xs text-zinc-500">
+                      No contact enquiries found matching your search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Pricing Inquiries Table */}
+      {activeTab === 'pricing' && (
+        <div className="bg-zinc-950/70 border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-xl backdrop-blur-sm space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-cyan-400" />
+                <span>Pricing &amp; Custom Quote Requests (/pricing)</span>
+              </h2>
+              <p className="text-xs text-zinc-400">
+                Inquiries and plan activation requests with verified 10-digit Indian mobile numbers.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-zinc-900 border border-zinc-800 text-zinc-300">
+              {pricingSubmissions.length} inquiries
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-zinc-800 text-zinc-500 uppercase font-semibold text-[10px] tracking-wider">
+                  <th className="pb-3 pl-2">Prospect / Contact</th>
+                  <th className="pb-3">Email Address</th>
+                  <th className="pb-3">Phone Number</th>
+                  <th className="pb-3">Company</th>
+                  <th className="pb-3">Target Plan</th>
+                  <th className="pb-3">Team Size</th>
+                  <th className="pb-3">Requirements</th>
+                  <th className="pb-3">Submitted At</th>
+                  <th className="pb-3 text-center">Status</th>
+                  <th className="pb-3 text-right pr-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-900">
+                {pricingSubmissions && pricingSubmissions.length > 0 ? (
+                  pricingSubmissions.map((sub) => {
+                    const rawDigits = sub.phone.replace(/\D/g, '');
+                    return (
+                      <tr key={sub.id} className="hover:bg-zinc-900/40 transition-colors">
+                        <td className="py-3.5 pl-2 max-w-xs">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-fuchsia-500 text-white font-black text-xs flex items-center justify-center shrink-0">
+                              {sub.full_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-white truncate">{sub.full_name}</p>
+                              <span className="inline-block mt-0.5 text-[9px] font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.2 rounded">
+                                Pricing Lead
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5">
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`mailto:${sub.email}`}
+                              className="font-mono text-indigo-400 hover:text-indigo-300 hover:underline text-[11px]"
+                            >
+                              {sub.email}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(sub.email, `pricing_email_${sub.id}`)}
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                              title="Copy Email"
+                            >
+                              {copiedId === `pricing_email_${sub.id}` ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5">
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`tel:${sub.phone}`}
+                              className="font-mono text-zinc-200 font-semibold hover:text-indigo-400 transition-colors text-[11px]"
+                            >
+                              {sub.phone}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(sub.phone, `pricing_phone_${sub.id}`)}
+                              className="p-1 rounded text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                              title="Copy Phone"
+                            >
+                              {copiedId === `pricing_phone_${sub.id}` ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                            {rawDigits.length >= 10 && (
+                              <a
+                                href={`https://wa.me/${rawDigits}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-[10px] font-bold inline-flex items-center gap-1 transition-colors"
+                                title="Message on WhatsApp"
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                <span>WhatsApp</span>
+                              </a>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 text-zinc-300 text-xs">
+                          {sub.company_name || <span className="text-zinc-600 italic">Not specified</span>}
+                        </td>
+
+                        <td className="py-3.5">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
+                            {sub.plan_name}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 text-zinc-300 font-mono text-xs">
+                          {sub.team_size || 'N/A'}
+                        </td>
+
+                        <td className="py-3.5 max-w-xs">
+                          <div
+                            className="text-zinc-300 text-xs line-clamp-2 bg-zinc-900/60 p-2 rounded-lg border border-zinc-800/80"
+                            title={sub.message || ''}
+                          >
+                            {sub.message || <span className="text-zinc-600 italic">No notes provided</span>}
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 text-zinc-400 font-mono text-[11px] whitespace-nowrap">
+                          {formatDate(sub.created_at, 'medium')}
+                        </td>
+
+                        <td className="py-3.5 text-center">
+                          <select
+                            value={sub.status || 'new'}
+                            disabled={isUpdatingId === sub.id}
+                            onChange={(e) => handlePricingStatusChange(sub.id, e.target.value)}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider border cursor-pointer focus:outline-none ${
+                              sub.status === 'contacted'
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                : sub.status === 'quoted'
+                                ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                                : sub.status === 'qualified'
+                                ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
+                                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                            }`}
+                          >
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="quoted">Quoted</option>
+                            <option value="qualified">Qualified</option>
+                          </select>
+                        </td>
+
+                        <td className="py-3.5 text-right pr-2">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePricingSubmission(sub.id)}
+                              className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                              title="Delete Pricing Inquiry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={10} className="py-12 text-center text-xs text-zinc-500">
+                      No pricing inquiries found matching your search.
                     </td>
                   </tr>
                 )}

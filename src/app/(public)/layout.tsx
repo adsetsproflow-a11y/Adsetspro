@@ -2,10 +2,19 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import ThemeToggle from '@/components/common/ThemeToggle';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  // Pages with their own dedicated, branded header and navigation
+  const isFullNavbarPage = pathname === '/pricing' || pathname === '/contact';
+
+  if (isFullNavbarPage) {
+    return <div className="min-h-screen flex flex-col">{children}</div>;
+  }
+
   return (
     <div className="min-h-screen relative flex flex-col">
       <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 flex items-center justify-between z-50 pointer-events-none">

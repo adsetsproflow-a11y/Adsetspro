@@ -16,6 +16,10 @@ import {
   X,
   Eye,
   RefreshCw,
+  Globe,
+  Link2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/dateFormat';
 
@@ -47,6 +51,7 @@ export default function FileList({
 }: FileListProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{
     url: string;
     fileName: string;
@@ -200,12 +205,121 @@ export default function FileList({
     );
   }
 
-  // Separate image attachments and document attachments for rich visual rendering
-  const imageFiles = files.filter(isImageAttachment);
-  const docFiles = files.filter((f) => !isImageAttachment(f));
+  const isLinkAttachment = (file: TaskAttachmentItem) => {
+    return (
+      file.file_type === 'link' ||
+      file.file_type === 'url' ||
+      Boolean(
+        file.storage_path &&
+          (file.storage_path.startsWith('http://') || file.storage_path.startsWith('https://')) &&
+          !isImageAttachment(file)
+      )
+    );
+  };
+
+  // Separate links, image attachments, and document attachments for rich rendering
+  const linkFiles = files.filter(isLinkAttachment);
+  const imageFiles = files.filter((f) => !isLinkAttachment(f) && isImageAttachment(f));
+  const docFiles = files.filter((f) => !isLinkAttachment(f) && !isImageAttachment(f));
 
   return (
     <div className="space-y-4">
+      {/* 0. SHARED RESOURCE & DELIVERABLE LINKS */}
+      {linkFiles.length > 0 && (
+        <div className="space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+            <Link2 className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Shared Deliverable Links ({linkFiles.length})</span>
+          </span>
+          <div className="space-y-2">
+            {linkFiles.map((file) => {
+              const canDelete = isAdmin || (currentUserId && file.uploaded_by === currentUserId);
+              const isDeleting = deletingId === file.id;
+              const targetUrl = file.storage_path || file.file_name;
+              const isCopied = copiedId === file.id;
+
+              return (
+                <div
+                  key={file.id}
+                  className="p-3.5 rounded-2xl bg-zinc-950/70 border border-cyan-500/30 hover:border-cyan-500/50 transition-all flex items-center justify-between gap-3 shadow-md"
+                >
+                  {/* Link Icon & Info */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                      <Globe className="w-4 h-4" />
+                    </div>
+
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-white truncate max-w-xs block">
+                          {file.file_name}
+                        </span>
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 shrink-0">
+                          LINK v{file.version || 1}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+                        <a
+                          href={targetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-cyan-400/90 hover:text-cyan-300 hover:underline truncate max-w-[200px] sm:max-w-sm block"
+                        >
+                          {targetUrl}
+                        </a>
+                        <span>•</span>
+                        <span className="truncate max-w-[100px]">{file.uploader_name || 'Team member'}</span>
+                        <span>•</span>
+                        <span className="font-mono text-zinc-500">{formatDate(file.created_at, 'short')}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions: Open, Copy, Delete */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <a
+                      href={targetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-semibold text-xs inline-flex items-center gap-1.5 transition-all shadow-sm"
+                    >
+                      <span>Open Link</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(targetUrl);
+                        setCopiedId(file.id);
+                        setTimeout(() => setCopiedId(null), 2000);
+                      }}
+                      className="p-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                      title="Copy link"
+                    >
+                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(file)}
+                        disabled={isDeleting}
+                        className="p-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-red-500/10 hover:border-red-500/30 text-zinc-400 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-40"
+                        title="Remove link"
+                      >
+                        <Trash2 className={`w-3.5 h-3.5 ${isDeleting ? 'animate-spin' : ''}`} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 1. VISUAL IMAGE THUMBNAILS GRID (Deliverables & Artwork) */}
       {imageFiles.length > 0 && (
         <div className="space-y-2">
