@@ -34,6 +34,7 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
   // Remember previously submitted lead
   const [isAlreadyUnlocked, setIsAlreadyUnlocked] = useState(false);
   const [savedLeadName, setSavedLeadName] = useState<string>('');
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(7);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -61,14 +62,20 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
         if (data?.valid && data?.lead) {
           setIsAlreadyUnlocked(true);
           setSavedLeadName(data.lead.fullName || leadName || 'Guest');
+          if (typeof data.lead.daysRemaining === 'number') {
+            setDaysRemaining(data.lead.daysRemaining);
+          }
         } else {
-          // Lead was deleted from DB (or never existed)! Purge stale state and display form
+          // Lead expired or deleted from DB! Purge stale state and display form
           localStorage.removeItem('demo_access_unlocked');
           localStorage.removeItem('demo_lead_name');
           localStorage.removeItem('demo_lead_id');
           document.cookie = 'demo_access_unlocked=; Max-Age=0; path=/;';
           setIsAlreadyUnlocked(false);
           setSavedLeadName('');
+          if (data?.expired) {
+            setDemoLaunchError('Your 7-day demo trial period has ended. Please register your company or enter new details to continue.');
+          }
         }
       } catch {
         // Fallback: if network fails or error, do not assume unlocked
@@ -222,8 +229,8 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
           </h3>
           <p className="text-xs sm:text-sm text-zinc-400">
             {isAlreadyUnlocked
-              ? `Welcome back, ${savedLeadName || 'Demo Tester'}! Choose your role below to launch directly into the live workspace.`
-              : 'Enter your contact details below to instantly unlock full access to live enterprise workspaces.'}
+              ? `Welcome back, ${savedLeadName || 'Demo Tester'}! You have ${daysRemaining ?? 7} days remaining in your 7-day demo trial.`
+              : 'Enter your contact details below to unlock 7 days of full access to live enterprise workspaces.'}
           </p>
         </div>
 
@@ -319,7 +326,12 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
           <div className="mb-4 flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>Demo access verified for <strong>{savedLeadName || 'Guest'}</strong></span>
+              <span>
+                Demo access verified for <strong>{savedLeadName || 'Guest'}</strong> •{' '}
+                <span className="font-semibold text-emerald-300">
+                  {daysRemaining !== null ? `${daysRemaining} days left` : '7-Day Trial Active'}
+                </span>
+              </span>
             </div>
             <button
               type="button"
@@ -420,7 +432,7 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
 
           <div className="pt-2 text-center text-[11px] text-zinc-500 flex items-center justify-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Instant sandbox entry • Verified contact data securely synced • No credit card required</span>
+            <span>7-Day sandbox trial • Verified contact data securely synced • No credit card required</span>
           </div>
         </div>
       </div>

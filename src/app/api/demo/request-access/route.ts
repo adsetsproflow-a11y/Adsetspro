@@ -104,6 +104,7 @@ export async function POST(request: Request) {
     // 5. Store lead into PostgreSQL
     let leadId: string | null = null;
     let syncedToSheets = false;
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: insertedLead, error: insertErr } = await adminClient
       .from('demo_leads')
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
         ip_address: ipAddress,
         status: 'new',
         synced_to_sheets: false,
+        expires_at: expiresAt,
       })
       .select('id')
       .maybeSingle();
@@ -162,23 +164,25 @@ export async function POST(request: Request) {
       }
     }
 
-    // 7. Prepare response and set authorization cookie
+    // 7. Prepare response and set authorization cookie (7-day trial)
     const response = NextResponse.json({
       success: true,
-      message: 'Demo access successfully unlocked! Welcome to Adsetspro Flow.',
+      message: 'Demo access successfully unlocked! Welcome to your 7-day Adsetspro Flow demo sandbox.',
       lead: {
         id: leadId,
         fullName: fullName.trim(),
         email: trimmedEmail,
         phone: phoneCheck.formatted,
+        expiresAt,
+        daysRemaining: 7,
         syncedToSheets,
       },
     });
 
-    // 30 days unlock cookie
+    // 7 days unlock cookie
     response.cookies.set('demo_access_unlocked', 'true', {
       path: '/',
-      maxAge: 30 * 24 * 60 * 60,
+      maxAge: 7 * 24 * 60 * 60,
       sameSite: 'lax',
       httpOnly: false,
     });
@@ -210,7 +214,7 @@ export async function GET(request: Request) {
         return response;
       }
 
-      let leadQuery = adminClient.from('demo_leads').select('id, full_name, email, status');
+      let leadQuery = adminClient.from('demo_leads').select('id, full_name, email, status, created_at, expires_at');
       if (leadId) {
         leadQuery = leadQuery.eq('id', leadId);
       } else if (leadName) {
@@ -230,14 +234,41 @@ export async function GET(request: Request) {
         return response;
       }
 
+      // Check 7-Day Expiry
+      const now = new Date();
+      const expiresAt = lead.expires_at
+        ? new Date(lead.expires_at)
+        : new Date(new Date(lead.created_at).getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const msRemaining = expiresAt.getTime() - now.getTime();
+      const isExpired = msRemaining <= 0;
+
+      if (isExpired) {
+        const response = NextResponse.json({
+          success: true,
+          valid: false,
+          expired: true,
+          reason: 'Your 7-day demo sandbox trial has ended. Please register your company to continue.',
+        });
+        response.cookies.set('demo_access_unlocked', '', { path: '/', maxAge: 0 });
+        return response;
+      }
+
+      const daysRemaining = Math.max(1, Math.ceil(msRemaining / (1000 * 60 * 60 * 24)));
+      const hoursRemaining = Math.max(1, Math.ceil(msRemaining / (1000 * 60 * 60)));
+
       return NextResponse.json({
         success: true,
         valid: true,
+        expired: false,
         lead: {
           id: lead.id,
           fullName: lead.full_name,
           email: lead.email,
           status: lead.status,
+          expiresAt: expiresAt.toISOString(),
+          daysRemaining,
+          hoursRemaining,
         },
       });
     }

@@ -368,6 +368,24 @@ export default function WorkspaceShell({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {companySlug === 'p8-test-org' && (
+          <div className="bg-gradient-to-r from-cyan-600/15 via-indigo-600/20 to-teal-600/15 border-b border-cyan-500/25 px-4 sm:px-8 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-zinc-200 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+              <span>
+                <strong className="text-cyan-300 font-semibold">7-Day Demo Sandbox:</strong> Live interactive workspace preview.
+              </span>
+            </div>
+            <Link
+              href="/register"
+              className="px-3 py-1 rounded-lg bg-gradient-to-r from-teal-500 to-indigo-500 hover:from-teal-400 hover:to-indigo-400 text-white font-bold text-[11px] shadow-sm flex items-center gap-1 transition-all shrink-0"
+            >
+              <span>Register Your Company</span>
+              <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+        )}
+
         {/* Desktop Top Header Bar */}
         <header className="hidden md:flex items-center justify-between px-8 py-3.5 bg-white/85 dark:bg-zinc-950/70 border-b border-slate-200 dark:border-zinc-800/80 backdrop-blur-md sticky top-0 z-50 transition-colors duration-200">
           <div className="flex items-center gap-2">

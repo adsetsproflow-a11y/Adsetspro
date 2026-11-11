@@ -41,6 +41,7 @@ export interface Database {
           status: string;
           synced_to_sheets: boolean;
           created_at: string;
+          expires_at: string | null;
         };
         Insert: {
           id?: string;
@@ -53,6 +54,7 @@ export interface Database {
           status?: string;
           synced_to_sheets?: boolean;
           created_at?: string;
+          expires_at?: string | null;
         };
         Update: {
           id?: string;
@@ -65,6 +67,7 @@ export interface Database {
           status?: string;
           synced_to_sheets?: boolean;
           created_at?: string;
+          expires_at?: string | null;
         };
         Relationships: [];
       };

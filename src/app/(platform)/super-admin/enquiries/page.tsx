@@ -36,6 +36,7 @@ interface DemoLead {
   status: string;
   synced_to_sheets: boolean;
   created_at: string;
+  expires_at?: string | null;
 }
 
 interface CompanyRegistration {
@@ -731,9 +732,29 @@ export default function SuperAdminEnquiriesPage() {
                           </span>
                         </td>
 
-                        {/* Submitted At */}
+                        {/* Submitted At & 7-Day Trial Status */}
                         <td className="py-3.5 text-zinc-400 font-mono text-[11px]">
-                          {formatDate(lead.created_at, 'medium')}
+                          <div>{formatDate(lead.created_at, 'medium')}</div>
+                          {(() => {
+                            const now = new Date().getTime();
+                            const exp = lead.expires_at
+                              ? new Date(lead.expires_at).getTime()
+                              : new Date(lead.created_at).getTime() + 7 * 24 * 60 * 60 * 1000;
+                            const diff = exp - now;
+                            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                            if (diff <= 0) {
+                              return (
+                                <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 font-sans">
+                                  Expired
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-sans">
+                                Active ({days}d left)
+                              </span>
+                            );
+                          })()}
                         </td>
 
                         {/* Status Selector */}

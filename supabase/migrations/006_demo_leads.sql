@@ -12,8 +12,9 @@ CREATE TABLE IF NOT EXISTS public.demo_leads (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Ensure status column exists if table was previously created
+-- Ensure status and expires_at columns exist if table was previously created
 ALTER TABLE public.demo_leads ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'new';
+ALTER TABLE public.demo_leads ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days');
 
 -- Enable RLS and add basic security policy
 ALTER TABLE public.demo_leads ENABLE ROW LEVEL SECURITY;
