@@ -292,11 +292,18 @@ export async function PATCH(request: Request) {
   }
 }
 
-// DELETE endpoint to remove a lead
+// DELETE endpoint to remove a lead or all leads
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const all = searchParams.get('all');
+
+    if (all === 'true') {
+      const { error } = await adminClient.from('demo_leads').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      return NextResponse.json({ success: true, message: 'All demo leads deleted successfully' });
+    }
 
     if (!id) {
       return NextResponse.json({ error: 'Missing lead id' }, { status: 400 });

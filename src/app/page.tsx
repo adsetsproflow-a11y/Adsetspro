@@ -508,7 +508,7 @@ export default function HomePage() {
 
             >
 
-              <span>Sign Up Now</span>
+              <span>Register Now</span>
 
               <ArrowRight className="w-3.5 h-3.5" />
 
@@ -590,7 +590,7 @@ export default function HomePage() {
 
             >
 
-              <span>{currentUser ? 'Open Your Workspace' : 'Sign Up Now'}</span>
+              <span>{currentUser ? 'Open Your Workspace' : 'Register Now'}</span>
 
               <ArrowRight className="w-4 h-4" />
 

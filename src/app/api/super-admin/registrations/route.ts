@@ -76,3 +76,48 @@ export async function GET(request: Request) {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const pool = getDbPool();
+
+    const profRes = await pool.query(
+      `SELECT is_super_admin FROM public.profiles WHERE id = $1 LIMIT 1;`,
+      [user.id]
+    );
+
+    if (!profRes.rows[0]?.is_super_admin) {
+      return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const all = searchParams.get('all');
+
+    if (all === 'true') {
+      await pool.query(`DELETE FROM public.company_registrations;`);
+      return NextResponse.json({ success: true, message: 'All company registrations deleted' });
+    }
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing registration id' }, { status: 400 });
+    }
+
+    await pool.query(`DELETE FROM public.company_registrations WHERE id = $1;`, [id]);
+
+    return NextResponse.json({ success: true, message: 'Company registration deleted successfully' });
+  } catch (error: any) {
+    console.error('Super Admin registrations delete API error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+

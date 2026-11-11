@@ -161,6 +161,63 @@ export default function SuperAdminEnquiriesPage() {
     }
   };
 
+  const handleDeleteRegistration = async (regId: string) => {
+    if (!confirm('Are you sure you want to delete this company registration record?')) return;
+    try {
+      const res = await fetch(`/api/super-admin/registrations?id=${regId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRegistrations((prev) => prev.filter((r) => r.id !== regId));
+      } else {
+        alert(data.error || 'Failed to delete registration');
+      }
+    } catch (err) {
+      console.error('Error deleting registration:', err);
+    }
+  };
+
+  const handleDeleteAllLeads = async () => {
+    if (!confirm('Are you sure you want to delete ALL demo sandbox enquiries? This action cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/demo/request-access?all=true', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLeads([]);
+        try {
+          localStorage.removeItem('demo_access_unlocked');
+          localStorage.removeItem('demo_lead_name');
+          localStorage.removeItem('demo_lead_id');
+          document.cookie = 'demo_access_unlocked=; Max-Age=0; path=/;';
+        } catch {}
+      } else {
+        alert(data.error || 'Failed to delete all leads');
+      }
+    } catch (err) {
+      console.error('Error deleting all leads:', err);
+    }
+  };
+
+  const handleDeleteAllRegistrations = async () => {
+    if (!confirm('Are you sure you want to delete ALL company registration archive records? This action cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/super-admin/registrations?all=true', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRegistrations([]);
+      } else {
+        alert(data.error || 'Failed to delete all registrations');
+      }
+    } catch (err) {
+      console.error('Error deleting all registrations:', err);
+    }
+  };
+
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -249,6 +306,17 @@ export default function SuperAdminEnquiriesPage() {
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
+
+          {(activeTab === 'registrations' ? registrations.length > 0 : leads.length > 0) && (
+            <button
+              onClick={activeTab === 'registrations' ? handleDeleteAllRegistrations : handleDeleteAllLeads}
+              className="px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 text-red-400 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              title={activeTab === 'registrations' ? 'Delete all company registration records' : 'Delete all demo enquiries'}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete All</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -531,6 +599,14 @@ export default function SuperAdminEnquiriesPage() {
                               <Phone className="w-3 h-3" />
                               <span>Call</span>
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRegistration(reg.id)}
+                              className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                              title="Delete Registration Record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </td>
                       </tr>
