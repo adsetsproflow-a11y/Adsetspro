@@ -6,12 +6,23 @@ import { usePathname } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import ThemeToggle from '@/components/common/ThemeToggle';
 
+// Only centered auth cards need the floating back-to-home and theme toggle overlay.
+// Full pages like /pricing, /contact, /terms, /privacy have their own headers.
+const AUTH_ROUTES = new Set([
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+]);
+
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Pages with their own dedicated, branded header and navigation
-  const isFullNavbarPage = pathname === '/pricing' || pathname === '/contact';
 
-  if (isFullNavbarPage) {
+  const showFloatingHeader =
+    pathname && (AUTH_ROUTES.has(pathname) || pathname.startsWith('/accept-invitation'));
+
+  if (!showFloatingHeader) {
     return <div className="min-h-screen flex flex-col">{children}</div>;
   }
 
