@@ -34,7 +34,7 @@ function validatePhone(phone: string): { valid: boolean; formatted: string; reas
   const digitsOnly = raw.replace(/\D/g, '');
 
   if (digitsOnly.length !== 10) {
-    return { valid: false, formatted: '', reason: 'Phone number must be exactly 10 digits.' };
+    return { valid: false, formatted: '', reason: 'Please enter a valid 10-digit phone number.' };
   }
 
   if (!/^[6-9]\d{9}$/.test(digitsOnly)) {

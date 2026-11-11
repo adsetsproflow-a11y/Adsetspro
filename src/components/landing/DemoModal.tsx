@@ -107,7 +107,7 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
 
     const digitsOnly = phone.replace(/\D/g, '');
     if (digitsOnly.length !== 10) {
-      setDemoLaunchError('Please enter a valid 10-digit phone number (do not include +91).');
+      setDemoLaunchError('Please enter a valid 10-digit phone number.');
       return false;
     }
 
