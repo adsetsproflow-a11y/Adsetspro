@@ -26,18 +26,22 @@ function validatePhone(phone: string): { valid: boolean; formatted: string; reas
     return { valid: false, formatted: '', reason: 'Phone number is required.' };
   }
 
-  const cleaned = phone.replace(/[^\d+]/g, '');
-  const digitsOnly = phone.replace(/\D/g, '');
-
-  if (digitsOnly.length < 10) {
-    return { valid: false, formatted: '', reason: 'Phone number must have at least 10 digits.' };
+  const raw = phone.trim();
+  if (raw.includes('+')) {
+    return { valid: false, formatted: '', reason: 'Please enter only your 10-digit phone number without +91 or country code.' };
   }
 
-  if (digitsOnly.length > 15) {
-    return { valid: false, formatted: '', reason: 'Phone number cannot exceed 15 digits.' };
+  const digitsOnly = raw.replace(/\D/g, '');
+
+  if (digitsOnly.length !== 10) {
+    return { valid: false, formatted: '', reason: 'Phone number must be exactly 10 digits.' };
   }
 
-  // Reject repeating digits like 0000000000, 1111111111
+  if (!/^[6-9]\d{9}$/.test(digitsOnly)) {
+    return { valid: false, formatted: '', reason: 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.' };
+  }
+
+  // Reject repeating digits like 0000000000, 1111111111, 9999999999
   if (/^(\d)\1+$/.test(digitsOnly)) {
     return { valid: false, formatted: '', reason: 'Please provide a genuine, active phone number.' };
   }
@@ -49,7 +53,7 @@ function validatePhone(phone: string): { valid: boolean; formatted: string; reas
 
   return {
     valid: true,
-    formatted: cleaned,
+    formatted: digitsOnly,
   };
 }
 

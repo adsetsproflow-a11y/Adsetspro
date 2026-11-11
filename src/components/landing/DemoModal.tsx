@@ -106,13 +106,18 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
     }
 
     const digitsOnly = phone.replace(/\D/g, '');
-    if (digitsOnly.length < 10 || digitsOnly.length > 15) {
-      setDemoLaunchError('Please enter a valid phone number with 10 to 15 digits.');
+    if (digitsOnly.length !== 10) {
+      setDemoLaunchError('Please enter a valid 10-digit phone number (do not include +91).');
       return false;
     }
 
-    if (/^(\d)\1+$/.test(digitsOnly) || '0123456789012345'.includes(digitsOnly)) {
-      setDemoLaunchError('Please enter a genuine, active phone number.');
+    if (!/^[6-9]\d{9}$/.test(digitsOnly)) {
+      setDemoLaunchError('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
+      return false;
+    }
+
+    if (/^(\d)\1+$/.test(digitsOnly) || '0123456789012345'.includes(digitsOnly) || '9876543210987654'.includes(digitsOnly)) {
+      setDemoLaunchError('Please enter a genuine, active 10-digit phone number.');
       return false;
     }
 
@@ -280,9 +285,13 @@ export default function DemoModal({ isOpen, onClose }: DemoModalProps) {
                   <input
                     type="tel"
                     required
+                    maxLength={10}
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 9876543210 (10 digits)"
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setPhone(digits);
+                    }}
+                    placeholder="9876543210 (10 digits)"
                     className="w-full pl-8 pr-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
                   />
                 </div>
