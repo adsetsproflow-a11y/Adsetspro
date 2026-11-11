@@ -69,6 +69,12 @@ import ClickUpBrainSection from '@/components/landing/ClickUpBrainSection';
 
 import AiInteractiveFeaturesShowcase from '@/components/landing/AiInteractiveFeaturesShowcase';
 
+import LandingClosing from '@/components/landing/LandingClosing';
+import PlanSmarterShowcase from '@/components/landing/PlanSmarterShowcase';
+import ScrollReveal from '@/components/landing/ScrollReveal';
+import CountUp from '@/components/landing/CountUp';
+import SectionAmbience from '@/components/landing/SectionAmbience';
+
 
 
 // High-performance dynamic code splitting for below-the-fold & non-critical interactive widgets
@@ -119,7 +125,6 @@ export default function HomePage() {
 
   // FAQ open state
 
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
 
 
@@ -413,15 +418,15 @@ export default function HomePage() {
 
          ========================================================================= */}
 
-      <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-[#070b14]/85 backdrop-blur-xl px-4 sm:px-8 py-3.5 transition-colors">
+      <header className="hp-header sticky top-0 z-50 bg-[#070914]/70 backdrop-blur-2xl backdrop-saturate-150 px-4 sm:px-8 py-3 transition-colors">
 
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
 
           {/* Logo & Brand Name */}
 
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href="/" className="flex items-center gap-3 group">
 
-            <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shadow-md shadow-cyan-500/25 group-hover:scale-105 transition-transform duration-200 shrink-0">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl overflow-hidden flex items-center justify-center ring-1 ring-white/10 bg-white/[0.04] shadow-[0_0_20px_-4px_rgba(34,211,238,0.5)] group-hover:scale-105 transition-transform duration-300 shrink-0">
 
               <img
 
@@ -429,7 +434,7 @@ export default function HomePage() {
 
                 alt="Adsetspro Flow Logo"
 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain scale-[1.65]"
 
               />
 
@@ -437,7 +442,7 @@ export default function HomePage() {
 
             <div className="flex items-center">
 
-              <span className="font-extrabold text-base tracking-tight text-white">
+              <span className="font-bold text-lg sm:text-xl tracking-tight text-white">
 
                 Adsetspro<span className="text-cyan-400">flow</span>
 
@@ -451,27 +456,27 @@ export default function HomePage() {
 
           {/* Center Navigation Links (Hidden on mobile) */}
 
-          <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-zinc-300">
+          <nav className="hp-nav hidden md:flex items-center gap-1 rounded-full p-1 text-[13px] font-medium text-white">
 
-            <a href="#features" className="hover:text-white transition-colors">
+            <a href="#features" className="px-4 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition-all duration-200">
 
               Manage Projects
 
             </a>
 
-            <a href="#planning" className="hover:text-white transition-colors">
+            <a href="#planning" className="px-4 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition-all duration-200">
 
               Plan Smarter
 
             </a>
 
-            <a href="#ai-features" className="hover:text-white transition-colors">
+            <a href="#ai-features" className="px-4 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition-all duration-200">
 
               AI Features
 
             </a>
 
-            <a href="#faqs" className="hover:text-white transition-colors">
+            <a href="#faqs" className="px-4 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition-all duration-200">
 
               FAQs
 
@@ -493,7 +498,7 @@ export default function HomePage() {
 
                   href={dashboardUrl}
 
-                  className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-200 transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                  className="px-3.5 py-2 rounded-full bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10 text-[13px] font-medium text-zinc-200 transition-colors inline-flex items-center gap-1.5"
 
                 >
 
@@ -527,7 +532,7 @@ export default function HomePage() {
 
                 href="/login"
 
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white transition-colors"
+                className="px-3.5 py-2 rounded-full text-[13px] font-medium text-zinc-300 hover:text-white transition-colors"
 
               >
 
@@ -543,11 +548,11 @@ export default function HomePage() {
 
               onClick={() => setIsDemoModalOpen(true)}
 
-              className="hidden lg:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 dark:border-zinc-700 hover:border-slate-400 dark:hover:border-zinc-600 text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/60 transition-all cursor-pointer shadow-xs"
+              className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.03] ring-1 ring-white/10 hover:ring-white/25 hover:bg-white/[0.07] text-[13px] font-medium text-zinc-200 transition-all cursor-pointer"
 
             >
 
-              <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+              <Calendar className="w-3.5 h-3.5 text-sky-300" />
 
               <span>Book a Demo</span>
 
@@ -559,7 +564,7 @@ export default function HomePage() {
 
               href="/register"
 
-              className="btn-shine px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold shadow-md shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all cursor-pointer flex items-center gap-1"
+              className="hp-btn-primary group btn-shine px-4 py-2 rounded-full text-white text-[13px] font-semibold transition-all cursor-pointer flex items-center gap-1"
 
             >
 
@@ -595,9 +600,9 @@ export default function HomePage() {
 
           {/* Badge */}
 
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-xs font-semibold shadow-xs">
+          <div className="hp-in hp-badge relative inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-zinc-200 text-xs font-medium overflow-hidden" style={{ animationDelay: '0ms' }}>
 
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
+            <Sparkles className="w-3.5 h-3.5 text-teal-300" />
 
             <span>Next-Gen Project Management Built for Modern Teams</span>
 
@@ -607,11 +612,11 @@ export default function HomePage() {
 
           {/* H1 Tag */}
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.12]">
+          <h1 className="hp-in text-4xl sm:text-6xl lg:text-7xl font-bold tracking-[-0.035em] text-white leading-[1.04]" style={{ animationDelay: '90ms' }}>
 
             Project Management tool{' '}
 
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 dark:from-indigo-400 dark:via-purple-300 dark:to-cyan-400">
+            <span className="hp-shimmer bg-clip-text text-transparent bg-gradient-to-r from-teal-300 via-sky-400 to-indigo-400">
 
               built for your startup team
 
@@ -623,7 +628,7 @@ export default function HomePage() {
 
           {/* Subtitle */}
 
-          <p className="text-base sm:text-xl text-slate-600 dark:text-zinc-300 max-w-3xl mx-auto leading-relaxed font-normal">
+          <p className="hp-in text-base sm:text-xl text-white/75 max-w-2xl mx-auto leading-relaxed font-normal" style={{ animationDelay: '180ms' }}>
 
             Bring your entire workflow together in one workspace. Manage tasks, collaborate on documents,
 
@@ -635,13 +640,13 @@ export default function HomePage() {
 
           {/* CTA Buttons */}
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-3">
+          <div className="hp-in flex flex-col sm:flex-row items-center justify-center gap-3 pt-3" style={{ animationDelay: '270ms' }}>
 
             <Link
 
               href={currentUser ? dashboardUrl : '/register'}
 
-              className="btn-shine w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/45 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+              className="hp-btn-primary group btn-shine w-full sm:w-auto px-7 py-3.5 rounded-full text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 cursor-pointer"
 
             >
 
@@ -659,11 +664,11 @@ export default function HomePage() {
 
               onClick={() => setIsDemoModalOpen(true)}
 
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 hover:border-slate-400 dark:hover:border-zinc-600 text-slate-800 dark:text-zinc-200 text-sm font-bold flex items-center justify-center gap-2 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-white/[0.04] ring-1 ring-white/15 hover:ring-white/30 hover:bg-white/[0.08] backdrop-blur-md text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 cursor-pointer"
 
             >
 
-              <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <Calendar className="w-4 h-4 text-sky-300" />
 
               <span>Book a Demo</span>
 
@@ -699,7 +704,7 @@ export default function HomePage() {
 
             {/* Browser Window Chrome with Neon Glow Border Pulse */}
 
-          <div className="neon-border-pulse rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-zinc-800/90 bg-white/90 dark:bg-zinc-950/90 shadow-2xl overflow-hidden backdrop-blur-xl">
+          <div className="bg-white/95 dark:bg-zinc-950/95 overflow-hidden">
 
             {/* Window Header */}
 
@@ -823,6 +828,8 @@ export default function HomePage() {
 
          ========================================================================= */}
 
+      <ScrollReveal />
+
       <ClickUpBrainSection />
 
 
@@ -833,35 +840,35 @@ export default function HomePage() {
 
          ========================================================================= */}
 
-      <section className="py-12 border-y border-slate-200/80 dark:border-zinc-800/80 bg-white/40 dark:bg-zinc-950/30 backdrop-blur-md relative z-10 overflow-hidden">
+      <section className="hp-logos py-16 sm:py-20 relative z-10 overflow-hidden">
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
 
-          <p className="text-xs uppercase font-extrabold tracking-widest text-slate-500 dark:text-zinc-400 mb-8">
+          <p data-reveal="up" className="flex items-center justify-center gap-3 sm:gap-5 text-[11px] sm:text-xs uppercase font-semibold tracking-[0.22em] text-zinc-300 mb-10 sm:mb-12"><span aria-hidden className="hidden sm:block h-px w-20 bg-gradient-to-r from-transparent via-teal-400/60 to-sky-400" /><span aria-hidden className="hidden sm:block w-1.5 h-1.5 rounded-full bg-teal-300 shadow-[0_0_10px_#2dd4bf]" />
 
             Trusted by the best startups: Startups Logo
 
-          </p>
+          <span aria-hidden className="hidden sm:block w-1.5 h-1.5 rounded-full bg-indigo-300 shadow-[0_0_10px_#818cf8]" /><span aria-hidden className="hidden sm:block h-px w-20 bg-gradient-to-l from-transparent via-indigo-400/60 to-sky-400" /></p>
 
 
 
           {/* Marquee Wrapper with Gradient Edge Masks */}
 
-          <div className="relative w-full overflow-hidden">
+          <div data-reveal="up" style={{ ['--rd' as string]: '120ms' }} className="hp-marquee-mask relative w-full overflow-hidden">
 
             {/* Left Gradient Edge Mask */}
 
-            <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-r from-slate-50 dark:from-[#070b14] to-transparent z-10 pointer-events-none" />
+            
 
             {/* Right Gradient Edge Mask */}
 
-            <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-l from-slate-50 dark:from-[#070b14] to-transparent z-10 pointer-events-none" />
+            
 
 
 
             {/* Seamless Infinite Looping Track */}
 
-            <div className="animate-marquee flex items-center gap-6 py-2">
+            <div className="animate-marquee flex items-center gap-3 sm:gap-4 py-2">
 
               {[...startupLogos, ...startupLogos, ...startupLogos, ...startupLogos].map((logo, idx) => {
 
@@ -873,13 +880,13 @@ export default function HomePage() {
 
                     key={`${logo.name}-${idx}`}
 
-                    className="flex items-center justify-center gap-2.5 py-3 px-6 rounded-2xl bg-white/70 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 hover:border-indigo-400 dark:hover:border-indigo-500 shadow-xs hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300 group cursor-default shrink-0 transform hover:-translate-y-0.5"
+                    className="hp-logo-chip flex items-center justify-center gap-3 py-3 px-5 sm:py-3.5 sm:px-7 rounded-2xl transition-all duration-300 group cursor-default shrink-0 hover:-translate-y-1"
 
                   >
 
-                    <Icon className={`w-5 h-5 ${logo.color} transition-transform group-hover:scale-110`} />
+                    <span className="hp-logo-icon w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"><Icon className={`w-4 h-4 sm:w-[18px] sm:h-[18px] ${logo.color}`} /></span>
 
-                    <span className="font-bold text-sm tracking-tight text-slate-700 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors whitespace-nowrap">
+                    <span className="font-semibold text-sm sm:text-[15px] tracking-tight text-zinc-100 group-hover:text-white transition-colors whitespace-nowrap">
 
                       {logo.name}
 
@@ -909,15 +916,17 @@ export default function HomePage() {
 
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
 
+        <SectionAmbience focus="right" />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           {/* Left Text & CTAs */}
 
-          <div className="space-y-6">
+          <div data-reveal="left" className="space-y-6">
 
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-xs font-semibold">
+            <div className="hp-chip inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-zinc-200 text-xs font-medium">
 
-              <TrendingUp className="w-3.5 h-3.5" />
+              <TrendingUp className="w-3.5 h-3.5 text-teal-300" />
 
               <span>Scalable Organization</span>
 
@@ -925,15 +934,15 @@ export default function HomePage() {
 
 
 
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-[-0.03em] text-white leading-[1.08]">
 
-              Manage Projects, Scale Your Startup
+              Manage Projects,{' '}<span className="hp-shimmer bg-clip-text text-transparent bg-gradient-to-r from-teal-300 via-sky-400 to-indigo-400">Scale Your Startup</span>
 
             </h2>
 
 
 
-            <p className="text-base sm:text-lg text-slate-600 dark:text-zinc-300 leading-relaxed">
+            <p className="text-base sm:text-lg text-white/75 leading-relaxed">
 
               Adsetsproflow Simplifies project management with smart planning, organized tasks, real-time
 
@@ -943,11 +952,11 @@ export default function HomePage() {
 
 
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-4 pt-2">
 
-              <div className="flex items-start gap-3">
+              <div data-reveal="up" style={{ ['--rd' as string]: '250ms' }} className="flex items-start gap-3">
 
-                <div className="w-5 h-5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-teal-400/10 ring-1 ring-teal-400/30 text-teal-300 flex items-center justify-center shrink-0">
 
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
 
@@ -955,13 +964,13 @@ export default function HomePage() {
 
                 <div>
 
-                  <span className="text-sm font-bold text-slate-900 dark:text-white block">
+                  <span className="text-[15px] font-semibold text-white block">
 
                     Zero-Latency Department Task Pipelines
 
                   </span>
 
-                  <span className="text-xs text-slate-500 dark:text-zinc-400">
+                  <span className="text-[13px] text-white/60">
 
                     Organize work across Development, Design, and Content in isolated workspaces.
 
@@ -973,9 +982,9 @@ export default function HomePage() {
 
 
 
-              <div className="flex items-start gap-3">
+              <div data-reveal="up" style={{ ['--rd' as string]: '360ms' }} className="flex items-start gap-3">
 
-                <div className="w-5 h-5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-sky-400/10 ring-1 ring-sky-400/30 text-sky-300 flex items-center justify-center shrink-0">
 
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
 
@@ -983,13 +992,13 @@ export default function HomePage() {
 
                 <div>
 
-                  <span className="text-sm font-bold text-slate-900 dark:text-white block">
+                  <span className="text-[15px] font-semibold text-white block">
 
                     Real-time Progress &amp; Stopwatch Timers
 
                   </span>
 
-                  <span className="text-xs text-slate-500 dark:text-zinc-400">
+                  <span className="text-[13px] text-white/60">
 
                     Track exact minutes per task with visual countdowns and deadline alerts.
 
@@ -1001,9 +1010,9 @@ export default function HomePage() {
 
 
 
-              <div className="flex items-start gap-3">
+              <div data-reveal="up" style={{ ['--rd' as string]: '470ms' }} className="flex items-start gap-3">
 
-                <div className="w-5 h-5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-indigo-400/10 ring-1 ring-indigo-400/30 text-indigo-300 flex items-center justify-center shrink-0">
 
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
 
@@ -1011,13 +1020,13 @@ export default function HomePage() {
 
                 <div>
 
-                  <span className="text-sm font-bold text-slate-900 dark:text-white block">
+                  <span className="text-[15px] font-semibold text-white block">
 
                     Role Delegation &amp; Peer Reviews
 
                   </span>
 
-                  <span className="text-xs text-slate-500 dark:text-zinc-400">
+                  <span className="text-[13px] text-white/60">
 
                     Seamless sign-offs between Team Leads, Company Admins, and Workers.
 
@@ -1037,7 +1046,7 @@ export default function HomePage() {
 
                 href="/register"
 
-                className="btn-shine inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all cursor-pointer"
+                className="hp-btn-primary btn-shine inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-white text-sm font-semibold transition-all hover:-translate-y-0.5 cursor-pointer"
 
               >
 
@@ -1055,21 +1064,21 @@ export default function HomePage() {
 
           {/* Right Visual Card */}
 
-          <div className="relative">
+          <div data-reveal="right" style={{ ['--rd' as string]: '150ms' }} className="relative">
 
-            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl space-y-6 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+            <div className="hp-glass hp-float-slow p-6 sm:p-8 rounded-[28px] space-y-6 hover:-translate-y-1 transition-all duration-500">
 
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-zinc-800">
+              <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/[0.06]">
 
                 <div>
 
-                  <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
+                  <span className="text-[11px] font-semibold text-teal-300 uppercase tracking-[0.18em] block mb-1">
 
                     Live Performance
 
                   </span>
 
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                  <h3 className="text-xl font-semibold tracking-tight text-white">
 
                     Startup Growth Velocity
 
@@ -1077,7 +1086,7 @@ export default function HomePage() {
 
                 </div>
 
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1">
+                <span className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-400/10 ring-1 ring-emerald-400/25 text-emerald-300 text-xs font-semibold flex items-center gap-1.5">
 
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
 
@@ -1091,7 +1100,7 @@ export default function HomePage() {
 
               <div className="grid grid-cols-2 gap-4">
 
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800">
+                <div data-reveal="zoom" style={{ ['--rd' as string]: '350ms' }} className="p-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07]">
 
                   <span className="text-xs text-slate-500 dark:text-zinc-400 block mb-1">
 
@@ -1099,7 +1108,7 @@ export default function HomePage() {
 
                   </span>
 
-                  <span className="text-2xl font-black text-slate-900 dark:text-white">142</span>
+                  <span className="text-3xl font-bold tracking-tight text-white"><CountUp to={142} /></span>
 
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold block mt-1">
 
@@ -1111,7 +1120,7 @@ export default function HomePage() {
 
 
 
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200/80 dark:border-zinc-800">
+                <div data-reveal="zoom" style={{ ['--rd' as string]: '470ms' }} className="p-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07]">
 
                   <span className="text-xs text-slate-500 dark:text-zinc-400 block mb-1">
 
@@ -1119,9 +1128,9 @@ export default function HomePage() {
 
                   </span>
 
-                  <span className="text-2xl font-black text-slate-900 dark:text-white">18.5h</span>
+                  <span className="text-3xl font-bold tracking-tight text-white"><CountUp to={18.5} decimals={1} suffix="h" /></span>
 
-                  <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold block mt-1">
+                  <span className="text-[11px] text-sky-300 font-semibold block mt-1">
 
                     Via AI Copilot
 
@@ -1139,13 +1148,13 @@ export default function HomePage() {
 
                 <div className="flex items-center justify-between">
 
-                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
+                  <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-[0.18em] block">
 
                     Active Sprint Pipelines
 
                   </span>
 
-                  <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1">
+                  <span className="text-[10px] font-mono text-teal-300 font-semibold flex items-center gap-1">
 
                     <Sparkles className="w-3 h-3" />
 
@@ -1159,7 +1168,7 @@ export default function HomePage() {
 
                 <div className="space-y-2.5">
 
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800">
+                  <div data-reveal="right" style={{ ['--rd' as string]: '550ms' }} className="flex flex-col gap-1.5 p-3.5 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] hover:ring-white/[0.14] transition-all">
 
                     <div className="flex items-center justify-between">
 
@@ -1173,7 +1182,7 @@ export default function HomePage() {
 
                         </span>
 
-                        <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">
+                        <span className="text-[13px] font-medium text-zinc-100">
 
                           Design Landing Page V2
 
@@ -1181,7 +1190,7 @@ export default function HomePage() {
 
                       </div>
 
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-sky-400/10 text-sky-300 ring-1 ring-sky-400/25">
 
                         In Review
 
@@ -1193,7 +1202,7 @@ export default function HomePage() {
 
 
 
-                  <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800">
+                  <div data-reveal="right" style={{ ['--rd' as string]: '680ms' }} className="flex flex-col gap-1.5 p-3.5 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] hover:ring-white/[0.14] transition-all">
 
                     <div className="flex items-center justify-between">
 
@@ -1201,13 +1210,13 @@ export default function HomePage() {
 
                         <span className="relative flex h-2 w-2">
 
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
 
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
 
                         </span>
 
-                        <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">
+                        <span className="text-[13px] font-medium text-zinc-100">
 
                           Stripe Billing Integration
 
@@ -1215,7 +1224,7 @@ export default function HomePage() {
 
                       </div>
 
-                      <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                      <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-400/10 text-indigo-300 ring-1 ring-indigo-400/25">
 
                         68% Synced
 
@@ -1225,9 +1234,9 @@ export default function HomePage() {
 
                     {/* Live Progress Bar */}
 
-                    <div className="w-full bg-slate-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-0.5">
+                    <div className="w-full bg-white/[0.06] h-1.5 rounded-full overflow-hidden mt-1">
 
-                      <div className="animate-progress-shimmer bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full" style={{ width: '68%' }} />
+                      <div className="animate-progress-shimmer hp-fill bg-gradient-to-r from-teal-400 via-sky-400 to-indigo-500 h-full rounded-full shadow-[0_0_12px_rgba(56,189,248,0.6)]" style={{ width: '68%' }} />
 
                     </div>
 
@@ -1235,13 +1244,13 @@ export default function HomePage() {
 
 
 
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800">
+                  <div data-reveal="right" style={{ ['--rd' as string]: '810ms' }} className="flex items-center justify-between p-3.5 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] hover:ring-white/[0.14] transition-all">
 
                     <div className="flex items-center gap-2.5">
 
                       <span className="w-2 h-2 rounded-full bg-emerald-500" />
 
-                      <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200">
+                      <span className="text-[13px] font-medium text-zinc-100">
 
                         WebP Studio Deliverables
 
@@ -1249,7 +1258,7 @@ export default function HomePage() {
 
                     </div>
 
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-400/10 text-emerald-300 ring-1 ring-emerald-400/25 flex items-center gap-1">
 
                       <Check className="w-3 h-3 stroke-[3]" />
 
@@ -1279,171 +1288,7 @@ export default function HomePage() {
 
          ========================================================================= */}
 
-      <section id="planning" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-
-          {/* Left Reference Image */}
-
-          <div className="order-2 lg:order-1 relative group">
-
-            <div className="rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl overflow-hidden">
-
-              <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
-
-                <img
-
-                  src="/images/smart_task_planning.jpg"
-
-                  alt="Plan Smarter. Get Work Done Faster - Smart Task Planning"
-
-                  className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
-
-                />
-
-                <div className="animate-float absolute top-4 left-4 px-3.5 py-2 rounded-xl bg-white/95 dark:bg-zinc-900/95 border border-slate-200 dark:border-zinc-700/80 text-xs font-bold text-slate-900 dark:text-white backdrop-blur-md shadow-xl flex items-center gap-2">
-
-                  <div className="relative flex h-2 w-2">
-
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
-
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
-
-                  </div>
-
-                  <Clock className="w-3.5 h-3.5 text-indigo-500" />
-
-                  <span>Gantt Milestones &amp; Live Deadlines</span>
-
-                </div>
-
-
-
-                <div className="animate-float-delayed absolute bottom-4 right-4 px-3 py-1.5 rounded-xl bg-slate-950/85 border border-indigo-500/30 text-indigo-300 text-xs font-mono font-bold backdrop-blur-md shadow-xl flex items-center gap-2">
-
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '5s' }} />
-
-                  <span>AI Schedulers: Active</span>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-
-          {/* Right Text & CTAs */}
-
-          <div className="order-1 lg:order-2 space-y-6">
-
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-xs font-semibold">
-
-              <Sparkles className="w-3.5 h-3.5" />
-
-              <span>Intelligent Execution</span>
-
-            </div>
-
-
-
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-
-              Plan Smarter. Get Work Done Faster.
-
-            </h2>
-
-
-
-            <p className="text-base sm:text-lg text-slate-600 dark:text-zinc-300 leading-relaxed">
-
-              Organize tasks, assign responsibilities, and set deadlines in seconds. Adsetspro Flow keeps
-
-              your projects structured and your team aligned, helping you move from planning to completion with ease.
-
-            </p>
-
-
-
-            <div className="space-y-3 pt-2">
-
-              <div className="flex items-center gap-3">
-
-                <div className="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
-
-                  1
-
-                </div>
-
-                <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200">
-
-                  Drag-and-drop Kanban and sticky column table views
-
-                </span>
-
-              </div>
-
-              <div className="flex items-center gap-3">
-
-                <div className="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
-
-                  2
-
-                </div>
-
-                <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200">
-
-                  One-click employee task assignments with smart skill matching
-
-                </span>
-
-              </div>
-
-              <div className="flex items-center gap-3">
-
-                <div className="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
-
-                  3
-
-                </div>
-
-                <span className="text-sm font-semibold text-slate-800 dark:text-zinc-200">
-
-                  Instant visual urgency cues for tasks due within 1 hour
-
-                </span>
-
-              </div>
-
-            </div>
-
-
-
-            <div className="pt-3">
-
-              <Link
-
-                href="/register"
-
-                className="btn-shine inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-sm font-bold shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all cursor-pointer"
-
-              >
-
-                <span>Sign Up Now</span>
-
-                <ArrowRight className="w-4 h-4" />
-
-              </Link>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
+      <PlanSmarterShowcase />
 
 
 
@@ -1461,7 +1306,7 @@ export default function HomePage() {
 
 
 
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-14 relative z-10">
+        <div data-reveal="up" className="text-center max-w-3xl mx-auto space-y-4 mb-14 relative z-10">
 
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-xs font-semibold">
 
@@ -1481,7 +1326,7 @@ export default function HomePage() {
 
 
 
-          <p className="text-base sm:text-lg text-slate-600 dark:text-zinc-400">
+          <p className="text-base sm:text-lg text-slate-600 dark:text-white/75">
 
             Automate mundane overhead, empower your team with immediate clarity, and execute at peak velocity.
 
@@ -1493,523 +1338,17 @@ export default function HomePage() {
 
         {/* Interactive Split Feature Showcase (Click on Left -> Display on Right) */}
 
-        <AiInteractiveFeaturesShowcase />
-
-      </section>
-
-
-
-      {/* =========================================================================
-
-          SECTION 6: FAQs (Accordion)
-
-         ========================================================================= */}
-
-      <section id="faqs" className="py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto relative z-10">
-
-        <div className="text-center space-y-4 mb-12">
-
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-600 dark:text-zinc-400">
-
-            <span>Got Questions?</span>
-
-          </div>
-
-          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
-
-            Adsetsproflow Project Management Tool FAQs
-
-          </h2>
-
-          <p className="text-base text-slate-600 dark:text-zinc-400 max-w-xl mx-auto">
-
-            Everything you need to know about getting started and scaling with Adsetspro Flow.
-
-          </p>
-
-        </div>
-
-
-
-        <div className="space-y-3.5">
-
-          {faqs.map((faq, index) => {
-
-            const isOpen = openFaqIndex === index;
-
-            return (
-
-              <div
-
-                key={faq.q}
-
-                className={`rounded-2xl border transition-all duration-300 overflow-hidden relative ${isOpen
-
-                  ? 'border-indigo-400 dark:border-indigo-500/80 bg-white dark:bg-zinc-900 shadow-xl shadow-indigo-500/10'
-
-                  : 'border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 hover:border-slate-300 dark:hover:border-zinc-700'
-
-                  }`}
-
-              >
-
-                {/* Left Accent Glow line when open */}
-
-                <div
-
-                  className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-500 to-cyan-400 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'
-
-                    }`}
-
-                />
-
-
-
-                <button
-
-                  type="button"
-
-                  onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-
-                  className="w-full px-6 py-4.5 text-left font-bold text-base text-slate-900 dark:text-zinc-100 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors"
-
-                >
-
-                  <span className={`transition-colors duration-200 ${isOpen ? 'text-indigo-600 dark:text-indigo-400 font-extrabold' : ''}`}>
-
-                    {faq.q}
-
-                  </span>
-
-                  <div
-
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${isOpen
-
-                      ? 'rotate-180 bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-
-                      : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700'
-
-                      }`}
-
-                  >
-
-                    <ChevronDown className="w-4 h-4 transition-transform duration-300" />
-
-                  </div>
-
-                </button>
-
-
-
-                {/* Animated Smooth Accordion Dropdown Wrapper */}
-
-                <div
-
-                  className={`grid transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-
-                    }`}
-
-                >
-
-                  <div className="overflow-hidden">
-
-                    <div className="px-6 pb-5 pt-2 text-sm text-slate-600 dark:text-zinc-300 leading-relaxed border-t border-slate-100 dark:border-zinc-800/60 bg-gradient-to-b from-indigo-50/30 to-transparent dark:from-indigo-950/20 dark:to-transparent">
-
-                      {faq.a}
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            );
-
-          })}
-
+        <div data-reveal="zoom" style={{ ['--rd' as string]: '120ms' }}>
+          <AiInteractiveFeaturesShowcase />
         </div>
 
       </section>
 
 
 
-      {/* =========================================================================
+      {/* FAQ + final CTA + footer */}
 
-          SECTION 7: Bottom High-Conversion Banner CTA (Flagship AI Banner)
-
-         ========================================================================= */}
-
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto relative z-10">
-
-        {/* Animated Conic Border Runner Shell */}
-
-        <div className="conic-border-wrapper p-[2px] shadow-2xl group">
-
-          {/* Rotating Conic Light Beam Behind Border */}
-
-          <div className="conic-border-glow" />
-
-
-
-          {/* Deep Glassmorphic Content Card */}
-
-          <div className="rounded-[1.4rem] bg-[#080d1a] text-white p-8 sm:p-16 text-center relative overflow-hidden">
-
-            {/* Dynamic Moving Aurora Background Mesh */}
-
-            <div className="absolute -top-24 -left-24 w-80 h-80 bg-indigo-600/30 rounded-full blur-[100px] pointer-events-none animate-aurora" />
-
-            <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-cyan-500/25 rounded-full blur-[100px] pointer-events-none animate-aurora" style={{ animationDelay: '4s' }} />
-
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/20 rounded-full blur-[130px] pointer-events-none" />
-
-
-
-            {/* Floating Left Holographic Badge (Desktop) */}
-
-            <div className="hidden lg:flex animate-float absolute top-8 left-8 px-3.5 py-2 rounded-xl bg-white/10 border border-white/15 backdrop-blur-md text-xs font-semibold text-indigo-200 items-center gap-2 shadow-xl">
-
-              <Zap className="w-3.5 h-3.5 text-cyan-400" />
-
-              <span>1-Click Instant Demo</span>
-
-            </div>
-
-
-
-
-
-            {/* Center Content */}
-
-            <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-
-              {/* Badge */}
-
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold tracking-wide uppercase shadow-sm">
-
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
-
-                <span>Next-Gen AI Workspace OS</span>
-
-              </div>
-
-
-
-              {/* H2 Title with Multi-Color Gradient */}
-
-              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.12]">
-
-                Start building with{' '}
-
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-cyan-300 to-purple-300">
-
-                  Adsetspro Flow
-
-                </span>{' '}
-
-                today.
-
-              </h2>
-
-
-
-              <p className="text-sm sm:text-base text-zinc-300 max-w-xl mx-auto leading-relaxed">
-
-                Join high-velocity teams orchestrating projects with smart planning, AI assistance, and seamless collaboration.
-
-              </p>
-
-
-
-              {/* CTAs */}
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-
-                <Link
-
-                  href="/register"
-
-                  className="btn-shine w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-indigo-950 hover:bg-zinc-100 text-sm font-extrabold shadow-xl hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2"
-
-                >
-
-                  <span>Sign Up Now</span>
-
-                  <ArrowRight className="w-4 h-4 text-indigo-600 transition-transform group-hover:translate-x-1" />
-
-                </Link>
-
-
-
-                <button
-
-                  type="button"
-
-                  onClick={() => setIsDemoModalOpen(true)}
-
-                  className="w-full sm:w-auto px-8 py-4 rounded-xl bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-400/40 text-white text-sm font-extrabold backdrop-blur-md transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2 shadow-lg"
-
-                >
-
-                  <Calendar className="w-4 h-4 text-indigo-300" />
-
-                  <span>Book a Demo</span>
-
-                </button>
-
-              </div>
-
-
-
-
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-
-      {/* =========================================================================
-
-          FOOTER (Flagship Multi-Column Modern SaaS Footer)
-
-         ========================================================================= */}
-
-      <footer className="relative z-10 bg-white/90 dark:bg-[#060a12]/95 backdrop-blur-2xl border-t border-slate-200/90 dark:border-zinc-800/90 transition-colors pt-16 pb-12 overflow-hidden">
-
-        {/* Subtle Gradient Glow Divider Bar */}
-
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/60 via-cyan-400/60 to-transparent" />
-
-
-
-        {/* Ambient background glow */}
-
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-48 bg-gradient-to-b from-indigo-500/5 via-purple-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
-
-          {/* Main 4-Column Grid */}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12">
-
-            {/* Col 1: Brand & Mission (Spans 2 cols on lg) */}
-
-            <div className="lg:col-span-2 space-y-5">
-
-              <Link href="/" className="inline-flex items-center gap-2.5 group">
-
-                <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-lg shadow-cyan-500/25 group-hover:scale-105 transition-transform duration-200 shrink-0">
-
-                  <img
-
-                    src="/images/adsetspro-logo.webp"
-
-                    alt="Adsetspro Flow Logo"
-
-                    className="w-full h-full object-contain"
-
-                  />
-
-                </div>
-
-                <div className="flex items-center">
-
-                  <span className="font-extrabold text-lg tracking-tight text-white">
-
-                    Adsetspro<span className="text-cyan-400">flow</span>
-
-                  </span>
-
-                </div>
-
-              </Link>
-
-
-
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed max-w-sm">
-
-                The all-in-one project management tool built for modern startups and growing teams. Bring tasks, AI assistance, team chat, and smart progress analytics together in one cohesive workspace.
-
-              </p>
-
-
-
-            </div>
-
-
-
-            {/* Col 2: Product */}
-
-            <div className="space-y-4">
-
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-
-                Product
-
-              </h3>
-
-              <ul className="space-y-2.5 text-xs font-medium text-slate-600 dark:text-zinc-400">
-
-                <li>
-
-                  <a href="#features" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-150">
-
-                    Manage Projects
-
-                  </a>
-
-                </li>
-
-                <li>
-
-                  <a href="#planning" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-150">
-
-                    Plan Smarter (Kanban)
-
-                  </a>
-
-                </li>
-
-                <li>
-
-                  <a href="#ai-features" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-150">
-
-                    AI Copilot Features
-
-                  </a>
-
-                </li>
-
-                <li>
-
-                  <button
-
-                    type="button"
-
-                    onClick={() => setIsDemoModalOpen(true)}
-
-                    className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-150 cursor-pointer text-left"
-
-                  >
-
-                    Instant 1-Click Demo
-
-                  </button>
-
-                </li>
-
-
-
-              </ul>
-
-            </div>
-
-
-
-            {/* Col 3: Resources */}
-
-            <div className="space-y-4">
-
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-
-                Resources
-
-              </h3>
-
-              <ul className="space-y-2.5 text-xs font-medium text-slate-600 dark:text-zinc-400">
-
-                <li>
-
-                  <a href="#faqs" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-150">
-
-                    Frequently Asked Questions
-
-                  </a>
-
-                </li>
-
-                <li>
-
-                  <Link href="/login" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-150">
-
-                    Sign In to Workspace
-
-                  </Link>
-
-                </li>
-
-              </ul>
-
-            </div>
-
-
-
-            {/* Col 4: Company & Legal */}
-
-            <div className="space-y-4">
-
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-
-                Company &amp; Legal
-
-              </h3>
-
-              <ul className="space-y-2.5 text-xs font-medium text-slate-600 dark:text-zinc-400">
-
-                <li>
-
-                  <Link href="/privacy" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-150">
-
-                    Privacy Policy
-
-                  </Link>
-
-                </li>
-
-                <li>
-
-                  <Link href="/terms" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-block hover:translate-x-1 transform duration-150">
-
-                    Terms of Service
-
-                  </Link>
-
-                </li>
-
-              </ul>
-
-            </div>
-
-          </div>
-
-
-
-          {/* Bottom Bar: Copyright & Architecture */}
-
-          <div className="border-t border-slate-200/80 dark:border-zinc-800/80 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-zinc-400 pr-16 sm:pr-24">
-
-            <div className="flex items-center gap-2">
-
-              <span>© 2026 Adsetspro Flow Inc. All rights reserved.</span>
-
-            </div>
-
-
-
-          </div>
-
-        </div>
-
-      </footer>
+      <LandingClosing faqs={faqs} onBookDemo={() => setIsDemoModalOpen(true)} />
 
 
 

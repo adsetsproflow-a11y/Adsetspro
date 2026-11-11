@@ -1,112 +1,127 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useSyncExternalStore } from 'react';
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 // =============================================================================
-// MAGNETIC HERO CORE: 3D MAGNETIC ENERGY GLOW & CONVERGENT ORBIT SYSTEM
-// Inspired by futuristic AI technology interfaces:
-// 1. Dual 3D Magnetic Elliptical Orbit Rings (Cyan & Magenta)
-// 2. Twin Ribbon Particle Flux (Parametric Helical Stardust orbiting the card)
-// 3. Subtle 3D Interactive Magnetic Tilt & Cursor Tracking
-// 4. Perimeter Traveling Circuit Photon Beams & 4 Corner Diamond Nodes
-// 5. Deep Multi-Layered Neon Ambient Bloom & Obsidian Ground Mirror Reflection
+// MAGNETIC HERO CORE — PREMIUM SCROLL-REVEAL SHOWCASE
+// 1. Scroll-driven 3D reveal: the mockup starts tilted back in perspective and
+//    "lands" flat, scaling up as the visitor scrolls (cinematic product reveal)
+// 2. Rim-light frame: luminous magenta → violet edge, brightest on the top rim,
+//    with a slow travelling highlight and a bloom that spills behind the card
+// 3. Subtle cursor tilt + spotlight layered on top of the scroll pose
+// 4. Soft orbit rings & stardust particles that fade in as the card lands
+// All per-frame motion is written straight to the DOM (no React re-renders).
 // =============================================================================
 
 interface MagneticHeroCoreProps {
   children: React.ReactNode;
 }
 
+const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
+// easeOutCubic for a smooth "landing" feel
+const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+
 export default function MagneticHeroCore({ children }: MagneticHeroCoreProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 3D Tilt State (Smooth Spring Lerp)
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-  const [cursorPos, setCursorPos] = useState({ x: 50, y: 50 }); // percentage 0-100
-  const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0, active: false });
+  // Shared mutable motion state (read by rAF loops, never triggers renders)
+  const motion = useRef({
+    mx: 0, my: 0, tx: 0, ty: 0, // cursor tilt (current / target)
+    cx: 50, cy: 50,             // cursor % within container
+    hover: false,
+    progress: 0,                // smoothed scroll progress 0..1
+  });
 
-  // Reduced motion preference
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(REDUCED_MOTION_QUERY);
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(REDUCED_MOTION_QUERY).matches,
+    () => false
+  );
 
+  // ---------------------------------------------------------------------------
+  // Main motion loop: scroll progress + cursor tilt → CSS variables
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-      setPrefersReducedMotion(mediaQuery.matches);
-      const listener = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
-      mediaQuery.addEventListener('change', listener);
-      return () => mediaQuery.removeEventListener('change', listener);
+    const container = containerRef.current;
+    const card = cardRef.current;
+    if (!container || !card) return;
+
+    if (prefersReducedMotion) {
+      container.style.setProperty('--p', '1');
+      card.style.transform = 'none';
+      return;
     }
-  }, []);
-
-  // Smooth tilt interpolation loop
-  useEffect(() => {
-    if (prefersReducedMotion) return;
 
     let animId: number;
-    const updateTilt = () => {
-      // Lerp towards target
-      const lerpFactor = mouseRef.current.active ? 0.12 : 0.06;
-      mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * lerpFactor;
-      mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * lerpFactor;
+    const loop = () => {
+      const m = motion.current;
+      const rect = container.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
 
-      setTilt({
-        x: Number(mouseRef.current.y.toFixed(2)),
-        y: Number(mouseRef.current.x.toFixed(2)),
-      });
+      // 0 when the card's top sits low in the viewport, 1 once it has risen
+      // to ~18% from the top. Clamped so a short page still reaches the end.
+      const raw = clamp((vh * 0.92 - rect.top) / (vh * 0.62));
+      m.progress += (raw - m.progress) * 0.1;
+      const p = ease(m.progress);
 
-      animId = requestAnimationFrame(updateTilt);
+      m.mx += (m.tx - m.mx) * (m.hover ? 0.12 : 0.06);
+      m.my += (m.ty - m.my) * (m.hover ? 0.12 : 0.06);
+
+      const rotateX = (1 - p) * 24 + m.my;   // tilted back → flat
+      const rotateY = m.mx;
+      const scale = 0.86 + p * 0.14 + (m.hover ? 0.008 : 0);
+      const lift = (1 - p) * 40;
+
+      card.style.transform =
+        `translate3d(0, ${lift.toFixed(2)}px, 0) rotateX(${rotateX.toFixed(3)}deg) ` +
+        `rotateY(${rotateY.toFixed(3)}deg) scale(${scale.toFixed(4)})`;
+
+      container.style.setProperty('--p', p.toFixed(4));
+      container.style.setProperty('--cx', `${m.cx.toFixed(1)}%`);
+      container.style.setProperty('--cy', `${m.cy.toFixed(1)}%`);
+      container.style.setProperty('--hover', m.hover ? '1' : '0');
+
+      animId = requestAnimationFrame(loop);
     };
-
-    animId = requestAnimationFrame(updateTilt);
+    animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
   }, [prefersReducedMotion]);
 
-  // Mouse Move Handler
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (prefersReducedMotion || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const clientX = e.clientX - rect.left;
-      const clientY = e.clientY - rect.top;
-
-      // Normalized coordinates (-1 to 1)
-      const nx = (clientX / rect.width) * 2 - 1;
-      const ny = (clientY / rect.height) * 2 - 1;
-
-      // Max tilt: ±4.5 deg on Y (horizontal mouse), ±3.5 deg on X (vertical mouse)
-      mouseRef.current.targetX = Math.max(-1, Math.min(1, nx)) * 4.5;
-      mouseRef.current.targetY = -Math.max(-1, Math.min(1, ny)) * 3.5;
-      mouseRef.current.active = true;
-
-      // Cursor spotlight percentage (0 to 100)
-      setCursorPos({
-        x: (clientX / rect.width) * 100,
-        y: (clientY / rect.height) * 100,
-      });
-    },
-    [prefersReducedMotion]
-  );
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-    mouseRef.current.active = true;
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (prefersReducedMotion || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const nx = clamp(((e.clientX - rect.left) / rect.width) * 2 - 1, -1, 1);
+    const ny = clamp(((e.clientY - rect.top) / rect.height) * 2 - 1, -1, 1);
+    const m = motion.current;
+    m.tx = nx * 3.5;
+    m.ty = -ny * 2.5;
+    m.cx = ((nx + 1) / 2) * 100;
+    m.cy = ((ny + 1) / 2) * 100;
+    m.hover = true;
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
-    mouseRef.current.targetX = 0;
-    mouseRef.current.targetY = 0;
-    mouseRef.current.active = false;
-    setCursorPos({ x: 50, y: 50 });
+    const m = motion.current;
+    m.tx = 0;
+    m.ty = 0;
+    m.cx = 50;
+    m.cy = 50;
+    m.hover = false;
   };
 
-  // =========================================================================
-  // TWIN RIBBON PARAMETRIC MAGNETIC PARTICLE CANVAS (60FPS)
-  // Two swirling helical streams: Cyan/Blue (Ribbon A) & Magenta/Violet (Ribbon B)
-  // Particles wrap around the card with 3D depth and subtle cursor magnetism.
-  // =========================================================================
+  // ---------------------------------------------------------------------------
+  // Stardust ribbon particles (created once; reads cursor from the ref)
+  // ---------------------------------------------------------------------------
   useEffect(() => {
+    if (prefersReducedMotion) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -123,7 +138,6 @@ export default function MagneticHeroCore({ children }: MagneticHeroCoreProps) {
       canvas.height = Math.floor(rect.height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
-
     handleResize();
     window.addEventListener('resize', handleResize);
 
@@ -135,130 +149,82 @@ export default function MagneticHeroCore({ children }: MagneticHeroCoreProps) {
     );
     observer.observe(canvas);
 
-    // Particle Structure
-    interface RibbonParticle {
-      ribbon: 'cyan' | 'magenta';
-      t: number;             // position along the 3D ribbon path (0 to 1)
-      speed: number;         // orbit speed
-      radius: number;        // size (0.8 to 2.2px)
-      color: string;
-      glowColor: string;
-      spreadX: number;       // lateral spread from ribbon spine
-      spreadY: number;       // vertical spread
-      twinkleOffset: number;
-    }
+    const cyanPalette = ['#00E5FF', '#38BDF8', '#818CF8', '#F8FAFC'];
+    const magentaPalette = ['#EC4899', '#F472B6', '#8B5CF6', '#C084FC'];
+    const count = window.innerWidth < 768 ? 30 : 64;
 
-    const cyanPalette = ['#00E5FF', '#38BDF8', '#2563EB', '#F8FAFC'];
-    const magentaPalette = ['#EC4899', '#F43F5E', '#8B5CF6', '#C084FC'];
-
-    const particleCount = typeof window !== 'undefined' && window.innerWidth < 768 ? 40 : 90;
-    const particles: RibbonParticle[] = Array.from({ length: particleCount }, (_, i) => {
+    const particles = Array.from({ length: count }, (_, i) => {
       const isCyan = i % 2 === 0;
       const palette = isCyan ? cyanPalette : magentaPalette;
       return {
-        ribbon: isCyan ? 'cyan' : 'magenta',
+        cyan: isCyan,
         t: Math.random(),
-        speed: 0.0025 + Math.random() * 0.0035,
-        radius: 0.9 + Math.random() * 1.4,
+        speed: 0.0012 + Math.random() * 0.0022,
+        radius: 0.7 + Math.random() * 1.2,
         color: palette[i % palette.length],
-        glowColor: isCyan ? 'rgba(0, 229, 255, 0.9)' : 'rgba(236, 72, 153, 0.9)',
+        glow: isCyan ? 'rgba(0, 229, 255, 0.85)' : 'rgba(236, 72, 153, 0.85)',
         spreadX: (Math.random() - 0.5) * 36,
         spreadY: (Math.random() - 0.5) * 28,
-        twinkleOffset: Math.random() * Math.PI * 2,
+        twinkle: Math.random() * Math.PI * 2,
       };
     });
 
     const render = () => {
-      if (!isVisible) {
-        animId = requestAnimationFrame(render);
-        return;
-      }
-
+      animId = requestAnimationFrame(render);
+      if (!isVisible) return;
       time += 0.03;
 
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
       ctx.clearRect(0, 0, w, h);
+
+      const m = motion.current;
+      const reveal = ease(m.progress); // particles bloom in as the card lands
+      if (reveal < 0.02) return;
 
       const centerX = w / 2;
       const centerY = h / 2;
-      const radiusX = Math.min(w * 0.54, 620);
+      const radiusX = Math.min(w * 0.52, 640);
       const radiusY = Math.min(h * 0.44, 280);
+      const mouseX = (m.cx / 100) * w;
+      const mouseY = (m.cy / 100) * h;
 
-      // Mouse influence on particles
-      const hasMouse = mouseRef.current.active;
-      const mouseCanvasX = (cursorPos.x / 100) * w;
-      const mouseCanvasY = (cursorPos.y / 100) * h;
+      for (const p of particles) {
+        p.t = (p.t + p.speed) % 1;
+        const angle = p.t * Math.PI * 2 + (p.cyan ? 0 : Math.PI);
+        const tilt = p.cyan ? -0.38 : 0.38;
+        const ox = Math.cos(angle) * radiusX;
+        const oy = Math.sin(angle) * radiusY * 0.42;
+        let px = centerX + (ox * Math.cos(tilt) - oy * Math.sin(tilt)) + p.spreadX;
+        let py = centerY + (ox * Math.sin(tilt) + oy * Math.cos(tilt)) + p.spreadY;
+        const z = Math.sin(angle);
 
-      particles.forEach((p) => {
-        p.t = (p.t + p.speed) % 1.0;
-        const angle = p.t * Math.PI * 2;
-
-        // Parametric 3D Elliptical Ribbon Formula with Tilts
-        // Ribbon Cyan: tilted at ~ -25deg
-        // Ribbon Magenta: tilted at ~ +25deg
-        const tiltAngle = p.ribbon === 'cyan' ? -0.42 : 0.42;
-        const phaseShift = p.ribbon === 'cyan' ? 0 : Math.PI;
-
-        const baseOrbitX = Math.cos(angle + phaseShift) * radiusX;
-        const baseOrbitY = Math.sin(angle + phaseShift) * radiusY * 0.42;
-
-        // Rotate in 2D to create the 3D tilted ribbon effect
-        const cosT = Math.cos(tiltAngle);
-        const sinT = Math.sin(tiltAngle);
-
-        let px = centerX + (baseOrbitX * cosT - baseOrbitY * sinT) + p.spreadX;
-        let py = centerY + (baseOrbitX * sinT + baseOrbitY * cosT) + p.spreadY;
-
-        // Subtle 3D Z-depth (Z > 0 is in front of the card, Z < 0 is behind)
-        const z = Math.sin(angle + phaseShift);
-
-        // Magnetic Cursor Attraction: if mouse is near, pull particles gently
-        if (hasMouse) {
-          const dx = mouseCanvasX - px;
-          const dy = mouseCanvasY - py;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 260 && dist > 1) {
-            const pull = (1 - dist / 260) * 18;
+        if (m.hover) {
+          const dx = mouseX - px;
+          const dy = mouseY - py;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 240 && dist > 1) {
+            const pull = (1 - dist / 240) * 16;
             px += (dx / dist) * pull;
             py += (dy / dist) * pull;
           }
         }
 
-        // Particle Alpha & Scale based on Z-depth (behind vs in front)
-        const depthAlpha = z > 0 ? 0.85 + z * 0.15 : 0.28 + (z + 1) * 0.25;
-        const depthScale = z > 0 ? 1.0 + z * 0.35 : 0.75;
-        const twinkle = Math.sin(time * 3 + p.twinkleOffset) * 0.25 + 0.75;
-        const finalAlpha = Math.max(0.08, Math.min(1.0, depthAlpha * twinkle));
+        const depthAlpha = z > 0 ? 0.8 + z * 0.2 : 0.25 + (z + 1) * 0.22;
+        const depthScale = z > 0 ? 1 + z * 0.3 : 0.75;
+        const twinkle = Math.sin(time * 3 + p.twinkle) * 0.25 + 0.75;
 
-        ctx.save();
+        ctx.globalAlpha = clamp(depthAlpha * twinkle * reveal, 0, 0.9);
         ctx.fillStyle = p.color;
-        ctx.shadowBlur = z > 0 ? 14 : 6;
-        ctx.shadowColor = p.glowColor;
-        ctx.globalAlpha = finalAlpha;
-
+        ctx.shadowBlur = z > 0 ? 12 : 5;
+        ctx.shadowColor = p.glow;
         ctx.beginPath();
         ctx.arc(px, py, p.radius * depthScale, 0, Math.PI * 2);
         ctx.fill();
-
-        // White hot center for prominent front particles
-        if (z > 0.4 && p.radius > 1.2) {
-          ctx.beginPath();
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowBlur = 8;
-          ctx.shadowColor = '#ffffff';
-          ctx.arc(px, py, p.radius * 0.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        ctx.restore();
-      });
-
-      animId = requestAnimationFrame(render);
+      }
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
     };
-
     animId = requestAnimationFrame(render);
 
     return () => {
@@ -266,262 +232,203 @@ export default function MagneticHeroCore({ children }: MagneticHeroCoreProps) {
       observer.disconnect();
       cancelAnimationFrame(animId);
     };
-  }, [cursorPos]);
+  }, [prefersReducedMotion]);
 
   return (
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 select-none"
-      style={{ perspective: '1200px' }}
+      className="hero-core relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 select-none"
+      style={{ perspective: '1600px', '--p': 0, '--hover': 0 } as React.CSSProperties}
     >
-      {/* =======================================================================
-          1. 3D MAGNETIC ENERGY ORBIT RINGS (DUAL INTERSECTING ELLIPSES)
-          Ring A: Cyan / Electric Blue (North Magnetic Flux)
-          Ring B: Magenta / Violet (South Magnetic Flux)
-         ======================================================================= */}
-      <div className="absolute inset-0 pointer-events-none -z-10 flex items-center justify-center overflow-visible">
-        {/* Ring A: Electric Cyan & Neon Blue 3D Ellipse */}
-        <div
-          className="absolute w-[112%] sm:w-[118%] h-[120%] sm:h-[135%] transition-transform duration-700 ease-out"
-          style={{
-            transform: `rotateX(66deg) rotateY(-18deg) rotateZ(-24deg) scale(${isHovered ? 1.03 : 1.0})`,
-            transformStyle: 'preserve-3d',
-          }}
-        >
-          <svg
-            className="w-full h-full overflow-visible"
-            viewBox="0 0 1000 500"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <linearGradient id="orbitCyanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.0" />
-                <stop offset="25%" stopColor="#00E5FF" stopOpacity="0.95" />
-                <stop offset="50%" stopColor="#2563EB" stopOpacity="0.85" />
-                <stop offset="75%" stopColor="#00E5FF" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#00E5FF" stopOpacity="0.0" />
-              </linearGradient>
-              <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="8" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
+      {/* ===== Back bloom: big magenta/violet glow rising behind the card ===== */}
+      <div aria-hidden className="hero-bloom absolute pointer-events-none -z-10" />
 
-            {/* Glowing Orbit Path */}
-            <ellipse
-              cx="500"
-              cy="250"
-              rx="480"
-              ry="210"
-              stroke="url(#orbitCyanGrad)"
-              strokeWidth="2.8"
-              filter="url(#cyanGlow)"
-              className="animate-pulse"
-              style={{ animationDuration: '3.5s' }}
-            />
-
-            {/* Orbiting Photon Pulse Bead */}
-            {!prefersReducedMotion && (
-              <ellipse
-                cx="500"
-                cy="250"
-                rx="480"
-                ry="210"
-                stroke="#FFFFFF"
-                strokeWidth="4.5"
-                strokeDasharray="28 2800"
-                strokeLinecap="round"
-                filter="url(#cyanGlow)"
-                className="animate-spin-slow"
-                style={{
-                  transformOrigin: '500px 250px',
-                  animation: 'orbitCyanSpin 8s linear infinite',
-                }}
-              />
-            )}
-          </svg>
-        </div>
-
-        {/* Ring B: Cyber Magenta & Electric Violet 3D Ellipse */}
-        <div
-          className="absolute w-[112%] sm:w-[118%] h-[120%] sm:h-[135%] transition-transform duration-700 ease-out"
-          style={{
-            transform: `rotateX(66deg) rotateY(18deg) rotateZ(26deg) scale(${isHovered ? 1.03 : 1.0})`,
-            transformStyle: 'preserve-3d',
-          }}
-        >
-          <svg
-            className="w-full h-full overflow-visible"
-            viewBox="0 0 1000 500"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <linearGradient id="orbitMagentaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#EC4899" stopOpacity="0.0" />
-                <stop offset="25%" stopColor="#EC4899" stopOpacity="0.95" />
-                <stop offset="50%" stopColor="#8B5CF6" stopOpacity="0.85" />
-                <stop offset="75%" stopColor="#EC4899" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#EC4899" stopOpacity="0.0" />
-              </linearGradient>
-              <filter id="magentaGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="8" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Glowing Orbit Path */}
-            <ellipse
-              cx="500"
-              cy="250"
-              rx="480"
-              ry="210"
-              stroke="url(#orbitMagentaGrad)"
-              strokeWidth="2.8"
-              filter="url(#magentaGlow)"
-              className="animate-pulse"
-              style={{ animationDuration: '4.2s' }}
-            />
-
-            {/* Orbiting Photon Pulse Bead */}
-            {!prefersReducedMotion && (
-              <ellipse
-                cx="500"
-                cy="250"
-                rx="480"
-                ry="210"
-                stroke="#FFFFFF"
-                strokeWidth="4.5"
-                strokeDasharray="28 2800"
-                strokeLinecap="round"
-                filter="url(#magentaGlow)"
-                style={{
-                  transformOrigin: '500px 250px',
-                  animation: 'orbitMagentaSpin 10s linear infinite',
-                }}
-              />
-            )}
-          </svg>
-        </div>
+      {/* ===== Soft orbit rings (fade in as the card lands) ===== */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none -z-10 flex items-center justify-center overflow-visible"
+        style={{ opacity: 'calc(var(--p) * 0.55)' }}
+      >
+        {[
+          { id: 'c', rot: 'rotateX(68deg) rotateY(-16deg) rotateZ(-22deg)', a: '#00E5FF', b: '#6366F1', dur: '9s', dir: -1 },
+          { id: 'm', rot: 'rotateX(68deg) rotateY(16deg) rotateZ(24deg)', a: '#EC4899', b: '#8B5CF6', dur: '11s', dir: 1 },
+        ].map((r) => (
+          <div key={r.id} className="absolute w-[112%] sm:w-[118%] h-[120%] sm:h-[135%]" style={{ transform: r.rot }}>
+            <svg className="w-full h-full overflow-visible" viewBox="0 0 1000 500" fill="none">
+              <defs>
+                <linearGradient id={`orbitGrad-${r.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor={r.a} stopOpacity="0" />
+                  <stop offset="30%" stopColor={r.a} stopOpacity="0.8" />
+                  <stop offset="50%" stopColor={r.b} stopOpacity="0.6" />
+                  <stop offset="70%" stopColor={r.a} stopOpacity="0.8" />
+                  <stop offset="100%" stopColor={r.a} stopOpacity="0" />
+                </linearGradient>
+                <filter id={`orbitGlow-${r.id}`} x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="6" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <ellipse cx="500" cy="250" rx="480" ry="210" stroke={`url(#orbitGrad-${r.id})`} strokeWidth="1.6" filter={`url(#orbitGlow-${r.id})`} />
+              {!prefersReducedMotion && (
+                <ellipse
+                  cx="500" cy="250" rx="480" ry="210"
+                  stroke="#FFFFFF" strokeWidth="3.5" strokeDasharray="24 2800" strokeLinecap="round"
+                  filter={`url(#orbitGlow-${r.id})`}
+                  style={{ animation: `${r.dir < 0 ? 'orbitCyanSpin' : 'orbitMagentaSpin'} ${r.dur} linear infinite` }}
+                />
+              )}
+            </svg>
+          </div>
+        ))}
       </div>
 
-      {/* =======================================================================
-          2. SWIRLING 3D MAGNETIC STARDUST RIBBON CANVAS (PARTICLE FLUX)
-         ======================================================================= */}
-      <div className="absolute -inset-16 sm:-inset-24 pointer-events-none -z-10 overflow-hidden">
+      {/* ===== Stardust ribbon canvas ===== */}
+      <div aria-hidden className="absolute -inset-16 sm:-inset-24 pointer-events-none -z-10 overflow-hidden">
         <canvas ref={canvasRef} className="w-full h-full block" />
       </div>
 
-      {/* =======================================================================
-          3. DYNAMIC MAGNETIC SPOTLIGHT (FOLLOWS CURSOR) & AMBIENT AURA BLOOM
-         ======================================================================= */}
+      {/* ===== 3D card (scroll pose + cursor tilt applied by rAF) ===== */}
       <div
-        className="absolute -inset-8 rounded-3xl pointer-events-none -z-10 transition-opacity duration-300"
-        style={{
-          background: `radial-gradient(650px circle at ${cursorPos.x}% ${cursorPos.y}%, rgba(0, 229, 255, ${
-            isHovered ? 0.22 : 0.12
-          }), rgba(139, 92, 246, ${isHovered ? 0.16 : 0.08}), rgba(236, 72, 153, ${
-            isHovered ? 0.12 : 0.05
-          }), transparent 72%)`,
-          opacity: isHovered ? 1.0 : 0.8,
-        }}
-      />
-
-      {/* Soft Multi-Layered Peripheral Ambient Aura */}
-      <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/20 via-violet-500/18 to-pink-500/20 rounded-3xl blur-2xl -z-10 opacity-75 dark:opacity-100 transition-all duration-500 group-hover:scale-[1.02] group-hover:opacity-100" />
-
-      {/* =======================================================================
-          4. 3D INTERACTIVE TILT CONTAINER
-          Encapsulates the Video / Mockup Card with authentic magnetic frame
-         ======================================================================= */}
-      <div
-        className="relative transition-transform duration-200 ease-out will-change-transform"
-        style={{
-          transform: prefersReducedMotion
-            ? 'none'
-            : `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(${
-                isHovered ? 1.012 : 1.0
-              }, ${isHovered ? 1.012 : 1.0}, 1)`,
-          transformStyle: 'preserve-3d',
-        }}
+        ref={cardRef}
+        className="relative will-change-transform"
+        style={{ transformStyle: 'preserve-3d', transformOrigin: '50% 0%' }}
       >
-        {/* MAGNETIC NEON VIDEO FRAME (CIRCUIT PERIMETER) */}
-        <div className="relative rounded-2xl sm:rounded-3xl p-[2px] bg-gradient-to-r from-[#00E5FF] via-[#8B5CF6] to-[#EC4899] shadow-2xl overflow-hidden transition-all duration-300">
-          {/* Animated Travelling Perimeter Photon Spark Light */}
+        {/* Rim-light frame */}
+        <div className="hero-frame relative rounded-2xl sm:rounded-[1.75rem] p-[1.5px]">
+          {/* Travelling highlight that sweeps around the rim */}
           {!prefersReducedMotion && (
-            <div
-              className="absolute -inset-[200%] pointer-events-none animate-spin-slow opacity-90"
-              style={{
-                background:
-                  'conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(0, 229, 255, 0.9) 30deg, #FFFFFF 45deg, rgba(236, 72, 153, 0.9) 60deg, transparent 90deg)',
-                animationDuration: '6s',
-              }}
-            />
+            <div aria-hidden className="absolute inset-0 rounded-[inherit] overflow-hidden pointer-events-none">
+              <div className="hero-rim-sweep absolute -inset-[150%]" />
+            </div>
           )}
 
-          {/* 4 Corner Diamond Energy Nodes */}
-          <div className="absolute top-1.5 left-1.5 w-2 h-2 rounded-sm bg-white shadow-[0_0_10px_#00E5FF] rotate-45 z-30 pointer-events-none" />
-          <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-sm bg-white shadow-[0_0_10px_#EC4899] rotate-45 z-30 pointer-events-none" />
-          <div className="absolute bottom-1.5 left-1.5 w-2 h-2 rounded-sm bg-white shadow-[0_0_10px_#2563EB] rotate-45 z-30 pointer-events-none" />
-          <div className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-sm bg-white shadow-[0_0_10px_#8B5CF6] rotate-45 z-30 pointer-events-none" />
+          {/* Bright top-edge light line (the "lit from above" rim) */}
+          <div aria-hidden className="hero-top-rim absolute left-[8%] right-[8%] -top-px h-px pointer-events-none z-30" />
 
-          {/* Inner Content Card (Preserving existing video/mockup 100%) */}
-          <div className="relative rounded-[calc(1rem-2px)] sm:rounded-[calc(1.5rem-2px)] overflow-hidden bg-slate-950/95 dark:bg-zinc-950/95 backdrop-blur-xl">
-            {/* Edge Inner Glow Layer */}
-            <div
-              className="absolute inset-0 pointer-events-none z-20 transition-opacity duration-300"
-              style={{
-                boxShadow: `inset 0 0 32px rgba(0, 229, 255, ${isHovered ? 0.22 : 0.14}), inset 0 0 54px rgba(139, 92, 246, ${isHovered ? 0.16 : 0.09})`,
-              }}
-            />
-
+          <div className="relative rounded-[calc(1rem-1.5px)] sm:rounded-[calc(1.75rem-1.5px)] overflow-hidden bg-slate-950">
+            {/* Cursor spotlight + inner edge glow */}
+            <div aria-hidden className="hero-spotlight absolute inset-0 pointer-events-none z-20" />
+            {/* Glass sheen that glides across once the card lands */}
+            {!prefersReducedMotion && <div aria-hidden className="hero-sheen absolute inset-0 pointer-events-none z-20" />}
             {children}
           </div>
         </div>
       </div>
 
-      {/* =======================================================================
-          5. OBSIDIAN GROUND MIRROR REFLECTION (UNDER VIDEO CONTAINER)
-         ======================================================================= */}
-      <div className="relative w-full flex justify-center pointer-events-none select-none -z-20">
+      {/* ===== Floor reflection ===== */}
+      <div aria-hidden className="relative w-full flex justify-center pointer-events-none -z-20">
         <div
-          className="w-4/5 h-20 -mt-6 sm:-mt-8 rounded-[100%] blur-2xl transition-opacity duration-500"
+          className="w-4/5 h-20 -mt-6 sm:-mt-8 rounded-[100%] blur-2xl"
           style={{
             background:
-              'linear-gradient(180deg, rgba(0, 229, 255, 0.22) 0%, rgba(139, 92, 246, 0.16) 45%, rgba(236, 72, 153, 0.10) 70%, transparent 100%)',
-            opacity: isHovered ? 1.0 : 0.75,
-            transform: 'scaleY(0.65)',
+              'linear-gradient(180deg, rgba(236, 72, 153, 0.22) 0%, rgba(139, 92, 246, 0.16) 45%, rgba(0, 229, 255, 0.08) 75%, transparent 100%)',
+            opacity: 'calc(0.3 + var(--p) * 0.6)',
+            transform: 'scaleY(0.6)',
           }}
         />
       </div>
 
-      {/* Keyframe Animations for SVG Orbit Rings */}
       <style jsx global>{`
         @keyframes orbitCyanSpin {
-          from {
-            stroke-dashoffset: 0;
-          }
-          to {
-            stroke-dashoffset: -2828;
-          }
+          from { stroke-dashoffset: 0; }
+          to { stroke-dashoffset: -2828; }
         }
         @keyframes orbitMagentaSpin {
-          from {
-            stroke-dashoffset: 0;
-          }
-          to {
-            stroke-dashoffset: 2828;
-          }
+          from { stroke-dashoffset: 0; }
+          to { stroke-dashoffset: 2828; }
+        }
+        @keyframes heroRimSpin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes heroSheen {
+          0%, 62% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+          66% { opacity: 1; }
+          86%, 100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+        }
+
+        .hero-core .hero-bloom {
+          left: 50%;
+          top: -18%;
+          width: 130%;
+          height: 130%;
+          transform: translateX(-50%) scale(calc(0.8 + var(--p) * 0.2));
+          background:
+            radial-gradient(50% 55% at 50% 40%, rgba(217, 70, 239, 0.45), transparent 70%),
+            radial-gradient(40% 50% at 30% 55%, rgba(139, 92, 246, 0.35), transparent 70%),
+            radial-gradient(40% 50% at 70% 55%, rgba(236, 72, 153, 0.35), transparent 70%);
+          filter: blur(60px);
+          opacity: calc(0.25 + var(--p) * 0.75);
+        }
+
+        .hero-core .hero-frame {
+          background: linear-gradient(
+            180deg,
+            rgba(244, 114, 182, 0.95) 0%,
+            rgba(168, 85, 247, 0.75) 22%,
+            rgba(99, 102, 241, 0.35) 60%,
+            rgba(99, 102, 241, 0.12) 100%
+          );
+          box-shadow:
+            0 -10px 50px -6px rgba(236, 72, 153, calc(0.3 + var(--p) * 0.4)),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            0 30px 80px -20px rgba(15, 10, 40, 0.8),
+            0 0 calc(45px + var(--hover) * 25px) rgba(168, 85, 247, calc(0.25 + var(--p) * 0.3)),
+            0 0 calc(120px + var(--hover) * 40px) rgba(217, 70, 239, calc(0.1 + var(--p) * 0.15));
+          transition: box-shadow 0.4s ease;
+        }
+
+        .hero-core .hero-rim-sweep {
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 300deg,
+            rgba(244, 114, 182, 0.9) 330deg,
+            #ffffff 345deg,
+            rgba(129, 140, 248, 0.9) 355deg,
+            transparent 360deg
+          );
+          animation: heroRimSpin 7s linear infinite;
+          opacity: 0.85;
+        }
+
+        .hero-core .hero-top-rim {
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+          box-shadow: 0 0 12px 1px rgba(244, 114, 182, 0.8), 0 0 28px 4px rgba(168, 85, 247, 0.5);
+          opacity: calc(0.4 + var(--p) * 0.6);
+        }
+
+        .hero-core .hero-spotlight {
+          background: radial-gradient(
+            600px circle at var(--cx, 50%) var(--cy, 50%),
+            rgba(255, 255, 255, calc(var(--hover) * 0.06)),
+            transparent 60%
+          );
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            inset 0 0 40px rgba(168, 85, 247, 0.12);
+        }
+
+        .hero-core .hero-sheen::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          width: 35%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.07),
+            rgba(255, 255, 255, 0.12),
+            rgba(255, 255, 255, 0.07),
+            transparent
+          );
+          animation: heroSheen 9s ease-in-out infinite;
         }
       `}</style>
     </div>

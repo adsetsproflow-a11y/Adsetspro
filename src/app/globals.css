@@ -1143,3 +1143,151 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
 }
 
 
+
+/* =============================================================================
+   Landing header + hero: premium polish
+   ============================================================================= */
+
+/* Header: gradient hairline instead of a flat border */
+.hp-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.45), rgba(99, 102, 241, 0.45), transparent);
+  pointer-events: none;
+}
+
+/* Center navigation as a glass pill */
+.hp-nav {
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Primary CTA: violet → fuchsia with inner highlight and glow */
+.hp-btn-primary {
+  background: linear-gradient(135deg, #14b8a6 0%, #3b82f6 55%, #6366f1 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(96, 165, 250, 0.5),
+    0 10px 30px -8px rgba(59, 130, 246, 0.75);
+}
+.hp-btn-primary:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 0 1px rgba(94, 234, 212, 0.7),
+    0 14px 40px -8px rgba(45, 212, 191, 0.7);
+}
+
+/* Hero badge: gradient border + slow light sweep */
+.hp-badge {
+  background: linear-gradient(#0a0f22, #0a0f22) padding-box,
+    linear-gradient(90deg, rgba(45, 212, 191, 0.7), rgba(96, 165, 250, 0.7), rgba(99, 102, 241, 0.7)) border-box;
+  border: 1px solid transparent;
+  box-shadow: 0 0 30px -8px rgba(59, 130, 246, 0.7);
+}
+.hp-badge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.18) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: hpBadgeSweep 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes hpBadgeSweep {
+  0%, 60% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Headline gradient shimmer */
+.hp-shimmer {
+  background-size: 200% auto;
+  animation: hpShimmer 7s linear infinite;
+}
+@keyframes hpShimmer {
+  to { background-position: 200% center; }
+}
+
+/* Staggered entrance on load */
+.hp-in {
+  animation: hpIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes hpIn {
+  from { opacity: 0; transform: translateY(18px); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-in, .hp-shimmer, .hp-badge::after { animation: none; }
+}
+
+/* =============================================================================
+   Feature sections + logo strip (logo palette: teal #2dd4bf, blue #3b82f6, indigo #6366f1)
+   ============================================================================= */
+
+/* Small gradient-border chip used for section eyebrows */
+.hp-chip {
+  background: linear-gradient(#0a0f22, #0a0f22) padding-box,
+    linear-gradient(90deg, rgba(45, 212, 191, 0.6), rgba(96, 165, 250, 0.6), rgba(99, 102, 241, 0.6)) border-box;
+  border: 1px solid transparent;
+  box-shadow: 0 0 24px -8px rgba(59, 130, 246, 0.7);
+}
+
+/* Glass card with gradient hairline + soft brand glow */
+.hp-glass {
+  background: linear-gradient(180deg, rgba(14, 20, 42, 0.92), rgba(8, 11, 24, 0.92)) padding-box,
+    linear-gradient(160deg, rgba(45, 212, 191, 0.45), rgba(255, 255, 255, 0.06) 40%, rgba(99, 102, 241, 0.45)) border-box;
+  border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 30px 80px -30px rgba(59, 130, 246, 0.45);
+}
+.hp-glass:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 40px 90px -30px rgba(45, 212, 191, 0.5);
+}
+
+/* Gradient frame for screenshots */
+.hp-frame {
+  background: linear-gradient(160deg, rgba(45, 212, 191, 0.7), rgba(59, 130, 246, 0.35) 45%, rgba(99, 102, 241, 0.7));
+  box-shadow: 0 30px 80px -25px rgba(59, 130, 246, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+/* Numbered step bullets */
+.hp-num {
+  background: linear-gradient(135deg, #14b8a6, #3b82f6 55%, #6366f1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px -6px rgba(59, 130, 246, 0.8);
+}
+
+/* Logo strip: glass band with soft brand glow */
+.hp-logos {
+  background:
+    radial-gradient(50% 120% at 50% 50%, rgba(59, 130, 246, 0.10), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+}
+.hp-logos::before,
+.hp-logos::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.45), rgba(96, 165, 250, 0.5), rgba(99, 102, 241, 0.45), transparent);
+}
+.hp-logos::before { top: 0; }
+.hp-logos::after { bottom: 0; }
+.hp-marquee-mask {
+  mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+}
+.hp-logo-chip {
+  background: linear-gradient(180deg, rgba(18, 26, 52, 0.9), rgba(10, 14, 30, 0.9)) padding-box,
+    linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04) 50%, rgba(96, 165, 250, 0.25)) border-box;
+  border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+}
+.hp-logo-chip:hover {
+  background: linear-gradient(180deg, rgba(22, 32, 64, 0.95), rgba(12, 17, 36, 0.95)) padding-box,
+    linear-gradient(160deg, rgba(45, 212, 191, 0.7), rgba(96, 165, 250, 0.4) 50%, rgba(99, 102, 241, 0.7)) border-box;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 16px 40px -14px rgba(59, 130, 246, 0.7);
+}
+.hp-logo-icon {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
