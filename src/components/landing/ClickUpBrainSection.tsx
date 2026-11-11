@@ -322,8 +322,12 @@ export default function ClickUpBrainSection() {
                 className="relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full bg-[conic-gradient(from_180deg,#2dd4bf,#3b82f6,#6366f1,#2dd4bf)] p-[2px] shadow-[0_0_60px_rgba(59,130,246,0.65)] transition-transform duration-300 hover:scale-105 active:scale-95"
                 title="Click to query live knowledge base"
               >
-                <span className="flex h-full w-full items-center justify-center rounded-full bg-[#0b1024]">
-                  <Bot className="h-10 w-10 text-white drop-shadow-[0_0_12px_rgba(125,211,252,0.9)]" />
+                <span className="flex h-full w-full items-center justify-center rounded-full bg-[#0b1024] overflow-hidden p-3.5">
+                  <img
+                    src="/images/adsetspro-logo.webp"
+                    alt="Adsetspro Flow Logo"
+                    className="h-full w-full object-contain scale-[1.55] drop-shadow-[0_0_16px_rgba(34,211,238,0.85)]"
+                  />
                 </span>
               </button>
             </div>
