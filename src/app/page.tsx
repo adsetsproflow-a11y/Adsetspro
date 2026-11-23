@@ -687,13 +687,13 @@ export default function HomePage() {
 
             {/* Tool Dashboard Image */}
 
-            <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
+            <div className="relative aspect-[1600/983] w-full bg-slate-900 overflow-hidden">
 
               <img
 
-                src="/images/tool_dashboard_preview.jpg"
+                src="/images/Adsetspro Flow SaaS Dashboard.png"
 
-                alt="Adsetspro Flow Tool Dashboard Preview"
+                alt="Adsetspro Flow SaaS Dashboard"
 
                 className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.01]"
 

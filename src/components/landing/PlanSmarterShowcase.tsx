@@ -109,7 +109,7 @@ export default function PlanSmarterShowcase() {
 
             <div className="relative aspect-video w-full overflow-hidden">
               <img
-                src="/images/smart_task_planning.jpg"
+                src="/images/4_smart_task_management (2).png"
                 alt="Plan Smarter. Get Work Done Faster - Smart Task Planning"
                 className="h-full w-full object-cover object-center transition-transform duration-[1200ms] ease-out group-hover:scale-[1.025]"
               />
