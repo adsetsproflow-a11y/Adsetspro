@@ -109,8 +109,8 @@ export default function PlanSmarterShowcase() {
 
             <div className="relative aspect-video w-full overflow-hidden">
               <img
-                src="/images/4_smart_task_management (2).png"
-                alt="Plan Smarter. Get Work Done Faster - Smart Task Planning"
+                src="/images/Neon SaaS Project Dashboard.png"
+                alt="Plan Smarter. Get Work Done Faster - Sprint 6 Gantt & Table"
                 className="h-full w-full object-cover object-center transition-transform duration-[1200ms] ease-out group-hover:scale-[1.025]"
               />
               {/* Scan light + cursor spotlight */}

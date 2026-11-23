@@ -25,7 +25,7 @@ import {
 import ThemeToggle from '@/components/common/ThemeToggle';
 
 export default function PricingPage() {
-  const [selectedPlan, setSelectedPlan] = useState<string>('Growth Pro');
+  const [selectedPlan, setSelectedPlan] = useState<string>('PREMIUM (₹300/mo)');
   const [teamSize, setTeamSize] = useState<string>('6 - 25 members');
 
   // Form State
@@ -38,6 +38,14 @@ export default function PricingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const selectPlanAndScroll = (plan: string) => {
+    setSelectedPlan(plan);
+    const formElement = document.getElementById('pricing-form-section');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,6 +149,12 @@ export default function PricingPage() {
 
           <div className="flex items-center gap-3">
             <Link
+              href="/blog"
+              className="text-xs text-zinc-400 hover:text-white font-medium transition-colors hidden sm:inline"
+            >
+              Blog
+            </Link>
+            <Link
               href="/contact"
               className="text-xs text-zinc-400 hover:text-white font-medium transition-colors hidden sm:inline"
             >
@@ -160,21 +174,152 @@ export default function PricingPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        {/* Hero Section */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        {/* Plans & Pricing Section Header (From Reference) */}
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold mb-4">
-            <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Custom Pricing &amp; Enterprise Quote</span>
-          </div>
+          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-pink-400 font-bold block mb-2">
+            PLANS &amp; PRICING
+          </span>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-            Get Custom Pricing for{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-300 via-sky-400 to-indigo-400">
-              Your Team
-            </span>
+            Simple pricing for growing teams
           </h1>
           <p className="mt-3 text-xs sm:text-sm text-zinc-400 leading-relaxed">
-            Fill in your details below. Our enterprise specialist will verify your 10-digit mobile number and send your tailored pricing proposal within 2 hours.
+            Select a plan below to get started immediately, or submit your requirements for tailored enterprise setups.
+          </p>
+        </div>
+
+        {/* 2 Pricing Cards Grid (Exact Reference Image Match) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto mb-14 items-stretch">
+          {/* FREE Plan Card */}
+          <div
+            onClick={() => selectPlanAndScroll('FREE (₹0 - 3 Users)')}
+            className={`relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-300 cursor-pointer ${
+              selectedPlan === 'FREE (₹0 - 3 Users)'
+                ? 'bg-[#0f1424] border-2 border-pink-500 shadow-[0_0_40px_-5px_rgba(236,72,153,0.45)] ring-2 ring-pink-500/40 scale-[1.01]'
+                : 'bg-[#0b0f19]/90 border border-zinc-800/80 hover:border-zinc-700 hover:bg-[#0c101c] shadow-xl'
+            }`}
+          >
+            {selectedPlan === 'FREE (₹0 - 3 Users)' && (
+              <div className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-pink-500/20 border border-pink-500 text-pink-300 text-[11px] font-bold">
+                <Check className="w-3 h-3 text-pink-400" /> Selected
+              </div>
+            )}
+
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-3">
+                FREE
+              </span>
+              <div className="flex items-baseline gap-1 mb-1">
+                <span className="text-4xl sm:text-5xl font-extrabold text-white">₹0</span>
+              </div>
+              <span className="text-xs text-zinc-500 block mb-6">Only 3 users</span>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectPlanAndScroll('FREE (₹0 - 3 Users)');
+                }}
+                className={`w-full py-2.5 px-4 rounded-xl border font-bold text-xs transition-all cursor-pointer shadow-sm mb-8 ${
+                  selectedPlan === 'FREE (₹0 - 3 Users)'
+                    ? 'bg-pink-500 border-pink-500 text-white shadow-pink-500/30'
+                    : 'border-pink-500/40 text-pink-300 hover:bg-pink-500/10 hover:border-pink-500'
+                }`}
+              >
+                {selectedPlan === 'FREE (₹0 - 3 Users)' ? '✓ Selected Plan' : 'Get started'}
+              </button>
+
+              <div className="space-y-3">
+                <span className="text-xs font-semibold text-zinc-400 block mb-1">Features</span>
+                {[
+                  '7 Days free Trial',
+                  '2 Projects',
+                  'AI Assistant',
+                  'Team Chat',
+                  'Work Analysis',
+                ].map((feat, i) => (
+                  <div key={i} className="flex items-center gap-2.5 text-xs text-zinc-300">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{feat}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* PREMIUM Plan Card (Most Popular) */}
+          <div
+            onClick={() => selectPlanAndScroll('PREMIUM (₹300/mo)')}
+            className={`relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-300 cursor-pointer relative group ${
+              selectedPlan === 'PREMIUM (₹300/mo)'
+                ? 'bg-[#0f1424] border-2 border-pink-500 shadow-[0_0_50px_-5px_rgba(236,72,153,0.55)] ring-2 ring-pink-500/40 scale-[1.01]'
+                : 'bg-[#0b0f19]/95 border-2 border-pink-500/70 hover:border-pink-400 hover:bg-[#0c101c] shadow-[0_0_30px_-10px_rgba(236,72,153,0.25)]'
+            }`}
+          >
+            {/* MOST POPULAR Pill */}
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 text-[10px] font-bold text-white uppercase tracking-wider shadow-md">
+              MOST POPULAR
+            </div>
+
+            {selectedPlan === 'PREMIUM (₹300/mo)' && (
+              <div className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-pink-500/20 border border-pink-500 text-pink-300 text-[11px] font-bold">
+                <Check className="w-3 h-3 text-pink-400" /> Selected
+              </div>
+            )}
+
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-pink-400 block mb-3">
+                PREMIUM
+              </span>
+              <div className="flex items-baseline gap-1 mb-1">
+                <span className="text-4xl sm:text-5xl font-extrabold text-white">₹300</span>
+                <span className="text-xs text-zinc-400">/month</span>
+              </div>
+              <span className="text-xs text-zinc-500 block mb-6">Full platform access</span>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectPlanAndScroll('PREMIUM (₹300/mo)');
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 text-white font-bold text-xs transition-all shadow-lg shadow-pink-500/30 cursor-pointer mb-8"
+              >
+                {selectedPlan === 'PREMIUM (₹300/mo)' ? '✓ Selected Plan' : 'Try for free'}
+              </button>
+
+              <div className="space-y-3">
+                <span className="text-xs font-semibold text-zinc-400 block mb-1">Features</span>
+                {[
+                  'Unlimited projects',
+                  'AI Assistance',
+                  'AI Smart Task Breakdown',
+                  'AI Smart Analysis',
+                  'Team Chat',
+                  'Recurring Tasks and Task Reminders',
+                  'Web Tabs',
+                ].map((feat, i) => (
+                  <div key={i} className="flex items-center gap-2.5 text-xs text-zinc-200">
+                    <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>{feat}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Anchor & Header */}
+        <div id="pricing-form-section" className="text-center max-w-2xl mx-auto mb-8 pt-4 border-t border-white/[0.08]">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold mb-3">
+            <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Selected Plan Activation &amp; Custom Quote</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            Confirm Your Plan &amp; Mobile Number
+          </h2>
+          <p className="mt-2 text-xs sm:text-sm text-zinc-400">
+            Selected: <strong className="text-pink-400 font-semibold">{selectedPlan}</strong>. Enter your details below for instant setup or custom enterprise quotes.
           </p>
         </div>
 
@@ -234,9 +379,9 @@ export default function PricingPage() {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
-                    { id: 'Starter Solo', desc: 'Up to 5 members' },
-                    { id: 'Growth Pro', desc: 'Up to 25 members (Popular)' },
-                    { id: 'Enterprise Scale', desc: 'Unlimited custom seats' },
+                    { id: 'FREE (₹0 - 3 Users)', desc: 'Up to 3 members • 7 Days Trial' },
+                    { id: 'PREMIUM (₹300/mo)', desc: 'Unlimited projects & AI features' },
+                    { id: 'Enterprise Scale', desc: 'Unlimited seats & Custom workflows' },
                   ].map((plan) => (
                     <button
                       key={plan.id}
@@ -244,13 +389,13 @@ export default function PricingPage() {
                       onClick={() => setSelectedPlan(plan.id)}
                       className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
                         selectedPlan === plan.id
-                          ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-md shadow-indigo-600/20'
+                          ? 'bg-gradient-to-r from-pink-500/20 to-purple-600/20 border-pink-500 text-white shadow-md shadow-pink-500/20 ring-1 ring-pink-500/50'
                           : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-white">{plan.id}</span>
-                        {selectedPlan === plan.id && <Check className="w-4 h-4 text-indigo-400" />}
+                        {selectedPlan === plan.id && <Check className="w-4 h-4 text-pink-400" />}
                       </div>
                       <span className="text-[11px] text-zinc-500 block mt-0.5">{plan.desc}</span>
                     </button>
@@ -389,12 +534,18 @@ export default function PricingPage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Generating Custom Quote &amp; Dispatching...</span>
+                      <span>Processing Activation Request...</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      <span>Request Pricing Proposal for {selectedPlan}</span>
+                      <span>
+                        {selectedPlan.includes('FREE')
+                          ? 'Activate 7-Day Free Experience (₹0)'
+                          : selectedPlan.includes('PREMIUM')
+                          ? 'Get Started with PREMIUM (₹300/mo)'
+                          : 'Request Enterprise Proposal'}
+                      </span>
                     </>
                   )}
                 </button>

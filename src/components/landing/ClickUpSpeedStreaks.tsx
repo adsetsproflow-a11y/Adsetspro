@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useRef } from 'react';
 
@@ -125,18 +125,18 @@ export default function ClickUpSpeedStreaks() {
       const rect = canvas.getBoundingClientRect();
       w = rect.width;
       h = rect.height;
-      // Capped DPR to 1.5 to maximize 60-120fps smoothness across all GPUs
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      // DPR 1 for ultra-lightweight, zero-stutter background fill rate
+      const dpr = 1;
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Balanced density for fluid performance without visual loss
-      const target = w < 640 ? 90 : w < 1024 ? 160 : 220;
+      // Lightweight calibrated density: completely fluid and smooth from frame 1
+      const target = w < 640 ? 60 : w < 1024 ? 95 : 130;
       while (streaks.length < target) streaks.push(createStreak(false));
       if (streaks.length > target) streaks.length = target;
 
-      const sparkTarget = w < 640 ? 70 : w < 1024 ? 110 : 150;
+      const sparkTarget = w < 640 ? 40 : w < 1024 ? 60 : 80;
       while (sparks.length < sparkTarget) sparks.push(createSpark(false));
       if (sparks.length > sparkTarget) sparks.length = sparkTarget;
     };
@@ -144,14 +144,14 @@ export default function ClickUpSpeedStreaks() {
     window.addEventListener('resize', resize);
 
     // ---- Interaction state --------------------------------------------------
-    let boost = reduced ? 0 : 2.0; // gentle warp-in on load
+    let boost = 0; // zero burst on load: starts cruising smoothly from the very first frame
     let lastScrollY = window.scrollY;
     const vp = { x: 0, y: 0, tx: 0, ty: 0 }; // vanishing-point offset (px)
 
     const onScroll = () => {
       const dy = Math.abs(window.scrollY - lastScrollY);
       lastScrollY = window.scrollY;
-      boost = Math.min(2.0, boost + dy * 0.012);
+      boost = Math.min(0.8, boost + dy * 0.006);
     };
     const onMouse = (e: MouseEvent) => {
       const nx = e.clientX / window.innerWidth - 0.5;

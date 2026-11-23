@@ -421,10 +421,11 @@ export default function HomePage() {
             <Link href="/pricing" className="px-4 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition-all duration-200">
               Pricing
             </Link>
+            <Link href="/blog" className="px-4 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition-all duration-200">
+              Blog
+            </Link>
             <Link href="/contact" className="px-4 py-1.5 rounded-full hover:text-white hover:bg-white/[0.06] transition-all duration-200">
-
               Contact
-
             </Link>
 
             </nav>

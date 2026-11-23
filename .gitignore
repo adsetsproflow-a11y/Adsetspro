@@ -43,3 +43,8 @@ next-env.d.ts
 
 # scratch
 scratch/
+
+# large media
+public/images/Screen Recordings/
+*.mp4
+

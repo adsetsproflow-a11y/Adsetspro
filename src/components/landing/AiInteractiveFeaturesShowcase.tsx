@@ -32,6 +32,7 @@ interface TabItem {
   badgeBorder: string;
   activeTextColor: string;
   glowColor: string;
+  image: string;
 }
 
 const CYCLE_MS = 9000; // time each feature stays on screen
@@ -192,6 +193,7 @@ export default function AiInteractiveFeaturesShowcase() {
       badgeBorder: 'border-cyan-500/30',
       activeTextColor: 'text-cyan-400',
       glowColor: 'rgba(56, 189, 248, 0.4)',
+      image: '/images/1_ai_assistance (3).png',
     },
     {
       id: 1,
@@ -205,6 +207,7 @@ export default function AiInteractiveFeaturesShowcase() {
       badgeBorder: 'border-pink-500/30',
       activeTextColor: 'text-pink-400',
       glowColor: 'rgba(236, 72, 153, 0.4)',
+      image: '/images/2_team_chat (2).png',
     },
     {
       id: 2,
@@ -218,6 +221,7 @@ export default function AiInteractiveFeaturesShowcase() {
       badgeBorder: 'border-purple-500/30',
       activeTextColor: 'text-purple-400',
       glowColor: 'rgba(168, 85, 247, 0.4)',
+      image: '/images/3_smart_analytics.png',
     },
     {
       id: 3,
@@ -231,6 +235,7 @@ export default function AiInteractiveFeaturesShowcase() {
       badgeBorder: 'border-emerald-500/30',
       activeTextColor: 'text-emerald-400',
       glowColor: 'rgba(16, 185, 129, 0.4)',
+      image: '/images/4_smart_task_management (2).png',
     },
   ];
 
@@ -468,467 +473,15 @@ export default function AiInteractiveFeaturesShowcase() {
                 style={{ backgroundColor: tabs[activeTab].accentColor }}
               />
 
-              {/* ---------------------------------------------------------------
-                  TAB 0 PREVIEW: 1. AI Assistance (Task / Prompt Synthesizer)
-                 --------------------------------------------------------------- */}
-              {activeTab === 0 && (
-                <div className="space-y-5 fx-panel-in">
-                  {/* Top Header Bar */}
-                  <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white">AI Task Synthesizer</h4>
-                        <span className="text-[10px] text-zinc-400">
-                          Automated Sprint &amp; Scope Generation
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Model Dropdown Selector (From Image 2 reference) */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowModelMenu(!showModelMenu)}
-                        className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-white/10 hover:border-cyan-500/40 text-xs font-mono text-zinc-200 flex items-center gap-1.5 cursor-pointer transition-colors"
-                      >
-                        <Bot className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{selectedModel}</span>
-                        <ChevronDown className="w-3 h-3 text-zinc-400" />
-                      </button>
-
-                      {showModelMenu && (
-                        <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl bg-zinc-950 border border-zinc-800 shadow-xl py-1 z-30 text-xs">
-                          {['Gemini 1.5 Pro', 'ChatGPT-4o', 'Claude 3.5 Sonnet', 'Cohere Command'].map(
-                            (model) => (
-                              <button
-                                key={model}
-                                onClick={() => {
-                                  setSelectedModel(model);
-                                  setShowModelMenu(false);
-                                }}
-                                className={`w-full text-left px-3 py-1.5 hover:bg-zinc-900 flex items-center justify-between cursor-pointer ${
-                                  selectedModel === model
-                                    ? 'text-cyan-400 font-bold bg-cyan-500/10'
-                                    : 'text-zinc-300'
-                                }`}
-                              >
-                                <span>{model}</span>
-                                {selectedModel === model && <Check className="w-3 h-3 text-cyan-400" />}
-                              </button>
-                            )
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Prompt Box */}
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
-                      Suggestion for Task Prompt
-                    </label>
-                    <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-white/[0.08] text-xs text-zinc-200 font-mono flex items-center justify-between">
-                      <span className="truncate pr-2">
-                        Generate sprint milestones based on: <span className="text-cyan-400">Q3 Enterprise Launch</span>
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] uppercase font-bold shrink-0">
-                        Context Linked
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* AI Generated Deliverables Box */}
-                  <div className="p-4 rounded-xl bg-zinc-950/60 border border-cyan-500/25 space-y-3 relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Zap className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Synthesized Sprint Scope:</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-emerald-400">
-                        ● 100% Verified
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-xs text-zinc-300">
-                      <div className="flex items-start gap-2 bg-zinc-900/60 p-2 rounded-lg border border-white/[0.04]">
-                        <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                        <span>Build tenant schema isolation &amp; dynamic routing</span>
-                      </div>
-                      <div className="flex items-start gap-2 bg-zinc-900/60 p-2 rounded-lg border border-white/[0.04]">
-                        <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                        <span>Real-time SSE event pipeline with auto-reconnect</span>
-                      </div>
-                      <div className="flex items-start gap-2 bg-zinc-900/60 p-2 rounded-lg border border-white/[0.04]">
-                        <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                        <span>Automated SLA latency tests &lt; 90ms benchmark</span>
-                      </div>
-
-                      {generationOutput &&
-                        generationOutput.map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-start gap-2 bg-cyan-500/10 p-2 rounded-lg border border-cyan-500/30 text-cyan-200 animate-in fade-in"
-                          >
-                            <Sparkles className="w-3.5 h-3.5 text-cyan-400 mt-0.5 shrink-0" />
-                            <span>{item}</span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-
-                  {/* Interactive Action Button */}
-                  <button
-                    onClick={handleSimulateAiGeneration}
-                    disabled={isGenerating}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 cursor-pointer transition-all"
-                  >
-                    <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                    <span>
-                      {isGenerating ? 'AI Synthesizing Scope...' : 'Run Live AI Synthesis'}
-                    </span>
-                  </button>
-                </div>
-              )}
-
-              {/* ---------------------------------------------------------------
-                  TAB 1 PREVIEW: 2. Team Chat (Real-Time Threads & Collaborative Messaging)
-                 --------------------------------------------------------------- */}
-              {activeTab === 1 && (
-                <div className="space-y-3.5 fx-panel-in">
-                  {/* Channel Header Bar */}
-                  <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-pink-500/15 border border-pink-500/30 text-pink-400 flex items-center justify-center font-bold text-xs">
-                        #
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white"># sprint-release-v2</h4>
-                        <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          <span>4 Team Members Online</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex -space-x-1.5">
-                      {['Sarah K.', 'Alex C.', 'David L.', 'Maria R.'].map((name, i) => (
-                        <div
-                          key={i}
-                          className="w-6 h-6 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 border border-zinc-950 flex items-center justify-center text-[9px] font-bold text-white"
-                          title={name}
-                        >
-                          {name[0]}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Real Message Stream (Pure Text & Live Collaboration - Zero Voice) */}
-                  <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
-                    {chatMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className="p-3 rounded-xl bg-zinc-950/80 border border-white/[0.06] hover:border-pink-500/20 transition-colors space-y-1"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`w-5 h-5 rounded-full bg-gradient-to-tr ${msg.avatarBg} text-white text-[9px] font-bold flex items-center justify-center`}
-                            >
-                              {msg.avatar}
-                            </div>
-                            <span className="text-xs font-bold text-pink-400">
-                              {msg.sender}{' '}
-                              <span className="text-[10px] text-zinc-400 font-normal">
-                                ({msg.role})
-                              </span>
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-zinc-400 font-mono">
-                              {msg.badge}
-                            </span>
-                            <span className="text-[10px] text-zinc-400 font-mono">
-                              {msg.time}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-zinc-200 pl-7 leading-relaxed">
-                          {msg.text}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* AI Copilot Thread Summarizer Pill */}
-                  <div className="p-2.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-[11px] text-purple-200 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                      <span className="truncate">
-                        AI Summary: All 3 pull requests merged cleanly, zero blockers remaining.
-                      </span>
-                    </span>
-                    <span className="text-emerald-400 font-bold font-mono text-[10px] shrink-0 ml-2">
-                      Live Synced
-                    </span>
-                  </div>
-
-                  {/* Interactive Quick Reply Suggestions */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-                    <span className="text-[10px] text-zinc-400 shrink-0 font-mono">Quick:</span>
-                    {['Looks good! 👍', 'Approved for prod 🚀', 'Latency verified ⚡'].map(
-                      (phrase) => (
-                        <button
-                          key={phrase}
-                          type="button"
-                          onClick={() => handleSendMessage(phrase)}
-                          className="px-2 py-0.5 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-white/10 hover:border-pink-500/30 text-[10px] text-zinc-300 hover:text-white shrink-0 cursor-pointer transition-colors"
-                        >
-                          {phrase}
-                        </button>
-                      )
-                    )}
-                  </div>
-
-                  {/* Interactive Live Chat Input Box */}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }}
-                    className="flex items-center gap-2 pt-1 border-t border-white/[0.06]"
-                  >
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={chatInputText}
-                        onChange={(e) => setChatInputText(e.target.value)}
-                        placeholder="Reply in #sprint-release-v2..."
-                        className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-white/10 hover:border-pink-500/30 focus:border-pink-500 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="px-3.5 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-pink-600/30 cursor-pointer transition-all hover:scale-105 active:scale-95"
-                    >
-                      <Send className="w-3 h-3" />
-                      <span>Send</span>
-                    </button>
-                  </form>
-
-                  {/* Quick Reactions Bar */}
-                  <div className="flex items-center justify-between text-xs text-zinc-400 pt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      {['🚀', '🔥', '✅', '❤️'].map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => handleAddReaction(emoji)}
-                          className="px-2 py-0.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-xs flex items-center gap-1 cursor-pointer transition-colors"
-                        >
-                          <span>{emoji}</span>
-                          <span className="font-mono text-[10px] text-zinc-400">
-                            {chatReactions[emoji] || 0}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                    <span className="text-[10px] text-zinc-400">Click to react</span>
-                  </div>
-                </div>
-              )}
-
-              {/* ---------------------------------------------------------------
-                  TAB 2 PREVIEW: 3. Smart Analytics (Telemetry & Circular KPIs)
-                 --------------------------------------------------------------- */}
-              {activeTab === 2 && (
-                <div className="space-y-5 fx-panel-in">
-                  {/* Top Header */}
-                  <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center">
-                        <TrendingUp className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white">Smart Velocity Analytics</h4>
-                        <span className="text-[10px] text-zinc-400">
-                          Automated Sprint Insights &amp; KPI Breakdown
-                        </span>
-                      </div>
-                    </div>
-
-                    <span className="px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-[10px] font-mono text-purple-300 font-bold">
-                      Q3 Sprint 6
-                    </span>
-                  </div>
-
-                  {/* Circular KPI Metrics (From Image 5 reference) */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Circle 1 */}
-                    <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-white/[0.08] flex items-center gap-3">
-                      <div className="relative w-14 h-14 rounded-full bg-pink-500/10 border-2 border-pink-500 flex items-center justify-center shrink-0 shadow-lg shadow-pink-500/20">
-                        <span className="text-xs font-black text-pink-400 font-mono">94.2%</span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-white block">Delivery Rate</span>
-                        <span className="text-[10px] text-zinc-400 leading-tight block mt-0.5">
-                          Top 2% among high-growth SaaS teams
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Circle 2 */}
-                    <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-white/[0.08] flex items-center gap-3">
-                      <div className="relative w-14 h-14 rounded-full bg-cyan-500/10 border-2 border-cyan-400 flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/20">
-                        <span className="text-xs font-black text-cyan-300 font-mono">+38%</span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-white block">Velocity Surge</span>
-                        <span className="text-[10px] text-zinc-400 leading-tight block mt-0.5">
-                          Tasks resolved ahead of deadline
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Velocity Histogram Bars */}
-                  <div className="p-4 rounded-xl bg-zinc-950/60 border border-white/[0.08] space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-300 font-semibold">Weekly Sprint Output</span>
-                      <span className="text-purple-400 font-mono text-[11px] font-bold">
-                        Average: 42 Story Pts/Wk
-                      </span>
-                    </div>
-
-                    <div className="h-16 flex items-end justify-between gap-2 pt-2 px-1">
-                      {[35, 50, 42, 68, 85, 96].map((val, idx) => (
-                        <div key={idx} className="flex-1 flex flex-col items-center gap-1 group">
-                          <div
-                            className="w-full rounded-t-md bg-gradient-to-t from-purple-600/40 to-purple-400 group-hover:to-cyan-400 transition-all duration-300"
-                            style={{ height: `${val}%` }}
-                          />
-                          <span className="text-[9px] font-mono text-zinc-400">
-                            Wk {idx + 1}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* AI Takeaway Insights Bulleted List (From Image 5 reference) */}
-                  <div className="space-y-1.5 text-xs text-zinc-300">
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                      <span>Zero critical blockers detected across all active departments.</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                      <span>Release milestone projected 3 days ahead of original schedule.</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ---------------------------------------------------------------
-                  TAB 3 PREVIEW: 4. Smart Task Management (Interactive Kanban Task)
-                 --------------------------------------------------------------- */}
-              {activeTab === 3 && (
-                <div className="space-y-4 fx-panel-in">
-                  {/* Task Header Bar (From Image 3 reference) */}
-                  <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                        PRO
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-white">Task PRO-10</h4>
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold">
-                            Sprint 6
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-zinc-400">
-                          Assigned to Monica Daniel • Donnelly Construction
-                        </span>
-                      </div>
-                    </div>
-
-                    <span className="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] font-bold text-amber-300 flex items-center gap-1">
-                      <Flame className="w-3 h-3" />
-                      <span>High Priority</span>
-                    </span>
-                  </div>
-
-                  {/* Task Description Summary */}
-                  <div className="p-3 rounded-xl bg-zinc-950/80 border border-white/[0.06] space-y-1">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-                      Task Summary
-                    </span>
-                    <p className="text-xs text-zinc-200 leading-relaxed">
-                      Luxe villa construction delivers premium, custom-designed homes with elegant architecture, superior materials, and tailored interiors.
-                    </p>
-                  </div>
-
-                  {/* Interactive Progress Bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-300 font-semibold">Subtasks Completion</span>
-                      <span className="text-emerald-400 font-mono font-bold">
-                        {completedCount} / {checklist.length} ({Math.round((completedCount / checklist.length) * 100)}%)
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-zinc-950 h-2.5 rounded-full overflow-hidden border border-white/[0.06]">
-                      <div
-                        className="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${(completedCount / checklist.length) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Interactive Checklist (Click to Toggle in Real-Time) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-                      Interactive Subtask Checklist (Click to toggle):
-                    </span>
-
-                    <div className="space-y-1.5">
-                      {checklist.map((item) => (
-                        <div
-                          key={item.id}
-                          onClick={() => toggleChecklistItem(item.id)}
-                          className={`p-2.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
-                            item.done
-                              ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-200'
-                              : 'bg-zinc-950/60 border-white/[0.06] text-zinc-400 hover:border-white/20 hover:text-zinc-200'
-                          }`}
-                        >
-                          <div
-                            className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
-                              item.done
-                                ? 'bg-emerald-500 border-emerald-500 text-white'
-                                : 'border-zinc-700 bg-zinc-900'
-                            }`}
-                          >
-                            {item.done && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                          <span
-                            className={`text-xs ${
-                              item.done ? 'line-through text-zinc-400' : 'text-zinc-200'
-                            }`}
-                          >
-                            {item.text}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Dynamic Feature Image Display */}
+              <div className="relative w-full flex-1 flex items-center justify-center py-2 overflow-hidden fx-panel-in">
+                <img
+                  key={tabs[activeTab].id}
+                  src={tabs[activeTab].image}
+                  alt={tabs[activeTab].title}
+                  className="w-full h-auto max-h-[490px] object-contain rounded-xl shadow-2xl transition-all duration-500 hover:scale-[1.01]"
+                />
+              </div>
 
               {/* Bottom Card Footer with Direct Workspace CTA */}
               <div className="pt-4 mt-4 border-t border-white/[0.08] flex items-center justify-between text-xs">

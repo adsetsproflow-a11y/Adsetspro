@@ -130,6 +130,12 @@ export default function ContactPage() {
             >
               Pricing
             </Link>
+            <Link
+              href="/blog"
+              className="text-xs text-zinc-400 hover:text-white font-medium transition-colors hidden sm:inline"
+            >
+              Blog
+            </Link>
 
             <Link
               href="/register"
