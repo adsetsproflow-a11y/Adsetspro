@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     icon: [
       { url: '/images/adsetspro-logo.webp', type: 'image/webp' },
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-32x32.webp', type: 'image/webp', sizes: '32x32' },
     ],
     shortcut: '/favicon.ico',
     apple: '/images/adsetspro-logo.webp',

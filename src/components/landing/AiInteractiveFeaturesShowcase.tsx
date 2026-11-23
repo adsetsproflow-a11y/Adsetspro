@@ -193,7 +193,7 @@ export default function AiInteractiveFeaturesShowcase() {
       badgeBorder: 'border-cyan-500/30',
       activeTextColor: 'text-cyan-400',
       glowColor: 'rgba(56, 189, 248, 0.4)',
-      image: '/images/1_ai_assistance (3).png',
+      image: '/images/1_ai_assistance (3).webp',
     },
     {
       id: 1,
@@ -207,7 +207,7 @@ export default function AiInteractiveFeaturesShowcase() {
       badgeBorder: 'border-pink-500/30',
       activeTextColor: 'text-pink-400',
       glowColor: 'rgba(236, 72, 153, 0.4)',
-      image: '/images/2_team_chat (2).png',
+      image: '/images/2_team_chat (2).webp',
     },
     {
       id: 2,
@@ -221,7 +221,7 @@ export default function AiInteractiveFeaturesShowcase() {
       badgeBorder: 'border-purple-500/30',
       activeTextColor: 'text-purple-400',
       glowColor: 'rgba(168, 85, 247, 0.4)',
-      image: '/images/3_smart_analytics.png',
+      image: '/images/3_smart_analytics.webp',
     },
     {
       id: 3,
@@ -234,8 +234,8 @@ export default function AiInteractiveFeaturesShowcase() {
       badgeBg: 'bg-emerald-500/10',
       badgeBorder: 'border-emerald-500/30',
       activeTextColor: 'text-emerald-400',
-      glowColor: 'rgba(16, 185, 129, 0.4)',
-      image: '/images/4_smart_task_management (2).png',
+      glowColor: 'rgba(168, 85, 129, 0.4)',
+      image: '/images/4_smart_task_management (2).webp',
     },
   ];
 

@@ -24,7 +24,7 @@ export default function BlogListingPage() {
       category: 'Project Management',
       date: 'Nov 23, 2027',
       readTime: '5 min read',
-      image: '/images/adsetspro_flow_blog_image.png',
+      image: '/images/adsetspro_flow_blog_image.webp',
       featured: true,
       tags: ['Free Plan', 'Startup Tools', 'Team Collaboration', 'AI Workflows'],
     },

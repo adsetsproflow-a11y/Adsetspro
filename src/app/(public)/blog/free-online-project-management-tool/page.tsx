@@ -121,7 +121,7 @@ export default function BlogPostFreeProjectManagementTool() {
         {/* Featured Image (Aspect-Ratio preserved without any text cropping) */}
         <div className="relative mb-12 rounded-3xl overflow-hidden border border-zinc-800/80 bg-[#05070d] shadow-[0_0_50px_-15px_rgba(236,72,153,0.3)] w-full aspect-[1200/630] flex items-center justify-center">
           <img
-            src="/images/adsetspro_flow_blog_image.png"
+            src="/images/adsetspro_flow_blog_image.webp"
             alt="Free Online Project Management Tool - Adsetspro Flow"
             className="w-full h-full object-contain"
           />

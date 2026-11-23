@@ -692,7 +692,7 @@ export default function HomePage() {
 
               <img
 
-                src="/images/Adsetspro Flow SaaS Dashboard.png"
+                src="/images/Adsetspro Flow SaaS Dashboard.webp"
 
                 alt="Adsetspro Flow SaaS Dashboard"
 
@@ -1018,7 +1018,7 @@ export default function HomePage() {
               <div className="absolute -inset-1 rounded-[32px] bg-gradient-to-r from-teal-500/20 via-sky-500/20 to-indigo-500/20 blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
               <img
-                src="/images/Adsetspro Flow Card.png"
+                src="/images/Adsetspro Flow Card.webp"
                 alt="Adsetspro Flow Startup Growth Performance Card"
                 className="relative w-full h-auto rounded-[28px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.01]"
               />
