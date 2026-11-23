@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = 'October 27, 2026';
+  const lastUpdated = 'October 27, 2027';
 
   const sections = [
     { id: 'overview', title: '1. Overview & Scope' },
@@ -357,7 +357,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Footer Navigation */}
         <footer className="pt-8 border-t border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-zinc-400 gap-4">
-          <p>© 2026 Adsetspro Platform. All rights reserved.</p>
+          <p>© 2027 Adsetspro Platform. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link href="/terms" className="text-indigo-600 dark:text-indigo-400 hover:underline">
               Terms of Service

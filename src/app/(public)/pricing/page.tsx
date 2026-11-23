@@ -586,7 +586,7 @@ export default function PricingPage() {
       {/* Footer */}
       <footer className="border-t border-white/[0.08] bg-[#070913] py-8 text-center text-xs text-zinc-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>© 2026 Adsetspro Flow Inc. All rights reserved.</span>
+          <span>© 2027 Adsetspro Flow Inc. All rights reserved.</span>
           <div className="flex items-center gap-6">
             <Link href="/" className="hover:text-zinc-300 transition-colors">
               Home

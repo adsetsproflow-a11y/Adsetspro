@@ -348,7 +348,7 @@ export default function LandingClosing({ faqs, onBookDemo }: LandingClosingProps
 
           {/* Bottom bar */}
           <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-slate-200 pt-8 text-xs text-slate-500 dark:border-white/[0.06] dark:text-white/45 sm:flex-row sm:pr-20">
-            <span>© 2026 Adsetspro Flow Inc. All rights reserved.</span>
+            <span>© 2027 Adsetspro Flow Inc. All rights reserved.</span>
             <span className="flex items-center gap-4">
               <Link href="/privacy" className={linkCls.replace('text-sm', 'text-xs')}>Privacy</Link>
               <Link href="/terms" className={linkCls.replace('text-sm', 'text-xs')}>Terms</Link>

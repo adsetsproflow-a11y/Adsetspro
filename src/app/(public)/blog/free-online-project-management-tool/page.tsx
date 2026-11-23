@@ -106,7 +106,7 @@ export default function BlogPostFreeProjectManagementTool() {
           <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 pb-6 border-b border-zinc-800/80">
             <span className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-zinc-500" />
-              Published Nov 23, 2026
+              Published Nov 23, 2027
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-zinc-500" />
@@ -118,12 +118,12 @@ export default function BlogPostFreeProjectManagementTool() {
           </div>
         </div>
 
-        {/* Featured Image */}
-        <div className="relative mb-12 rounded-3xl overflow-hidden border border-zinc-800/80 bg-zinc-950 shadow-[0_0_50px_-15px_rgba(236,72,153,0.3)]">
+        {/* Featured Image (Aspect-Ratio preserved without any text cropping) */}
+        <div className="relative mb-12 rounded-3xl overflow-hidden border border-zinc-800/80 bg-[#05070d] shadow-[0_0_50px_-15px_rgba(236,72,153,0.3)] w-full aspect-[1200/630] flex items-center justify-center">
           <img
             src="/images/adsetspro_flow_blog_image.png"
             alt="Free Online Project Management Tool - Adsetspro Flow"
-            className="w-full h-auto object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
 
@@ -483,7 +483,7 @@ export default function BlogPostFreeProjectManagementTool() {
 
       {/* Footer */}
       <footer className="border-t border-white/[0.08] py-8 text-center text-xs text-zinc-500">
-        <p>&copy; {new Date().getFullYear()} Adsetspro Flow. All rights reserved.</p>
+        <p>&copy; 2027 Adsetspro Flow. All rights reserved.</p>
       </footer>
     </div>
   );

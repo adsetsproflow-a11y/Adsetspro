@@ -22,7 +22,7 @@ export default function BlogListingPage() {
       excerpt:
         'Managing projects, assigning tasks, tracking deadlines, and coordinating with team members can become challenging as a business grows. When teams depend on multiple tools, spreadsheets, and messages, important updates easily get missed. Discover how Adsetspro Flow centralizes daily operations.',
       category: 'Project Management',
-      date: 'Nov 23, 2026',
+      date: 'Nov 23, 2027',
       readTime: '5 min read',
       image: '/images/adsetspro_flow_blog_image.png',
       featured: true,
@@ -106,52 +106,56 @@ export default function BlogListingPage() {
           {blogPosts.map((post) => (
             <article
               key={post.slug}
-              className="group relative rounded-3xl bg-[#0b0f19]/90 border border-zinc-800/80 hover:border-pink-500/50 transition-all duration-300 overflow-hidden shadow-2xl hover:shadow-[0_0_50px_-10px_rgba(236,72,153,0.25)] flex flex-col md:flex-row items-stretch"
+              className="group relative rounded-3xl bg-[#0b0f19]/90 border border-zinc-800/80 hover:border-pink-500/50 transition-all duration-300 overflow-hidden shadow-2xl hover:shadow-[0_0_50px_-10px_rgba(236,72,153,0.25)] flex flex-col"
             >
-              {/* Blog Image */}
-              <div className="md:w-1/2 relative min-h-[240px] md:min-h-full overflow-hidden bg-zinc-950 flex items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800/80">
+              {/* Blog Image (Full aspect-ratio 1200:630 without ANY cropping) */}
+              <Link
+                href={`/blog/${post.slug}`}
+                className="block relative w-full aspect-[1200/630] overflow-hidden bg-[#05070d] border-b border-zinc-800/80 cursor-pointer"
+              >
                 <img
                   src={post.image}
                   alt={post.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-contain md:object-cover group-hover:scale-[1.02] transition-transform duration-500"
                 />
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-bold text-pink-400 uppercase tracking-wider">
-                  Featured Guide
+                <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-pink-500/30 text-[11px] font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5 shadow-lg">
+                  <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                  <span>Featured Guide</span>
                 </div>
-              </div>
+              </Link>
 
               {/* Blog Content & Metadata */}
-              <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between">
+              <div className="p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
                 <div>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400 mb-3">
-                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-semibold text-[11px]">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400 mb-4">
+                    <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-semibold text-xs">
                       {post.category}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] text-zinc-400">
+                    <span className="flex items-center gap-1.5 text-xs text-zinc-400">
                       <Calendar className="w-3.5 h-3.5 text-zinc-500" />
                       {post.date}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] text-zinc-400">
+                    <span className="flex items-center gap-1.5 text-xs text-zinc-400">
                       <Clock className="w-3.5 h-3.5 text-zinc-500" />
                       {post.readTime}
                     </span>
                   </div>
 
-                  <h2 className="text-xl sm:text-2xl font-bold text-white group-hover:text-pink-300 transition-colors leading-snug">
+                  <h2 className="text-xl sm:text-3xl font-extrabold text-white group-hover:text-pink-300 transition-colors leading-tight">
                     <Link href={`/blog/${post.slug}`}>
                       {post.title}
                     </Link>
                   </h2>
 
-                  <p className="mt-3 text-xs sm:text-sm text-zinc-400 line-clamp-3 leading-relaxed">
+                  <p className="mt-3.5 text-xs sm:text-base text-zinc-400 leading-relaxed">
                     {post.excerpt}
                   </p>
 
-                  <div className="mt-4 flex flex-wrap gap-1.5">
+                  <div className="mt-5 flex flex-wrap gap-2">
                     {post.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400"
+                        className="text-[11px] sm:text-xs px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 font-mono"
                       >
                         #{tag}
                       </span>
@@ -159,14 +163,17 @@ export default function BlogListingPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-zinc-800/80 flex items-center justify-between">
-                  <span className="text-xs text-zinc-400 font-medium">Free 7-Day Access Included</span>
+                <div className="mt-8 pt-6 border-t border-zinc-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-zinc-300 font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Free 7-Day Experience Included (No Credit Card)</span>
+                  </div>
                   <Link
                     href={`/blog/${post.slug}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-pink-500/10 hover:bg-pink-500 border border-pink-500/30 hover:border-pink-500 text-pink-300 hover:text-white text-xs font-bold transition-all group-hover:translate-x-1"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold transition-all shadow-lg shadow-pink-500/25 group-hover:scale-105"
                   >
-                    <span>Read More</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Read Full Article</span>
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               </div>
@@ -177,7 +184,7 @@ export default function BlogListingPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/[0.08] py-8 text-center text-xs text-zinc-500">
-        <p>&copy; {new Date().getFullYear()} Adsetspro Flow. All rights reserved.</p>
+        <p>&copy; 2027 Adsetspro Flow. All rights reserved.</p>
       </footer>
     </div>
   );
