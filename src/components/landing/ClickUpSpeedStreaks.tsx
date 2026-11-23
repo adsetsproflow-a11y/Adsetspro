@@ -3,29 +3,56 @@
 import React, { useEffect, useRef } from 'react';
 
 // =============================================================================
-// HYPERDRIVE WARP FIELD (hero background)
+// HYPERDRIVE WARP FIELD (hero background - Ultra Smooth 60/120 FPS Mode)
 // Light streaks are born at a vanishing point behind the dashboard and rush
-// OUTWARD toward the viewer with true perspective, so the product feels like
-// it is flying at you.
-//  - Warp-in burst on page load, then a steady cruising flow
-//  - Small sparkle particles fly through the same field for depth
-//  - Scrolling injects extra speed ("boost"), which smoothly decays
-//  - Vanishing point drifts with the cursor for parallax depth
-//  - Cool cyan/violet on the left, hot magenta/amber on the right
-//  - Density scales with screen size; pauses off-screen; respects reduced motion
+// OUTWARD toward the viewer with true perspective.
+// Optimizations for buttery smooth 60fps rendering:
+//  - Zero object allocations / zero GC sweeps in the render loop (object pooling)
+//  - Zero string template allocations in rAF loop (pre-cached colors & globalAlpha)
+//  - Clamped delta-time physics (no micro-stutter, lag or sticking)
+//  - High-performance dual-pass glowing strokes (no heavy gradient allocations)
+//  - Hardware compositing hints (translate3d, will-change: transform)
 // =============================================================================
+
+interface PaletteColor {
+  rgb: string;
+  glow: string;
+  core: string;
+}
+
+const LEFT_PALETTE: PaletteColor[] = [
+  { rgb: '0,229,255', glow: 'rgba(0,229,255,0.22)', core: 'rgba(0,229,255,0.95)' },
+  { rgb: '56,189,248', glow: 'rgba(56,189,248,0.22)', core: 'rgba(56,189,248,0.95)' },
+  { rgb: '129,140,248', glow: 'rgba(129,140,248,0.22)', core: 'rgba(129,140,248,0.95)' },
+  { rgb: '167,139,250', glow: 'rgba(167,139,250,0.22)', core: 'rgba(167,139,250,0.95)' },
+  { rgb: '226,232,255', glow: 'rgba(226,232,255,0.25)', core: 'rgba(255,255,255,0.98)' },
+];
+
+const RIGHT_PALETTE: PaletteColor[] = [
+  { rgb: '236,72,153', glow: 'rgba(236,72,153,0.22)', core: 'rgba(236,72,153,0.95)' },
+  { rgb: '217,70,239', glow: 'rgba(217,70,239,0.22)', core: 'rgba(217,70,239,0.95)' },
+  { rgb: '244,114,182', glow: 'rgba(244,114,182,0.22)', core: 'rgba(244,114,182,0.95)' },
+  { rgb: '251,146,60', glow: 'rgba(251,146,60,0.22)', core: 'rgba(251,146,60,0.95)' },
+  { rgb: '255,228,240', glow: 'rgba(255,228,240,0.25)', core: 'rgba(255,255,255,0.98)' },
+];
 
 interface Streak {
   x: number; // world-space position (-1..1 spread)
   y: number;
   z: number; // depth: 1 = far (at vanishing point) -> 0 = at viewer
-  hue: string; // rgb triplet
+  color: PaletteColor;
   width: number;
 }
 
-// Weighted palettes: mostly brand hues, white is rare so it reads as a highlight
-const LEFT_COLORS = ['0,229,255', '56,189,248', '56,189,248', '129,140,248', '129,140,248', '167,139,250', '226,232,255'];
-const RIGHT_COLORS = ['236,72,153', '236,72,153', '217,70,239', '217,70,239', '244,114,182', '251,146,60', '255,228,240'];
+interface Spark {
+  x: number;
+  y: number;
+  z: number;
+  color: PaletteColor;
+  size: number;
+  tw: number;
+  phase: number;
+}
 
 export default function ClickUpSpeedStreaks() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -41,81 +68,90 @@ export default function ClickUpSpeedStreaks() {
     let w = 0;
     let h = 0;
     const streaks: Streak[] = [];
+    const sparks: Spark[] = [];
 
-    const spawn = (s: Partial<Streak> = {}, far = true): Streak => {
-      // Polar spawn keeps an empty "eye" in the middle (hidden behind the card anyway)
+    // Object pooling: resets properties in-place, zero GC allocations during animation
+    const resetStreak = (s: Streak, far = true): void => {
       const angle = Math.random() * Math.PI * 2;
-      // Bias toward the card's edges so more streaks are visible around it
       const r = 0.3 + Math.pow(Math.random(), 0.6) * 0.9;
-      const x = Math.cos(angle) * r;
-      const y = Math.sin(angle) * r;
-      const palette = x < 0 ? LEFT_COLORS : RIGHT_COLORS;
-      return {
-        x,
-        y,
-        z: far ? 0.85 + Math.random() * 0.15 : 0.05 + Math.random() * 0.95,
-        hue: palette[Math.floor(Math.random() * palette.length)],
-        // Mostly hairlines, a few hero streaks
-        width: Math.random() < 0.12 ? 1.1 + Math.random() * 0.5 : 0.35 + Math.random() * 0.55,
-        ...s,
-      };
+      s.x = Math.cos(angle) * r;
+      s.y = Math.sin(angle) * r;
+      s.z = far ? 0.85 + Math.random() * 0.15 : 0.05 + Math.random() * 0.95;
+      const palette = s.x < 0 ? LEFT_PALETTE : RIGHT_PALETTE;
+      s.color = palette[Math.floor(Math.random() * palette.length)];
+      s.width = Math.random() < 0.12 ? 1.1 + Math.random() * 0.5 : 0.35 + Math.random() * 0.55;
     };
 
-    // Small sparkle particles (dots) sharing the same warp field
-    interface Spark { x: number; y: number; z: number; hue: string; size: number; tw: number; phase: number }
-    const sparks: Spark[] = [];
-    const spawnSpark = (far = true): Spark => {
+    const resetSpark = (p: Spark, far = true): void => {
       const angle = Math.random() * Math.PI * 2;
       const r = 0.15 + Math.pow(Math.random(), 0.7) * 1.1;
-      const x = Math.cos(angle) * r;
-      const palette = x < 0 ? LEFT_COLORS : RIGHT_COLORS;
-      return {
-        x,
-        y: Math.sin(angle) * r,
-        z: far ? 0.8 + Math.random() * 0.2 : 0.05 + Math.random() * 0.95,
-        hue: Math.random() < 0.25 ? '255,255,255' : palette[Math.floor(Math.random() * palette.length)],
-        size: 0.5 + Math.random() * 0.9,
-        tw: 0.6 + Math.random() * 1.4,
-        phase: Math.random() * Math.PI * 2,
+      p.x = Math.cos(angle) * r;
+      p.y = Math.sin(angle) * r;
+      p.z = far ? 0.8 + Math.random() * 0.2 : 0.05 + Math.random() * 0.95;
+      const palette = p.x < 0 ? LEFT_PALETTE : RIGHT_PALETTE;
+      p.color = palette[Math.floor(Math.random() * palette.length)];
+      p.size = 0.5 + Math.random() * 0.9;
+      p.tw = 0.6 + Math.random() * 1.4;
+      p.phase = Math.random() * Math.PI * 2;
+    };
+
+    const createStreak = (far = true): Streak => {
+      const s: Streak = {
+        x: 0,
+        y: 0,
+        z: 0,
+        color: LEFT_PALETTE[0],
+        width: 0.5,
       };
+      resetStreak(s, far);
+      return s;
+    };
+
+    const createSpark = (far = true): Spark => {
+      const p: Spark = {
+        x: 0,
+        y: 0,
+        z: 0,
+        color: LEFT_PALETTE[0],
+        size: 0.8,
+        tw: 1,
+        phase: 0,
+      };
+      resetSpark(p, far);
+      return p;
     };
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       w = rect.width;
       h = rect.height;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // Capped DPR to 1.5 to maximize 60-120fps smoothness across all GPUs
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Responsive density: fewer streaks on phones
-      const target = w < 640 ? 110 : w < 1024 ? 200 : 320;
-      if (streaks.length < target) {
-        for (let i = streaks.length; i < target; i++) streaks.push(spawn({}, false));
-      } else {
-        streaks.length = target;
-      }
+      // Balanced density for fluid performance without visual loss
+      const target = w < 640 ? 90 : w < 1024 ? 160 : 220;
+      while (streaks.length < target) streaks.push(createStreak(false));
+      if (streaks.length > target) streaks.length = target;
 
-      const sparkTarget = w < 640 ? 90 : w < 1024 ? 160 : 260;
-      if (sparks.length < sparkTarget) {
-        for (let i = sparks.length; i < sparkTarget; i++) sparks.push(spawnSpark(false));
-      } else {
-        sparks.length = sparkTarget;
-      }
+      const sparkTarget = w < 640 ? 70 : w < 1024 ? 110 : 150;
+      while (sparks.length < sparkTarget) sparks.push(createSpark(false));
+      if (sparks.length > sparkTarget) sparks.length = sparkTarget;
     };
     resize();
     window.addEventListener('resize', resize);
 
     // ---- Interaction state --------------------------------------------------
-    let boost = reduced ? 0 : 2.2; // gentle warp-in on load
+    let boost = reduced ? 0 : 2.0; // gentle warp-in on load
     let lastScrollY = window.scrollY;
     const vp = { x: 0, y: 0, tx: 0, ty: 0 }; // vanishing-point offset (px)
 
     const onScroll = () => {
       const dy = Math.abs(window.scrollY - lastScrollY);
       lastScrollY = window.scrollY;
-      boost = Math.min(2.2, boost + dy * 0.012);
+      boost = Math.min(2.0, boost + dy * 0.012);
     };
     const onMouse = (e: MouseEvent) => {
       const nx = e.clientX / window.innerWidth - 0.5;
@@ -135,23 +171,30 @@ export default function ClickUpSpeedStreaks() {
     );
     observer.observe(canvas);
 
-    // ---- Render --------------------------------------------------------------
-    const BASE_SPEED = 0.17; // depth units per second while cruising (fast but smooth)
+    // ---- Smooth Render Loop --------------------------------------------------
+    const BASE_SPEED = 0.17; // depth units per second
     let last = performance.now();
     let animId = 0;
 
     const frame = (now: number) => {
       animId = requestAnimationFrame(frame);
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      if (!isVisible) return;
+      if (!isVisible) {
+        last = now;
+        return;
+      }
 
-      boost *= Math.pow(0.25, dt); // slow, smooth decay
-      vp.x += (vp.tx - vp.x) * Math.min(1, dt * 1.5);
-      vp.y += (vp.ty - vp.y) * Math.min(1, dt * 1.5);
+      // Smooth delta time clamp between 8ms (120fps) and 33ms (30fps fallback)
+      // Prevents hitching or teleporting when tab is throttled or during GC
+      const rawDt = (now - last) / 1000;
+      last = now;
+      const dt = Math.max(0.008, Math.min(0.033, rawDt));
+
+      boost *= Math.pow(0.25, dt); // smooth decay
+      vp.x += (vp.tx - vp.x) * Math.min(1, dt * 2.0);
+      vp.y += (vp.ty - vp.y) * Math.min(1, dt * 2.0);
 
       const speed = BASE_SPEED * (1 + boost);
-      const trail = 0.05 + speed * 0.6; // longer streaks when going faster
+      const trail = 0.05 + speed * 0.6; // longer streaks when moving faster
 
       const cx = w / 2 + vp.x;
       const cy = h * 0.46 + vp.y;
@@ -162,9 +205,10 @@ export default function ClickUpSpeedStreaks() {
       ctx.globalCompositeOperation = 'lighter';
       ctx.lineCap = 'round';
 
+      // --- Draw Streaks (High-speed batching, zero gradient creation) ---
       for (let i = 0; i < streaks.length; i++) {
         const s = streaks[i];
-        s.z -= speed * dt * (0.7 + (1 - s.z) * 0.5); // gentle acceleration toward the viewer
+        s.z -= speed * dt * (0.7 + (1 - s.z) * 0.5);
 
         const z = s.z;
         const tz = Math.min(1, z + trail);
@@ -172,7 +216,7 @@ export default function ClickUpSpeedStreaks() {
         const hy = cy + (s.y / z) * scaleY * 0.32;
 
         if (z <= 0.02 || hx < -80 || hx > w + 80 || hy < -80 || hy > h + 80) {
-          streaks[i] = spawn();
+          resetStreak(s, true);
           continue;
         }
 
@@ -180,26 +224,22 @@ export default function ClickUpSpeedStreaks() {
         const ty = cy + (s.y / tz) * scaleY * 0.32;
 
         const near = 1 - z; // 0 far -> 1 near
-        // Fade in from the far plane (no popping) and stay soft overall
         const fadeIn = Math.min(1, near / 0.25);
         const alpha = fadeIn * Math.min(1, 0.4 + near * 0.9) * (0.75 + Math.min(boost, 1.5) * 0.15);
-        const lw = Math.min(2.6, s.width * (0.5 + near * 1.6)); // capped: no fat grey bars
+        const lw = Math.min(2.6, s.width * (0.5 + near * 1.6));
 
-        const grad = ctx.createLinearGradient(tx, ty, hx, hy);
-        grad.addColorStop(0, `rgba(${s.hue},0)`);
-        grad.addColorStop(0.7, `rgba(${s.hue},${(alpha * 0.8).toFixed(3)})`);
-        grad.addColorStop(1, `rgba(${s.hue},${alpha.toFixed(3)})`);
-
-        // Soft glow pass
-        ctx.strokeStyle = `rgba(${s.hue},${(alpha * 0.16).toFixed(3)})`;
-        ctx.lineWidth = Math.min(6, lw * 3);
+        // Soft outer glow pass
+        ctx.globalAlpha = alpha * 0.22;
+        ctx.strokeStyle = s.color.glow;
+        ctx.lineWidth = Math.min(6, lw * 2.6);
         ctx.beginPath();
         ctx.moveTo(tx, ty);
         ctx.lineTo(hx, hy);
         ctx.stroke();
 
-        // Bright core pass
-        ctx.strokeStyle = grad;
+        // Vibrant neon core pass
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = s.color.core;
         ctx.lineWidth = lw;
         ctx.beginPath();
         ctx.moveTo(tx, ty);
@@ -207,7 +247,7 @@ export default function ClickUpSpeedStreaks() {
         ctx.stroke();
       }
 
-      // ---- Small particles: tiny glowing sparks flying toward the viewer ----
+      // --- Draw Small Sparkle Particles ---
       const pSpeed = speed * 0.85;
       for (let i = 0; i < sparks.length; i++) {
         const p = sparks[i];
@@ -217,7 +257,7 @@ export default function ClickUpSpeedStreaks() {
         const py = cy + (p.y / z) * scaleY * 0.32;
 
         if (z <= 0.02 || px < -20 || px > w + 20 || py < -20 || py > h + 20) {
-          sparks[i] = spawnSpark();
+          resetSpark(p, true);
           continue;
         }
 
@@ -228,19 +268,23 @@ export default function ClickUpSpeedStreaks() {
         const r = Math.min(2.2, p.size * (0.4 + near * 1.6));
 
         // Halo
-        ctx.fillStyle = `rgba(${p.hue},${(a * 0.18).toFixed(3)})`;
+        ctx.globalAlpha = a * 0.25;
+        ctx.fillStyle = p.color.glow;
         ctx.beginPath();
-        ctx.arc(px, py, r * 3, 0, Math.PI * 2);
+        ctx.arc(px, py, r * 2.5, 0, Math.PI * 2);
         ctx.fill();
+
         // Core
-        ctx.fillStyle = `rgba(${p.hue},${a.toFixed(3)})`;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.color.core;
         ctx.beginPath();
         ctx.arc(px, py, r, 0, Math.PI * 2);
         ctx.fill();
       }
 
+      ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
-      if (reduced) cancelAnimationFrame(animId); // draw one still frame only
+      if (reduced) cancelAnimationFrame(animId);
     };
     animId = requestAnimationFrame(frame);
 
@@ -257,6 +301,11 @@ export default function ClickUpSpeedStreaks() {
     <div
       aria-hidden="true"
       className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-screen h-[520px] sm:h-[760px] lg:h-[920px] pointer-events-none overflow-hidden select-none -z-10"
+      style={{
+        transform: 'translate3d(0, 0, 0)',
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
+      }}
     >
       {/* Core bloom at the vanishing point (sits behind the card) */}
       <div className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 w-[70%] h-[55%] rounded-full blur-[120px] bg-[radial-gradient(closest-side,rgba(217,70,239,0.35),rgba(99,102,241,0.18),transparent)]" />
@@ -268,6 +317,9 @@ export default function ClickUpSpeedStreaks() {
         ref={canvasRef}
         className="relative w-full h-full block opacity-60 dark:opacity-100"
         style={{
+          transform: 'translate3d(0, 0, 0)',
+          willChange: 'transform',
+          backfaceVisibility: 'hidden',
           // Radial vignette + top fade, so streaks never cross the headline / CTA buttons
           maskImage:
             'radial-gradient(ellipse 90% 85% at 50% 50%, black 60%, transparent 100%), linear-gradient(to bottom, transparent 0%, transparent 12%, black 28%, black 90%, transparent 100%)',

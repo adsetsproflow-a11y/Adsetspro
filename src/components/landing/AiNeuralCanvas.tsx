@@ -137,9 +137,8 @@ export default function AiNeuralCanvas({
 
     window.addEventListener('resize', handleResize, { passive: true });
 
-    // Target ~60 FPS cap to prevent 144Hz/240Hz battery drain
-    let lastFrameTime = 0;
-    const frameInterval = 1000 / 60;
+    // Smooth 60fps frame loop with time delta scaling (prevents frame skipping/stuttering)
+    let lastFrameTime = performance.now();
 
     const render = (time: number) => {
       if (!isVisible) {
@@ -149,9 +148,10 @@ export default function AiNeuralCanvas({
 
       animationFrameId = requestAnimationFrame(render);
 
-      const delta = time - lastFrameTime;
-      if (delta < frameInterval) return;
-      lastFrameTime = time - (delta % frameInterval);
+      // Delta time in seconds, clamped between 8ms and 33ms to ensure buttery smooth movement
+      const dt = Math.max(0.008, Math.min(0.033, (time - lastFrameTime) / 1000));
+      lastFrameTime = time;
+      const speedScale = dt * 60; // 1.0 at true 60fps
 
       ctx.clearRect(0, 0, width, height);
 
@@ -162,8 +162,8 @@ export default function AiNeuralCanvas({
       for (let i = 0; i < nodes.length; i++) {
         const n = nodes[i];
 
-        n.x += n.vx;
-        n.y += n.vy;
+        n.x += n.vx * speedScale;
+        n.y += n.vy * speedScale;
 
         if (n.x < 0 || n.x > width) n.vx *= -1;
         if (n.y < 0 || n.y > height) n.vy *= -1;

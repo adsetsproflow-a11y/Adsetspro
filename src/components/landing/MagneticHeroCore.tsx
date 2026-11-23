@@ -213,17 +213,24 @@ export default function MagneticHeroCore({ children }: MagneticHeroCoreProps) {
         const depthAlpha = z > 0 ? 0.8 + z * 0.2 : 0.25 + (z + 1) * 0.22;
         const depthScale = z > 0 ? 1 + z * 0.3 : 0.75;
         const twinkle = Math.sin(time * 3 + p.twinkle) * 0.25 + 0.75;
+        const a = clamp(depthAlpha * twinkle * reveal, 0, 0.9);
+        const r = p.radius * depthScale;
 
-        ctx.globalAlpha = clamp(depthAlpha * twinkle * reveal, 0, 0.9);
-        ctx.fillStyle = p.color;
-        ctx.shadowBlur = z > 0 ? 12 : 5;
-        ctx.shadowColor = p.glow;
+        // Outer soft glow halo (hardware accelerated, zero shadowBlur shader lag)
+        ctx.globalAlpha = a * 0.28;
+        ctx.fillStyle = p.glow;
         ctx.beginPath();
-        ctx.arc(px, py, p.radius * depthScale, 0, Math.PI * 2);
+        ctx.arc(px, py, r * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bright particle core
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
     };
     animId = requestAnimationFrame(render);
 
